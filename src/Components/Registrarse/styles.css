@@ -1,0 +1,20 @@
+.cont-registrarse{
+    width: 50%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+}
+
+/* responsive */
+@media screen and (max-width: 1000px) {
+    .cont-registrarse{
+        width: 80%;
+    }
+}
+@media screen and (max-width: 550px) {
+    .cont-registrarse{
+        width: 90%;
+    }
+}

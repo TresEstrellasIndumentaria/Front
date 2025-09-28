@@ -1,0 +1,62 @@
+.cont-navbar{
+    width: 100%;
+    height: 48px;
+    display: flex;
+    justify-content: start;
+    align-items: start;
+    background-color: var(--color-barra);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .4);
+    z-index: 10;
+}
+.subCont-navbar {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    justify-content: start;
+    align-items: start;
+}
+.cont-menu-hambur,
+.cont-login-logout{
+    width: 50%;
+    height: 48px;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    background-color: var(--color-barra);
+}
+.cont-btn-menu,
+.cont-icono-log{
+    width: 72px;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--color-barra);
+}
+.toggle-button {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    height: 25px;
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
+    background-color: var(--color-barra);
+}
+.linea-menuHamburguesa {
+    width: 100%;
+    height: 3px;
+    background-color: rgb(5, 5, 5);
+    transition: all 0.3s ease;
+}
+.cont-login-logout{
+    justify-content: end;
+}
+/* col logOut */
+.cont-icono-log{
+    width: 200px;
+}
+.nombre-usuario{
+    margin-right: 10px;
+}

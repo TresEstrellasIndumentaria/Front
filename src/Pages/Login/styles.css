@@ -1,0 +1,56 @@
+.cont-login-page {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+    /* background-image: url('../../Images/mujerPelo3.webp');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat; */
+}
+/* código para el degrade */
+.cont-login-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100lvh;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.711), rgba(0, 0, 0, 0.662));
+    pointer-events: none; /* Permite hacer clic a través del pseudo-elemento */
+}
+.cont-login-clasico-page{
+    width: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+}
+.cont-login-google-page{
+    margin-top: 20px;
+    background-color: black;
+    padding: 10px;
+    border-radius: 5px;
+}
+/* modal */
+.modalRecuperaDatos{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: start;
+    background-color: #3e3d3d;
+    z-index: 1000;
+}
+.hidden{
+    display: none;
+}
+/* responsive */
+@media screen and (max-width: 700px) {
+    .cont-login-clasico-page{
+        width: 95%;
+    }
+}
