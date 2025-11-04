@@ -1,7 +1,8 @@
 import axios from "axios";
 import { URL } from "../../Urls";
 import { 
-    LOGIN,  GET_USER, RESET_USER, GET_USER_BY_DNI,    
+    LOGIN,  GET_USER, RESET_USER, GET_USER_BY_DNI,
+    GET_ALL_USUARIOS,    
 } from "./actionsType";
 //-------usuario-----------------------------
 export const login = (data) => {
@@ -41,6 +42,13 @@ export const registrarse = (data) => {
 }
 
 //-----usuario--------------------
+export const getAllUsuarios = () => {
+    return async function(dispatch) {
+        const resp = axios.get(`${URL}/usuario/`);
+        dispatch({type: GET_ALL_USUARIOS, payload: resp.data});
+    }
+}
+
 //trae usuario por id
 export const getUsuarioById = (id) => {
     return async function(dispatch) {  

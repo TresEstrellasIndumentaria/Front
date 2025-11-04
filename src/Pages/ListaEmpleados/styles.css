@@ -1,6 +1,10 @@
 .cont-principal-listaEmp {
+    width: 80%;
+    justify-content: start;
+    align-items: center;
     padding: 20px;
     font-family: 'Roboto', sans-serif;
+    background-color: rgb(185, 186, 185);
 }
 
 .header-lista {
@@ -8,6 +12,10 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+}
+
+.header-lista > h2 {
+    margin: 0;
 }
 
 .btn-add {

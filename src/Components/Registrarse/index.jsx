@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { modificaUsuario, registrarse } from '../../Redux/Actions';
 import Swal from 'sweetalert2';
-//import FormDatosUsuario from '../FormDatosUsuario';
+import FormularioUsuario from '../FormCreaUsuario';
 import './styles.css';
 
 function Registrarse({ operacion, tipo }) {
+
     const userLog = useSelector(state => state.dataUsuario);
     const dispatch = useDispatch();
 
@@ -139,6 +140,7 @@ function Registrarse({ operacion, tipo }) {
         }
     };
 
+    
     useEffect(() => {
         if (operacion === 'modificar') {
             setIdUser(userLog.id);
@@ -161,7 +163,7 @@ function Registrarse({ operacion, tipo }) {
 
     return (
         <div className='cont-registrarse'>
-            {/* <FormDatosUsuario
+            <FormularioUsuario
                 nombre={nombre} apellido={apellido} dni={dni} email={email} password={password}
                 area={area} numTel={numTel} calle={calle} numero={numero} piso={piso} depto={depto}
                 codigoPostal={codigoPostal} provincia={provincia} localidad={localidad}
@@ -169,7 +171,7 @@ function Registrarse({ operacion, tipo }) {
                 errors={errors} onClickVerContraseña={onClickVerContraseña}
                 limpiarCampos={limpiarCampos} handleChange={handleChange}
                 handleSubmit={handleSubmit} operacion={operacion} tipo={tipo}
-            /> */}
+            />
         </div>
     );
 }

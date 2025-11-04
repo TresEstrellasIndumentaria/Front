@@ -10,6 +10,8 @@ const AppProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   //estado nombre admin logeado
   const [nombreUser, setNombreUser] = useState('');
+  //estado para el SEARCH
+  const [search, setSearch] = useState('');
 
   const login = () => {
     setIsAuthenticated(true);
@@ -37,6 +39,8 @@ const AppProvider = ({ children }) => {
         nombreUser,
         login,
         logout,
+        search,
+        setSearch,
       }}>
       {children}
     </AppContext.Provider>

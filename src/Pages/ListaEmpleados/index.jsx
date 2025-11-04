@@ -1,39 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppContext } from '../../Context';
+import { NavLink } from 'react-router-dom';
+import { getAllUsuarios } from '../../Redux/Actions';
+
 import './styles.css';
+import BotonEliminarUsuario from '../../Components/BotonEliminarUsuario';
 
 function ListaEmpleados() {
-    const arrayEmp = [
-        {
-            nombre: "Marcos",
-            apellido: "Pp",
-            email: "ff@gmail.com",
-            tel: 123456,
-            rol: "Empleado"
-        },
-        {
-            nombre: "Mel",
-            apellido: "Pp",
-            email: "ff@gmail.com",
-            tel: 123456,
-            rol: "Empleado"
-        }
-    ];
 
-    const handleEdit = (empleado) => {
-        alert(`Editar: ${empleado.nombre} ${empleado.apellido}`);
+    const allUsuarios = useSelector(state => state.clientes); 
+    const [buscaUsuario, setBuscaUsuario] = useState(allUsuarios);
+    //const [usuarioAeditar, setUsuarioAeditar] = useState(null);
+    const dispatch = useDispatch();
+    const contexto = useContext(AppContext);
+
+    //onChange para pasarle al comp. hijo searchbar - a pesar q el input está en el hijo
+    const handleOnChangeBuscaUsuario = (e) => {
+        contexto.setSearch(e.target.value);
     };
 
-    const handleDelete = (empleado) => {
-        if (window.confirm(`¿Seguro que deseas eliminar a ${empleado.nombre} ${empleado.apellido}?`)) {
-            alert(`Eliminado: ${empleado.nombre}`);
-        }
-    };
+    /* const handleEdit = (empleado) => {
+        setUsuarioAeditar(empleado);
+    }; */
+
+    //trae usuarios
+    useEffect(() => {
+        dispatch(getAllUsuarios());
+    }, [dispatch]);
+    //para la SearchBar
+    useEffect(() => {
+        setBuscaUsuario(
+            allUsuarios.filter(c => c.nombreApellido.includes(contexto.search)));//ver por q criterio buscar
+    },[allUsuarios, contexto.search]);
 
     return (
         <div className='cont-principal-listaEmp'>
             <div className="header-lista">
                 <h2>Lista de Empleados</h2>
-                <button className="btn-add">+ Añadir Empleado</button>
+                <NavLink to='/creaEmpleado' className='navLink-btnCreaEmp'>
+                    <button className="btn-add">+ Añadir Empleado</button>
+                </NavLink>
             </div>
 
             <table className="tabla-empleados">
@@ -48,16 +55,19 @@ function ListaEmpleados() {
                     </tr>
                 </thead>
                 <tbody>
-                    {arrayEmp.map((e, i) => (
+                    {allUsuarios.map((emp, i) => (
                         <tr key={i}>
-                            <td>{e.nombre}</td>
-                            <td>{e.apellido}</td>
-                            <td>{e.email}</td>
-                            <td>{e.tel}</td>
-                            <td>{e.rol}</td>
+                            <td>{emp.nombre}</td>
+                            <td>{emp.apellido}</td>
+                            <td>{emp.email}</td>
+                            <td>{emp.tel}</td>
+                            <td>{emp.rol}</td>
                             <td className="acciones">
-                                <button className="btn-edit" onClick={() => handleEdit(e)}>Editar</button>
-                                <button className="btn-delete" onClick={() => handleDelete(e)}>Eliminar</button>
+                                <NavLink to={`/modificaUsuario/${emp._id}`} className='nav-modifUsuario'>
+                                    <button className="btn-edit" /* onClick={() => handleEdit(emp)} */>Editar</button>
+                                </NavLink>
+                                
+                                <BotonEliminarUsuario _id={emp._id} nombre={emp.nombre} apellido={emp.apellido} />
                             </td>
                         </tr>
                     ))}

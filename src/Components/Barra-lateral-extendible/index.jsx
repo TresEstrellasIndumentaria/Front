@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { userData } from '../../LocalStorage';
 import { Link } from 'react-router-dom';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
@@ -13,14 +13,26 @@ const BarraLateral = ({ isOpen }) => {
   const userLog = userData();
   const nombre = userLog?.user?.nombre;
 
-  // Estados para desplegar cada menú
+  // Estados de los menús
   const [usuarioOpen, setUsuarioOpen] = useState(false);
   const [informesOpen, setInformesOpen] = useState(false);
   const [articulosOpen, setArticulosOpen] = useState(false);
   const [empleadosOpen, setEmpleadosOpen] = useState(false);
   const [clientesOpen, setClientesOpen] = useState(false);
 
-  // Función para cerrar todos los menús y abrir solo el deseado
+  // Referencia a la barra lateral
+  const sidebarRef = useRef(null);
+
+  // Función para cerrar todos los menús
+  const closeAllMenus = () => {
+    setUsuarioOpen(false);
+    setInformesOpen(false);
+    setArticulosOpen(false);
+    setEmpleadosOpen(false);
+    setClientesOpen(false);
+  };
+
+  // Función para alternar el menú correspondiente
   const handleToggle = (menu) => {
     setUsuarioOpen(menu === 'usuario' ? !usuarioOpen : false);
     setInformesOpen(menu === 'informes' ? !informesOpen : false);
@@ -29,10 +41,21 @@ const BarraLateral = ({ isOpen }) => {
     setClientesOpen(menu === 'clientes' ? !clientesOpen : false);
   };
 
-  return (
-    <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
-      <div className="content">
+  // Detectar clic fuera del sidebar
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+        closeAllMenus();
+      }
+    };
 
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={sidebarRef} className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+      <div className="content">
         {/* Usuario */}
         <div className="cont-item-barra" onClick={() => handleToggle('usuario')}>
           <div className="cont-item-icono">
@@ -44,8 +67,8 @@ const BarraLateral = ({ isOpen }) => {
               <button
                 className="btn-down"
                 onClick={(e) => {
-                  e.stopPropagation(); // evita que el click suba al cont-item-barra
-                  handleToggle('usuario'); // abre/cierra el menú correspondiente
+                  e.stopPropagation();
+                  handleToggle('usuario');
                 }}
               >
                 <KeyboardArrowDownIcon />
@@ -75,8 +98,8 @@ const BarraLateral = ({ isOpen }) => {
               <button
                 className="btn-down"
                 onClick={(e) => {
-                  e.stopPropagation(); // evita que el click suba al cont-item-barra
-                  handleToggle('informes'); // abre/cierra el menú correspondiente
+                  e.stopPropagation();
+                  handleToggle('informes');
                 }}
               >
                 <KeyboardArrowDownIcon />
@@ -106,8 +129,8 @@ const BarraLateral = ({ isOpen }) => {
               <button
                 className="btn-down"
                 onClick={(e) => {
-                  e.stopPropagation(); // evita que el click suba al cont-item-barra
-                  handleToggle('articulos'); // abre/cierra el menú correspondiente
+                  e.stopPropagation();
+                  handleToggle('articulos');
                 }}
               >
                 <KeyboardArrowDownIcon />
@@ -137,8 +160,8 @@ const BarraLateral = ({ isOpen }) => {
               <button
                 className="btn-down"
                 onClick={(e) => {
-                  e.stopPropagation(); // evita que el click suba al cont-item-barra
-                  handleToggle('empleados'); // abre/cierra el menú correspondiente
+                  e.stopPropagation();
+                  handleToggle('empleados');
                 }}
               >
                 <KeyboardArrowDownIcon />
@@ -168,8 +191,8 @@ const BarraLateral = ({ isOpen }) => {
               <button
                 className="btn-down"
                 onClick={(e) => {
-                  e.stopPropagation(); // evita que el click suba al cont-item-barra
-                  handleToggle('clientes'); // abre/cierra el menú correspondiente
+                  e.stopPropagation();
+                  handleToggle('clientes');
                 }}
               >
                 <KeyboardArrowDownIcon />
@@ -178,11 +201,11 @@ const BarraLateral = ({ isOpen }) => {
           )}
           {clientesOpen && (
             <ul className="dropdown-menu">
-              <Link to="/crearCliente" className="link-menu">
-                <li className="dropdown-item">Crear Cliente</li>
-              </Link>
               <Link to="/listaClientes" className="link-menu">
                 <li className="dropdown-item">Listar Clientes</li>
+              </Link>
+              <Link to="/crearCliente" className="link-menu">
+                <li className="dropdown-item">otra opc</li>
               </Link>
             </ul>
           )}

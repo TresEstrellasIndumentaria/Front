@@ -1,203 +1,202 @@
-import React, { useState } from 'react';
-import './formulario-usuario.css';
+import React from 'react';
+import './styles.css';
 
-const FormularioUsuario = () => {
-    const [form, setForm] = useState({
-        nombre: '',
-        apellido: '',
-        dni: '',
-        email: '',
-        password: '',
-        telefono: '',
-        direccion: '',
-        rol: '',
-    });
-
-    const [errors, setErrors] = useState({});
-
-    // Validaciones simples
-    const validate = (fieldValues = form) => {
-        let temp = { ...errors };
-
-        if ('nombre' in fieldValues)
-            temp.nombre = fieldValues.nombre ? '' : 'El nombre es obligatorio.';
-
-        if ('apellido' in fieldValues)
-            temp.apellido = fieldValues.apellido ? '' : 'El apellido es obligatorio.';
-
-        if ('dni' in fieldValues)
-            temp.dni = /^[0-9]{7,10}$/.test(fieldValues.dni)
-                ? ''
-                : 'DNI debe ser numérico y tener entre 7 y 10 dígitos.';
-
-        if ('email' in fieldValues)
-            temp.email = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fieldValues.email)
-                ? ''
-                : 'Email inválido.';
-
-        if ('password' in fieldValues)
-            temp.password = fieldValues.password.length >= 6
-                ? ''
-                : 'La contraseña debe tener al menos 6 caracteres.';
-
-        if ('telefono' in fieldValues)
-            temp.telefono = /^[0-9]{7,15}$/.test(fieldValues.telefono)
-                ? ''
-                : 'Teléfono inválido. Solo números, 7-15 dígitos.';
-
-        if ('direccion' in fieldValues)
-            temp.direccion = fieldValues.direccion ? '' : 'La dirección es obligatoria.';
-
-        if ('rol' in fieldValues)
-            temp.rol = fieldValues.rol ? '' : 'Selecciona un rol.';
-
-        setErrors({ ...temp });
-    };
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm({
-            ...form,
-            [name]: value,
-        });
-        validate({ [name]: value });
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        validate();
-        const hasErrors = Object.values(errors).some(x => x !== '');
-        if (!hasErrors) {
-            console.log('Datos del usuario:', form);
-            alert('Usuario creado con éxito!');
-            setForm({
-                nombre: '',
-                apellido: '',
-                dni: '',
-                email: '',
-                password: '',
-                telefono: '',
-                direccion: '',
-                rol: '',
-            });
-            setErrors({});
-        } else {
-            alert('Por favor completa todos los campos correctamente.');
-        }
-    };
+const FormularioUsuario = ({
+    nombre,
+    apellido,
+    dni,
+    email,
+    password,
+    area,
+    numTel,
+    calle,
+    numero,
+    piso,
+    depto,
+    codigoPostal,
+    provincia,
+    localidad,
+    comentarios,
+    rol,
+    errors,
+    onClickVerContraseña,
+    limpiarCampos,
+    handleChange,
+    handleSubmit,
+    operacion, /* crear o modificar */
+    tipo /* usuario(Admin/Empleado) o cliente */
+}) => {
 
     return (
-        <div className="form-container">
-            <h2>Crear Usuario</h2>
-            <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit} noValidate className='form-container'>
+            <div className='items-A'>
                 {/* Nombre */}
                 <div className="form-group">
                     <label>Nombre</label>
                     <input
+                        id="nombre"
                         type="text"
-                        name="nombre"
-                        value={form.nombre}
+                        value={nombre}
                         onChange={handleChange}
                         placeholder="Nombre"
                     />
-                    {errors.nombre && <span className="error">{errors.nombre}</span>}
+                    {errors.nombre && <span className="error">El nombre {errors.nombre}</span>}
                 </div>
 
                 {/* Apellido */}
                 <div className="form-group">
                     <label>Apellido</label>
                     <input
+                        id="apellido"
                         type="text"
-                        name="apellido"
-                        value={form.apellido}
+                        value={apellido}
                         onChange={handleChange}
                         placeholder="Apellido"
                     />
-                    {errors.apellido && <span className="error">{errors.apellido}</span>}
+                    {errors.apellido && <span className="error">El apellido {errors.apellido}</span>}
                 </div>
 
                 {/* DNI */}
                 <div className="form-group">
                     <label>DNI</label>
                     <input
+                        id="dni"
                         type="text"
-                        name="dni"
-                        value={form.dni}
+                        value={dni}
                         onChange={handleChange}
                         placeholder="DNI"
                     />
-                    {errors.dni && <span className="error">{errors.dni}</span>}
+                    {errors.dni && <span className="error">El DNI {errors.dni}</span>}
                 </div>
 
                 {/* Email */}
                 <div className="form-group">
                     <label>Email</label>
                     <input
+                        id="email"
                         type="email"
-                        name="email"
-                        value={form.email}
+                        value={email}
                         onChange={handleChange}
                         placeholder="Email"
                     />
-                    {errors.email && <span className="error">{errors.email}</span>}
+                    {errors.email && <span className="error">El email {errors.email}</span>}
                 </div>
+            </div>
 
+            <div className='items-B'>
                 {/* Password */}
                 <div className="form-group">
                     <label>Contraseña</label>
-                    <input
-                        type="password"
-                        name="password"
-                        value={form.password}
-                        onChange={handleChange}
-                        placeholder="Contraseña"
-                    />
-                    {errors.password && <span className="error">{errors.password}</span>}
+                    <div className="password-container">
+                        <input
+                            id="password"
+                            type="password"
+                            value={password}
+                            onChange={handleChange}
+                            placeholder="Contraseña"
+                        />
+                        <button
+                            type="button"
+                            className="btn-ver"
+                            onClick={onClickVerContraseña}
+                        >
+                            👁
+                        </button>
+                    </div>
+                    {errors.password && <span className="error">La contraseña {errors.password}</span>}
                 </div>
 
-                {/* Teléfono */}
-                <div className="form-group">
+                {/* Área y Teléfono */}
+                <div className="form-group telefono-group">
                     <label>Teléfono</label>
-                    <input
-                        type="text"
-                        name="telefono"
-                        value={form.telefono}
-                        onChange={handleChange}
-                        placeholder="Teléfono"
-                    />
-                    {errors.telefono && <span className="error">{errors.telefono}</span>}
+                    <div className="tel-inputs">
+                        <input
+                            id="area"
+                            type="text"
+                            value={area}
+                            onChange={handleChange}
+                            placeholder="Área"
+                            className="input-area"
+                        />
+                        <input
+                            id="numTel"
+                            type="text"
+                            value={numTel}
+                            onChange={handleChange}
+                            placeholder="Número"
+                            className="input-num"
+                        />
+                    </div>
+                    {(errors.area || errors.numTel) &&
+                        <span className="error">Teléfono {errors.area || errors.numTel}</span>}
                 </div>
 
                 {/* Dirección */}
                 <div className="form-group">
                     <label>Dirección</label>
-                    <input
-                        type="text"
-                        name="direccion"
-                        value={form.direccion}
-                        onChange={handleChange}
-                        placeholder="Dirección"
-                    />
-                    {errors.direccion && <span className="error">{errors.direccion}</span>}
+                    <div className="direccion-inputs">
+                        <input id="calle" type="text" value={calle} onChange={handleChange} placeholder="Calle" />
+                        <input id="numero" type="text" value={numero} onChange={handleChange} placeholder="Número" />
+                        <input id="piso" type="text" value={piso} onChange={handleChange} placeholder="Piso" />
+                        <input id="depto" type="text" value={depto} onChange={handleChange} placeholder="Depto" />
+                    </div>
+                    {(errors.calle || errors.numero) && <span className="error">Dirección incompleta</span>}
                 </div>
+
+                {/* Código Postal / Provincia / Localidad */}
+                <div className="form-group">
+                    <label>Ubicación</label>
+                    <div className="ubicacion-inputs">
+                        <input id="codigoPostal" type="text" value={codigoPostal} onChange={handleChange} placeholder="Código Postal" />
+                        <input id="provincia" type="text" value={provincia} onChange={handleChange} placeholder="Provincia" />
+                        <input id="localidad" type="text" value={localidad} onChange={handleChange} placeholder="Localidad" />
+                    </div>
+                    {(errors.codigoPostal || errors.provincia || errors.localidad) &&
+                        <span className="error">Datos de ubicación incompletos</span>}
+                </div>
+
+                {/* Comentarios */}
+                {tipo === 'cliente' && (
+                    <div className="form-group">
+                        <label>Comentarios</label>
+                        <textarea
+                            id="comentarios"
+                            value={comentarios}
+                            onChange={handleChange}
+                            placeholder="Comentarios adicionales..."
+                        />
+                    </div>
+                )}
 
                 {/* Rol */}
                 <div className="form-group">
                     <label>Rol</label>
-                    <select name="rol" value={form.rol} onChange={handleChange}>
-                        <option value="">-- Selecciona un rol --</option>
+                    <select id="rol" value={rol} onChange={handleChange}>
+                        <option value="usuario">Usuario</option>
                         <option value="cliente">Cliente</option>
                         <option value="empleado">Empleado</option>
                         <option value="administrador">Administrador</option>
                     </select>
-                    {errors.rol && <span className="error">{errors.rol}</span>}
+                    {errors.rol && <span className="error">El rol {errors.rol}</span>}
                 </div>
+            </div>
 
+            <div className="buttons">
                 <button type="submit" className="btn-submit">
-                    Crear Usuario
+                    {operacion === 'crear' && tipo === 'usuario'
+                        ? 'Crear Usuario'
+                        : operacion === 'crear' && tipo === 'cliente'
+                            ? 'Crear Cliente'
+                            : operacion === 'modificar' && tipo === 'usuario'
+                                ? 'Modificar Usuario'
+                                : 'Modificar Cliente'}
                 </button>
-            </form>
-        </div>
+
+                <button type="button" onClick={limpiarCampos} className="btn-reset">
+                    Limpiar
+                </button>
+            </div>
+        </form>
     );
 };
 
