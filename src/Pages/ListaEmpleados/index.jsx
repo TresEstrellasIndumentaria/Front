@@ -6,10 +6,11 @@ import { getAllUsuarios } from '../../Redux/Actions';
 
 import './styles.css';
 import BotonEliminarUsuario from '../../Components/BotonEliminarUsuario';
+import SearchBar from '../../Components/SearchBar';
 
 function ListaEmpleados() {
 
-    const allUsuarios = useSelector(state => state.clientes); 
+    const allUsuarios = useSelector(state => state.usuarios);
     const [buscaUsuario, setBuscaUsuario] = useState(allUsuarios);
     //const [usuarioAeditar, setUsuarioAeditar] = useState(null);
     const dispatch = useDispatch();
@@ -28,16 +29,25 @@ function ListaEmpleados() {
     useEffect(() => {
         dispatch(getAllUsuarios());
     }, [dispatch]);
+
     //para la SearchBar
     useEffect(() => {
         setBuscaUsuario(
-            allUsuarios.filter(c => c.nombreApellido.includes(contexto.search)));//ver por q criterio buscar
-    },[allUsuarios, contexto.search]);
+            allUsuarios?.filter(c =>
+                (c.nombreApellido || "")
+                    .toLowerCase()
+                    .includes((contexto.search || "").toLowerCase())
+            )
+        );
+    }, [allUsuarios, contexto.search]);
+
 
     return (
         <div className='cont-principal-listaEmp'>
             <div className="header-lista">
                 <h2>Lista de Empleados</h2>
+                {/* searchBar */}
+                <SearchBar handleOnChange={handleOnChangeBuscaUsuario} vista={"usuario"} />
                 <NavLink to='/creaEmpleado' className='navLink-btnCreaEmp'>
                     <button className="btn-add">+ Añadir Empleado</button>
                 </NavLink>
@@ -55,7 +65,7 @@ function ListaEmpleados() {
                     </tr>
                 </thead>
                 <tbody>
-                    {allUsuarios.map((emp, i) => (
+                    {buscaUsuario?.map((emp, i) => (
                         <tr key={i}>
                             <td>{emp.nombre}</td>
                             <td>{emp.apellido}</td>
@@ -66,7 +76,7 @@ function ListaEmpleados() {
                                 <NavLink to={`/modificaUsuario/${emp._id}`} className='nav-modifUsuario'>
                                     <button className="btn-edit" /* onClick={() => handleEdit(emp)} */>Editar</button>
                                 </NavLink>
-                                
+
                                 <BotonEliminarUsuario _id={emp._id} nombre={emp.nombre} apellido={emp.apellido} />
                             </td>
                         </tr>

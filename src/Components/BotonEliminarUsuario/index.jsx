@@ -26,8 +26,8 @@ function BotonEliminarUsuario({_id, nombre, apellido}) {
                     text: "Your file has been deleted.",
                     icon: "success"
                 });
-                dispatch(eliminaCliente(_id));
-                dispatch(getAllClientes());
+                /* dispatch(eliminaCliente(_id));
+                dispatch(getAllClientes()); */
                 window.location.reload();
             }
         });

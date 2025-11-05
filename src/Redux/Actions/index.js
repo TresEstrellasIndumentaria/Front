@@ -43,8 +43,8 @@ export const registrarse = (data) => {
 
 //-----usuario--------------------
 export const getAllUsuarios = () => {
-    return async function(dispatch) {
-        const resp = axios.get(`${URL}/usuario/`);
+    return async function(dispatch){
+        const resp = await axios.get(`${URL}/usuario`);
         dispatch({type: GET_ALL_USUARIOS, payload: resp.data});
     }
 }
