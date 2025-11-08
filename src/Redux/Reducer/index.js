@@ -1,4 +1,4 @@
-import { REGISTRARSE, LOGIN, RESET_LOGIN, GET_ALL_USUARIOS } from "../Actions/actionsType";
+import { REGISTRARSE, LOGIN, RESET_LOGIN, GET_ALL_USUARIOS, GET_USER_BY_ID, LOADING } from "../Actions/actionsType";
 
 const initialState = {
     loading: true,
@@ -8,6 +8,11 @@ const initialState = {
 
 export default function rootReducer(state = initialState, action) {
     switch (action.type) {
+        case LOADING:
+            return{
+                ...state,
+                loading: action.payload
+            }
         case REGISTRARSE:
             return {
                 ...state,
@@ -27,6 +32,11 @@ export default function rootReducer(state = initialState, action) {
             return {
                 ...state, 
                 usuarios: action.payload,
+            }
+        case GET_USER_BY_ID:
+            return {
+                ...state,
+                dataUsuario: action.payload
             }
         default:
             return state;

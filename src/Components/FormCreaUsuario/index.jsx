@@ -2,83 +2,41 @@ import React from 'react';
 import './styles.css';
 
 const FormularioUsuario = ({
-    nombre,
-    apellido,
-    dni,
-    email,
-    password,
-    area,
-    numTel,
-    calle,
-    numero,
-    piso,
-    depto,
-    codigoPostal,
-    provincia,
-    localidad,
-    comentarios,
-    rol,
-    errors,
-    onClickVerContraseña,
-    limpiarCampos,
-    handleChange,
-    handleSubmit,
-    operacion, /* crear o modificar */
-    tipo /* usuario(Admin/Empleado) o cliente */
+    nombre, apellido, dni, email, password,
+    area, numTel, calle, numero, piso, depto,
+    codigoPostal, provincia, localidad,
+    errors, onClickVerContraseña,
+    limpiarCampos, handleChange,
+    handleSubmit, operacion, rol, isAdmin
 }) => {
-
     return (
         <form onSubmit={handleSubmit} noValidate className='form-container'>
             <div className='items-A'>
                 {/* Nombre */}
                 <div className="form-group">
                     <label>Nombre</label>
-                    <input
-                        id="nombre"
-                        type="text"
-                        value={nombre}
-                        onChange={handleChange}
-                        placeholder="Nombre"
-                    />
+                    <input id="nombre" type="text" value={nombre} onChange={handleChange} placeholder="Nombre" />
                     {errors.nombre && <span className="error">El nombre {errors.nombre}</span>}
                 </div>
 
                 {/* Apellido */}
                 <div className="form-group">
                     <label>Apellido</label>
-                    <input
-                        id="apellido"
-                        type="text"
-                        value={apellido}
-                        onChange={handleChange}
-                        placeholder="Apellido"
-                    />
+                    <input id="apellido" type="text" value={apellido} onChange={handleChange} placeholder="Apellido" />
                     {errors.apellido && <span className="error">El apellido {errors.apellido}</span>}
                 </div>
 
                 {/* DNI */}
                 <div className="form-group">
                     <label>DNI</label>
-                    <input
-                        id="dni"
-                        type="text"
-                        value={dni}
-                        onChange={handleChange}
-                        placeholder="DNI"
-                    />
+                    <input id="dni" type="text" value={dni} onChange={handleChange} placeholder="DNI" />
                     {errors.dni && <span className="error">El DNI {errors.dni}</span>}
                 </div>
 
                 {/* Email */}
                 <div className="form-group">
                     <label>Email</label>
-                    <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={handleChange}
-                        placeholder="Email"
-                    />
+                    <input id="email" type="email" value={email} onChange={handleChange} placeholder="Email" />
                     {errors.email && <span className="error">El email {errors.email}</span>}
                 </div>
             </div>
@@ -88,47 +46,20 @@ const FormularioUsuario = ({
                 <div className="form-group">
                     <label>Contraseña</label>
                     <div className="password-container">
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={handleChange}
-                            placeholder="Contraseña"
-                        />
-                        <button
-                            type="button"
-                            className="btn-ver"
-                            onClick={onClickVerContraseña}
-                        >
-                            👁
-                        </button>
+                        <input id="password" type="password" value={password} onChange={handleChange} placeholder="Contraseña" />
+                        <button type="button" className="btn-ver" onClick={onClickVerContraseña}>👁</button>
                     </div>
                     {errors.password && <span className="error">La contraseña {errors.password}</span>}
                 </div>
 
-                {/* Área y Teléfono */}
+                {/* Teléfono */}
                 <div className="form-group telefono-group">
                     <label>Teléfono</label>
                     <div className="tel-inputs">
-                        <input
-                            id="area"
-                            type="text"
-                            value={area}
-                            onChange={handleChange}
-                            placeholder="Área"
-                            className="input-area"
-                        />
-                        <input
-                            id="numTel"
-                            type="text"
-                            value={numTel}
-                            onChange={handleChange}
-                            placeholder="Número"
-                            className="input-num"
-                        />
+                        <input id="area" type="text" value={area} onChange={handleChange} placeholder="Área" className="input-area" />
+                        <input id="numTel" type="text" value={numTel} onChange={handleChange} placeholder="Número" className="input-num" />
                     </div>
-                    {(errors.area || errors.numTel) &&
-                        <span className="error">Teléfono {errors.area || errors.numTel}</span>}
+                    {(errors.area || errors.numTel) && <span className="error">Teléfono {errors.area || errors.numTel}</span>}
                 </div>
 
                 {/* Dirección */}
@@ -143,7 +74,7 @@ const FormularioUsuario = ({
                     {(errors.calle || errors.numero) && <span className="error">Dirección incompleta</span>}
                 </div>
 
-                {/* Código Postal / Provincia / Localidad */}
+                {/* Ubicación */}
                 <div className="form-group">
                     <label>Ubicación</label>
                     <div className="ubicacion-inputs">
@@ -155,46 +86,43 @@ const FormularioUsuario = ({
                         <span className="error">Datos de ubicación incompletos</span>}
                 </div>
 
-                {/* Comentarios */}
-                {tipo === 'cliente' && (
-                    <div className="form-group">
-                        <label>Comentarios</label>
-                        <textarea
-                            id="comentarios"
-                            value={comentarios}
-                            onChange={handleChange}
-                            placeholder="Comentarios adicionales..."
-                        />
-                    </div>
-                )}
-
-                {/* Rol */}
+                {/* Es administrador */}
                 <div className="form-group">
-                    <label>Rol</label>
-                    <select id="rol" value={rol} onChange={handleChange}>
-                        <option value="usuario">Usuario</option>
-                        <option value="cliente">Cliente</option>
-                        <option value="empleado">Empleado</option>
-                        <option value="administrador">Administrador</option>
-                    </select>
-                    {errors.rol && <span className="error">El rol {errors.rol}</span>}
+                    <label>
+                        <input
+                            type="checkbox"
+                            id="isAdmin"
+                            checked={isAdmin === true}
+                            onChange={(e) =>
+                                handleChange({
+                                    target: {
+                                        id: 'isAdmin',
+                                        value: e.target.checked
+                                    }
+                                })
+                            }
+                        />
+                        Es administrador
+                    </label>
+                    {errors.isAdmin && <span className="error">El rol {errors.isAdmin}</span>}
                 </div>
-            </div>
 
-            <div className="buttons">
-                <button type="submit" className="btn-submit">
-                    {operacion === 'crear' && tipo === 'usuario'
-                        ? 'Crear Usuario'
-                        : operacion === 'crear' && tipo === 'cliente'
-                            ? 'Crear Cliente'
-                            : operacion === 'modificar' && tipo === 'usuario'
-                                ? 'Modificar Usuario'
-                                : 'Modificar Cliente'}
-                </button>
+                {/* Botones */}
+                <div className="buttons">
+                    <button type="submit" className="btn-submit">
+                        {operacion === 'crear' && rol === 'usuario'
+                            ? 'Crear Empleado'
+                            : operacion === 'crear' && rol === 'cliente'
+                                ? 'Crear Cliente'
+                                : operacion === 'modificar' && rol === 'usuario'
+                                    ? 'Modificar Usuario'
+                                    : 'Modificar Cliente'}
+                    </button>
 
-                <button type="button" onClick={limpiarCampos} className="btn-reset">
-                    Limpiar
-                </button>
+                    <button type="button" onClick={limpiarCampos} className="btn-reset">
+                        Limpiar
+                    </button>
+                </div>
             </div>
         </form>
     );

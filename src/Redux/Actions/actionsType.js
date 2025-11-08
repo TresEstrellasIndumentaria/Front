@@ -4,8 +4,10 @@ export const RESET_LOGIN = "RESET_LOGIN";
 export const REGISTRARSE = "REGISTRARSE";
 export const GET_ALL_USUARIOS = "GET_ALL_USUARIOS";
 export const GET_USER = "GET_USER";
+export const GET_USER_BY_ID="GET_USER_BY_ID";
 export const GET_USER_BY_DNI = "GET_USER_BY_DNI";
 export const RESET_USER = "RESET_USER";
+export const MODIFICA_USUARIO = "MODIFICA_USUARIO";
 export const MODIFICA_CONTRASEÑA = "MODIFICA_CONTRASEÑA";
 //productos
 export const LOADING = "LOADING";

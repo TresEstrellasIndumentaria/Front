@@ -60,7 +60,7 @@ function ListaEmpleados() {
                         <th>Apellido</th>
                         <th>Email</th>
                         <th>Teléfono</th>
-                        <th>Rol</th>
+                        <th>Es Admin</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -70,7 +70,7 @@ function ListaEmpleados() {
                             <td>{emp.nombre}</td>
                             <td>{emp.apellido}</td>
                             <td>{emp.email}</td>
-                            <td>{emp.tel}</td>
+                            <td>{emp.telefono.area+emp.telefono.numero}</td>
                             <td>{emp.rol}</td>
                             <td className="acciones">
                                 <NavLink to={`/modificaUsuario/${emp._id}`} className='nav-modifUsuario'>

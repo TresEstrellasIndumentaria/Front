@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react'; 
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { modificaUsuario, registrarse } from '../../Redux/Actions';
 import Swal from 'sweetalert2';
 import FormularioUsuario from '../FormCreaUsuario';
 import './styles.css';
 
-function Registrarse({ operacion, tipo }) {
-
-    const userLog = useSelector(state => state.dataUsuario);
+function Registrarse({ operacion, rol }) {
     const dispatch = useDispatch();
+    const userLog = useSelector(state => state.dataUsuario); // usuario para modificar
 
     const [idUser, setIdUser] = useState('');
     const [nombre, setNombre] = useState('');
@@ -25,12 +24,11 @@ function Registrarse({ operacion, tipo }) {
     const [codigoPostal, setCodigoPostal] = useState('');
     const [provincia, setProvincia] = useState('');
     const [localidad, setLocalidad] = useState('');
-    const [comentarios, setComentarios] = useState('');
-    const [rol, setRol] = useState('usuario');
+    const [isAdmin, setIsAdmin] = useState(false);
     const [errors, setErrors] = useState({});
 
     const handleChange = (e) => {
-        const { id, value } = e.target;
+        const { id, value, type, checked } = e.target;
         setErrors(prev => ({ ...prev, [id]: null }));
 
         switch (id) {
@@ -48,8 +46,7 @@ function Registrarse({ operacion, tipo }) {
             case 'codigoPostal': setCodigoPostal(value); break;
             case 'provincia': setProvincia(value); break;
             case 'localidad': setLocalidad(value); break;
-            case 'comentarios': setComentarios(value); break;
-            case 'rol': setRol(value); break;
+            case 'isAdmin': setIsAdmin(type === 'checkbox' ? checked : value); break;
             default: break;
         }
     };
@@ -60,21 +57,9 @@ function Registrarse({ operacion, tipo }) {
     };
 
     const validar = () => {
-        const esCliente = tipo === 'cliente';
         const esModif = operacion === 'modificar';
-
-        let campos = {
-            nombre, email, rol,
-        };
-
-        if (!esModif) campos.password = password;
-
-        if (esCliente) {
-            campos = {
-                ...campos,
-                apellido, dni, area, numTel, calle, numero, codigoPostal, provincia, localidad, comentarios
-            };
-        }
+        let campos = { nombre, email };
+        if (!esModif) campos = { ...campos, apellido, dni, password, area, numTel };
 
         const nuevosErrores = Object.entries(campos).reduce((acc, [key, value]) => {
             if (!value || (typeof value === 'string' && value.trim() === '')) {
@@ -91,7 +76,7 @@ function Registrarse({ operacion, tipo }) {
         setNombre(''); setApellido(''); setDni(''); setEmail(''); setPassword('');
         setArea(''); setNumTel(''); setCalle(''); setNumero(''); setPiso('');
         setDepto(''); setCodigoPostal(''); setProvincia(''); setLocalidad('');
-        setComentarios(''); setErrors({}); setRol('usuario');
+        setErrors({}); setIsAdmin(false);
     };
 
     const handleSubmit = (e) => {
@@ -104,46 +89,39 @@ function Registrarse({ operacion, tipo }) {
             dni,
             email,
             password,
-            rol,
+            isAdmin,
             telefono: { area, numero: numTel },
-            direccion: {
-                calle,
-                numero,
-                piso,
-                depto,
-                codigoPostal,
-                provincia,
-                localidad,
-            },
-            comentarios,
+            direccion: { calle, numero, piso, depto, codigoPostal, provincia, localidad },
         };
 
         if (operacion === 'modificar') {
             dispatch(modificaUsuario(idUser, data)).then((response) => {
-                if (response?.msg === 'success') {
-                    Swal.fire({ icon: 'success', title: 'Modificado correctamente', timer: 1500 });
-                    limpiarCampos();
-                } else {
-                    Swal.fire({ icon: 'error', title: response?.data?.msg || 'Error desconocido', timer: 1500 });
-                }
+                Swal.fire({
+                    icon: response.message.includes('correctamente') ? 'success' : 'error',
+                    title: response.message,
+                    timer: 2500
+                });
             });
         } else {
             dispatch(registrarse(data)).then((response) => {
-                if (response?.message === 'success') {
-                    Swal.fire({ icon: 'success', title: 'Registrado correctamente', timer: 1500 });
-                    limpiarCampos();
-                    window.location.href = '/login';
-                } else {
-                    Swal.fire({ icon: 'error', title: response?.data?.message || 'Error desconocido', timer: 1500 });
-                }
+                Swal.fire({
+                    icon: response.message.includes('correctamente') ? 'success' : 'error',
+                    title: response.message,
+                    timer: 2500
+                }).then(() => {
+                    if (response.message.includes('correctamente')) {
+                        limpiarCampos();
+                        window.location.href = '/listaEmpleados';
+                    }
+                });
             });
         }
     };
 
-    
+    // --- Al montar, si es modificar, precarga los datos ---
     useEffect(() => {
-        if (operacion === 'modificar') {
-            setIdUser(userLog.id);
+        if (operacion === 'modificar' && userLog?._id) {
+            setIdUser(userLog._id);
             setNombre(userLog.nombre || '');
             setApellido(userLog.apellido || '');
             setDni(userLog.dni || '');
@@ -157,7 +135,7 @@ function Registrarse({ operacion, tipo }) {
             setCodigoPostal(userLog.direccion?.codigoPostal || '');
             setProvincia(userLog.direccion?.provincia || '');
             setLocalidad(userLog.direccion?.localidad || '');
-            setRol(userLog.rol || 'usuario');
+            setIsAdmin(Boolean(userLog.isAdmin));
         }
     }, [operacion, userLog]);
 
@@ -167,10 +145,10 @@ function Registrarse({ operacion, tipo }) {
                 nombre={nombre} apellido={apellido} dni={dni} email={email} password={password}
                 area={area} numTel={numTel} calle={calle} numero={numero} piso={piso} depto={depto}
                 codigoPostal={codigoPostal} provincia={provincia} localidad={localidad}
-                comentarios={comentarios} rol={rol}
+                isAdmin={isAdmin}
                 errors={errors} onClickVerContraseña={onClickVerContraseña}
                 limpiarCampos={limpiarCampos} handleChange={handleChange}
-                handleSubmit={handleSubmit} operacion={operacion} tipo={tipo}
+                handleSubmit={handleSubmit} operacion={operacion} rol={rol}
             />
         </div>
     );
