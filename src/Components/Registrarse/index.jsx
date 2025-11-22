@@ -24,11 +24,11 @@ function Registrarse({ operacion, rol }) {
     const [codigoPostal, setCodigoPostal] = useState('');
     const [provincia, setProvincia] = useState('');
     const [localidad, setLocalidad] = useState('');
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [rolAsignado, setRolAsignado] = useState(''); //admin/empleado/cliente/proveedor
     const [errors, setErrors] = useState({});
 
     const handleChange = (e) => {
-        const { id, value, type, checked } = e.target;
+        const { id, value, } = e.target;
         setErrors(prev => ({ ...prev, [id]: null }));
 
         switch (id) {
@@ -46,7 +46,7 @@ function Registrarse({ operacion, rol }) {
             case 'codigoPostal': setCodigoPostal(value); break;
             case 'provincia': setProvincia(value); break;
             case 'localidad': setLocalidad(value); break;
-            case 'isAdmin': setIsAdmin(type === 'checkbox' ? checked : value); break;
+            case 'rolAsignado': setRolAsignado(value); break;
             default: break;
         }
     };
@@ -76,7 +76,7 @@ function Registrarse({ operacion, rol }) {
         setNombre(''); setApellido(''); setDni(''); setEmail(''); setPassword('');
         setArea(''); setNumTel(''); setCalle(''); setNumero(''); setPiso('');
         setDepto(''); setCodigoPostal(''); setProvincia(''); setLocalidad('');
-        setErrors({}); setIsAdmin(false);
+        setErrors({});
     };
 
     const handleSubmit = (e) => {
@@ -89,9 +89,9 @@ function Registrarse({ operacion, rol }) {
             dni,
             email,
             password,
-            isAdmin,
             telefono: { area, numero: numTel },
             direccion: { calle, numero, piso, depto, codigoPostal, provincia, localidad },
+            rolAsignado,
         };
 
         if (operacion === 'modificar') {
@@ -118,6 +118,11 @@ function Registrarse({ operacion, rol }) {
         }
     };
 
+    //asigno Rol al usuario creado
+    useEffect(() => {
+        if (rol) setRolAsignado(rol);
+    }, [rol]);
+
     // --- Al montar, si es modificar, precarga los datos ---
     useEffect(() => {
         if (operacion === 'modificar' && userLog?._id) {
@@ -135,7 +140,7 @@ function Registrarse({ operacion, rol }) {
             setCodigoPostal(userLog.direccion?.codigoPostal || '');
             setProvincia(userLog.direccion?.provincia || '');
             setLocalidad(userLog.direccion?.localidad || '');
-            setIsAdmin(Boolean(userLog.isAdmin));
+            setRolAsignado(userLog.rolAsignado || '');
         }
     }, [operacion, userLog]);
 
@@ -145,7 +150,7 @@ function Registrarse({ operacion, rol }) {
                 nombre={nombre} apellido={apellido} dni={dni} email={email} password={password}
                 area={area} numTel={numTel} calle={calle} numero={numero} piso={piso} depto={depto}
                 codigoPostal={codigoPostal} provincia={provincia} localidad={localidad}
-                isAdmin={isAdmin}
+                rolAsignado={rolAsignado}
                 errors={errors} onClickVerContraseña={onClickVerContraseña}
                 limpiarCampos={limpiarCampos} handleChange={handleChange}
                 handleSubmit={handleSubmit} operacion={operacion} rol={rol}

@@ -3,9 +3,9 @@ import Registrarse from '../../Components/Registrarse';
 
 function RegistrarsePage({ operacion, rol }) {
     return (
-        <div className='page'>
-            <h1>Alta nuevo {rol === 'empleado' ? 'empleado' : 'cliente'}</h1>
-            <Registrarse operacion={operacion} rol={rol}/> {/* pueden tomar los vaslores de "nuevo o modif" y "usuario o cliente" */}
+        <div className='registrarse page'>
+            <h1>Alta nuevo {rol}</h1>
+            <Registrarse operacion={operacion} rol={rol}/> {/* pueden tomar los valores de "nuevo o modif" y "usuario/cliente/proveedor" */}
         </div>
     )
 }

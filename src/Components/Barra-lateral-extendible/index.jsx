@@ -10,6 +10,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import './estilos.css';
 
 const BarraLateral = ({ isOpen }) => {
+
   const userLog = userData();
   const nombre = userLog?.user?.nombre;
 
@@ -17,8 +18,10 @@ const BarraLateral = ({ isOpen }) => {
   const [usuarioOpen, setUsuarioOpen] = useState(false);
   const [informesOpen, setInformesOpen] = useState(false);
   const [articulosOpen, setArticulosOpen] = useState(false);
+  const [adminsOpen, setAdminsOpen] = useState(false);
   const [empleadosOpen, setEmpleadosOpen] = useState(false);
   const [clientesOpen, setClientesOpen] = useState(false);
+  const [proveedoresOpen, setProveedoresOpen] = useState(false);
 
   // Referencia a la barra lateral
   const sidebarRef = useRef(null);
@@ -28,8 +31,10 @@ const BarraLateral = ({ isOpen }) => {
     setUsuarioOpen(false);
     setInformesOpen(false);
     setArticulosOpen(false);
+    setAdminsOpen(false);
     setEmpleadosOpen(false);
     setClientesOpen(false);
+    setProveedoresOpen(false);
   };
 
   // Función para alternar el menú correspondiente
@@ -37,8 +42,10 @@ const BarraLateral = ({ isOpen }) => {
     setUsuarioOpen(menu === 'usuario' ? !usuarioOpen : false);
     setInformesOpen(menu === 'informes' ? !informesOpen : false);
     setArticulosOpen(menu === 'articulos' ? !articulosOpen : false);
+    setAdminsOpen(menu === 'administradores' ? !adminsOpen : false);
     setEmpleadosOpen(menu === 'empleados' ? !empleadosOpen : false);
     setClientesOpen(menu === 'clientes' ? !clientesOpen : false);
+    setProveedoresOpen(menu === 'proveedores' ? !proveedoresOpen : false);
   };
 
   // Detectar clic fuera del sidebar
@@ -139,12 +146,40 @@ const BarraLateral = ({ isOpen }) => {
           )}
           {articulosOpen && (
             <ul className="dropdown-menu">
-              <Link to="/crearArticulo" className="link-menu">
-                <li className="dropdown-item">Crear Artículo</li>
-              </Link>
               <Link to="/listaArticulos" className="link-menu">
                 <li className="dropdown-item">Listar Artículos</li>
               </Link>
+            </ul>
+          )}
+        </div>
+
+        {/* Administradores */}
+        <div className="cont-item-barra" onClick={() => handleToggle('administradores')}>
+          <div className="cont-item-icono">
+            <HailIcon sx={{ width: 30, height: 30, color: 'green' }} />
+          </div>
+          {isOpen && <div className="cont-item-texto"><p>Administradores</p></div>}
+          {isOpen && (
+            <div className="cont-item-btn">
+              <button
+                className="btn-down"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggle('administradores');
+                }}
+              >
+                <KeyboardArrowDownIcon />
+              </button>
+            </div>
+          )}
+          {adminsOpen && (
+            <ul className="dropdown-menu">
+              <Link to="/listaAdmins" className="link-menu">
+                <li className="dropdown-item">Lista de Administradores</li>
+              </Link>
+              {/* <Link to="/listaEmpleados" className="link-menu">
+                <li className="dropdown-item">Derechos de Empleados</li>
+              </Link> */}
             </ul>
           )}
         </div>
@@ -205,6 +240,37 @@ const BarraLateral = ({ isOpen }) => {
                 <li className="dropdown-item">Listar Clientes</li>
               </Link>
               <Link to="/crearCliente" className="link-menu">
+                <li className="dropdown-item">otra opc</li>
+              </Link>
+            </ul>
+          )}
+        </div>
+
+        {/* Proveedores */}
+        <div className="cont-item-barra" onClick={() => handleToggle('proveedores')}>
+          <div className="cont-item-icono">
+            <HailIcon sx={{ width: 30, height: 30, color: 'grey' }} />
+          </div>
+          {isOpen && <div className="cont-item-texto"><p>Proveedores</p></div>}
+          {isOpen && (
+            <div className="cont-item-btn">
+              <button
+                className="btn-down"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggle('proveedores');
+                }}
+              >
+                <KeyboardArrowDownIcon />
+              </button>
+            </div>
+          )}
+          {proveedoresOpen && (
+            <ul className="dropdown-menu">
+              <Link to="/listaProveedores" className="link-menu">
+                <li className="dropdown-item">Listar Proveedores</li>
+              </Link>
+              <Link to="/crearProveedores" className="link-menu">
                 <li className="dropdown-item">otra opc</li>
               </Link>
             </ul>

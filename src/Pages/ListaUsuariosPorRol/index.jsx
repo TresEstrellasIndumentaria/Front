@@ -2,15 +2,14 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppContext } from '../../Context';
 import { NavLink } from 'react-router-dom';
-import { getAllUsuarios } from '../../Redux/Actions';
-
-import './styles.css';
+import { getUsuarioByRol } from '../../Redux/Actions';
 import BotonEliminarUsuario from '../../Components/BotonEliminarUsuario';
 import SearchBar from '../../Components/SearchBar';
+import './styles.css';
 
-function ListaEmpleados() {
+function ListaUsuariosPorRol({rol}) {
 
-    const allUsuarios = useSelector(state => state.usuarios);
+    const allUsuarios = useSelector(state => state.usuariosRol);
     const [buscaUsuario, setBuscaUsuario] = useState(allUsuarios);
     //const [usuarioAeditar, setUsuarioAeditar] = useState(null);
     const dispatch = useDispatch();
@@ -26,9 +25,9 @@ function ListaEmpleados() {
     }; */
 
     //trae usuarios
-    useEffect(() => {
-        dispatch(getAllUsuarios());
-    }, [dispatch]);
+        useEffect(() => {
+            dispatch(getUsuarioByRol(rol));
+        }, [dispatch, rol]);
 
     //para la SearchBar
     useEffect(() => {
@@ -45,7 +44,17 @@ function ListaEmpleados() {
     return (
         <div className='cont-principal-listaEmp'>
             <div className="header-lista">
-                <h2>Lista de Empleados</h2>
+                <h2>
+                    Lista de {
+                        rol === "administrador" 
+                        ? "Administradores"
+                        : rol === "empleado" 
+                        ? "Emplados"
+                        : rol === "cliente"
+                        ? "Clientes"
+                        : "Proveedores"
+                    }
+                </h2>
                 {/* searchBar */}
                 <SearchBar handleOnChange={handleOnChangeBuscaUsuario} vista={"usuario"} />
                 <NavLink to='/creaEmpleado' className='navLink-btnCreaEmp'>
@@ -60,7 +69,7 @@ function ListaEmpleados() {
                         <th>Apellido</th>
                         <th>Email</th>
                         <th>Teléfono</th>
-                        <th>Es Admin</th>
+                        <th>Rol</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -71,9 +80,9 @@ function ListaEmpleados() {
                             <td>{emp.apellido}</td>
                             <td>{emp.email}</td>
                             <td>{emp.telefono.area+emp.telefono.numero}</td>
-                            <td>{emp.rol}</td>
+                            <td>{emp.rolAsignado}</td>
                             <td className="acciones">
-                                <NavLink to={`/modificaUsuario/${emp._id}`} className='nav-modifUsuario'>
+                                <NavLink to={`/modificaUsuario/${rol}/${emp._id}`} className='nav-modifUsuario'>
                                     <button className="btn-edit" /* onClick={() => handleEdit(emp)} */>Editar</button>
                                 </NavLink>
 
@@ -87,4 +96,4 @@ function ListaEmpleados() {
     );
 }
 
-export default ListaEmpleados;
+export default ListaUsuariosPorRol;

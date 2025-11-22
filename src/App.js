@@ -4,10 +4,10 @@ import DashboardLayout from './Components/DashboardLayout';
 import Home from './Pages/Home';
 import LoginPage from './Pages/Login';
 import RegistrarsePage from './Pages/Registrarse';
-import ListaEmpleados from './Pages/ListaEmpleados';
-import ListaClientes from './Pages/ListaClientes';
-import './App.css';
 import ModifUsuario from './Pages/ModifUsuario';
+import ListaUsuariosPorRol from './Pages/ListaUsuariosPorRol';
+import './App.css';
+import ListaArticulos from './Pages/ListaArticulos';
 
 function App() {
   return (
@@ -17,16 +17,28 @@ function App() {
           {/* rutas publicas */}
           <Route path='/login' element={<LoginPage />} />
           <Route path='/registrarse' element={<RegistrarsePage />} /> {/* puede que no se necesite SOLO el Admin va a crear usuarios */}
-
           {/* Dashboard con navbar + sidebar fijos */}
           <Route path="/" element={<DashboardLayout />}>
             <Route index element={<Home />} />
-            <Route path="listaEmpleados" element={<ListaEmpleados />} />
-            <Route path="creaEmpleado" element={<RegistrarsePage rol='usuario' operacion='crear'/>} />
-            <Route path='modificaUsuario/:id' element={<ModifUsuario rol='usuario' operacion='modificar'/>} />
-            <Route path="listaClientes" element={<ListaClientes />} />
+            {/* Rutas Admins */}
+            <Route path="listaAdmins" element={<ListaUsuariosPorRol rol={"administrador"} />} />
+            <Route path="creaAdmin" element={<RegistrarsePage rol='administrador' operacion='crear'/>} />
+            <Route path='modificaUsuario/:rol/:id' element={<ModifUsuario />} />
+            {/* Rutas Emp */}
+            <Route path="listaEmpleados" element={<ListaUsuariosPorRol rol={"empleado"} />} />
+            <Route path="creaEmpleado" element={<RegistrarsePage rol='empleado' operacion='crear'/>} />
+            <Route path='modificaUsuario/:rol/:id' element={<ModifUsuario />} />
+            {/* Rutas Cliente */}
+            <Route path="listaClientes" element={<ListaUsuariosPorRol rol={"cliente"} />} />
             <Route path="creaCliente" element={<RegistrarsePage rol='cliente' operacion='crear'/>} />
-            <Route path='modificaCliente/:id' element={<ModifUsuario rol='cliente' operacion='modificar'/>} />
+            <Route path='modificaUsuario/:rol/:id' element={<ModifUsuario />} />
+            {/* Rutas Provee */}
+            <Route path="listaProveedores" element={<ListaUsuariosPorRol rol={"proveedor"} />} />
+            <Route path="creaProveedor" element={<RegistrarsePage rol='proveedor' operacion='crear'/>} />
+            <Route path='modificaUsuario/:rol/:id' element={<ModifUsuario />} />
+            {/* Rutas Articulos */}
+            <Route path='listaArticulos' element={<ListaArticulos/>} />
+            
             {/*<Route path="informes" element={<Informes />} />
             <Route path="articulos" element={<Articulos />} /> */}
           </Route>

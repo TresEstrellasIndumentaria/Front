@@ -4,6 +4,9 @@ import {
     LOGIN, RESET_USER, GET_USER_BY_DNI, GET_ALL_USUARIOS, REGISTRARSE,
     MODIFICA_USUARIO, GET_USER_BY_ID,
     LOADING,
+    GET_USUARIOS_BY_ROL,
+    GET_ARTICULOS,
+    CREA_ARTICULO,
 } from "./actionsType";
 //-------usuario-----------------------------
 export const login = (data) => {
@@ -63,6 +66,14 @@ export const getAllUsuarios = () => {
         dispatch({ type: GET_ALL_USUARIOS, payload: resp.data });
     }
 }
+
+//trae por rol
+export const getUsuarioByRol = (rol) => {
+    return async function (dispatch) {
+        const resp = await axios.get(`${URL}/usuario/rol/${rol}`);
+        dispatch({ type: GET_USUARIOS_BY_ROL, payload: resp.data });
+    }
+};
 
 //trae usuario por id
 export const getUsuarioById = (id) => {
@@ -140,4 +151,34 @@ export const ActualizoLoading = () => {
         type: LOADING,
         payload: false
     }
+};
+
+//--ARTICULOS--------------------------------
+//trae todos
+export const getAllArticulos = () => {
+    return async function (dispatch) {
+        const resp = await axios.get(`${URL}/articulo`);
+        dispatch({ type: GET_ARTICULOS, payload: resp.data });
+    }
+};
+
+//crea art
+export const creaArticulo = (data) => {
+    return async function (dispatch) {
+        try {
+            const resp = await axios.post(`${URL}/articulo`, data);
+            dispatch({type: CREA_ARTICULO, payload: resp.data});
+            return resp.data; // 👉 el back debería enviar algo como { message: "success" }
+        } catch (error) {
+            console.error("Error en registrarse:", error);
+
+            // Capturamos y devolvemos el mensaje del backend (si existe)
+            return {
+                message:
+                    error.response?.data?.message ||
+                    error.response?.data ||
+                    "Error al registrar el usuario.",
+            };
+        }
+    };
 };

@@ -5,7 +5,8 @@ import { ActualizoLoading, getUsuarioById } from '../../Redux/Actions';
 import Registrarse from '../../Components/Registrarse';
 
 function ModifUsuario() {
-    const { id } = useParams();
+    
+    const { rol, id } = useParams(); console.log("rol:", rol)
     const dispatch = useDispatch();
 
     const usuario = useSelector(state => state.dataUsuario);
@@ -25,7 +26,15 @@ function ModifUsuario() {
 
     return (
         <div className="page">
-            <h1>Modificar Usuario</h1>
+            <h1>Modificar {
+                        rol === "administrador" 
+                        ? "Administrador"
+                        : rol === "empleado" 
+                        ? "Emplado"
+                        : rol === "cliente"
+                        ? "Cliente"
+                        : "Proveedor"
+                    }</h1>
             <Registrarse operacion="modificar" rol="usuario" />
         </div>
     );

@@ -7,8 +7,10 @@ const FormularioUsuario = ({
     codigoPostal, provincia, localidad,
     errors, onClickVerContraseña,
     limpiarCampos, handleChange,
-    handleSubmit, operacion, rol, isAdmin
+    handleSubmit, operacion, rol,
 }) => {
+
+    //función asigna rol al crear empleado/cliente/proveedor
     return (
         <form onSubmit={handleSubmit} noValidate className='form-container'>
             <div className='items-A'>
@@ -86,37 +88,12 @@ const FormularioUsuario = ({
                         <span className="error">Datos de ubicación incompletos</span>}
                 </div>
 
-                {/* Es administrador */}
-                <div className="form-group">
-                    <label>
-                        <input
-                            type="checkbox"
-                            id="isAdmin"
-                            checked={isAdmin === true}
-                            onChange={(e) =>
-                                handleChange({
-                                    target: {
-                                        id: 'isAdmin',
-                                        value: e.target.checked
-                                    }
-                                })
-                            }
-                        />
-                        Es administrador
-                    </label>
-                    {errors.isAdmin && <span className="error">El rol {errors.isAdmin}</span>}
-                </div>
-
                 {/* Botones */}
                 <div className="buttons">
                     <button type="submit" className="btn-submit">
-                        {operacion === 'crear' && rol === 'usuario'
-                            ? 'Crear Empleado'
-                            : operacion === 'crear' && rol === 'cliente'
-                                ? 'Crear Cliente'
-                                : operacion === 'modificar' && rol === 'usuario'
-                                    ? 'Modificar Usuario'
-                                    : 'Modificar Cliente'}
+                        {
+                            operacion === 'crear' ? `Crear ${rol}` : `Modificar ${rol}`
+                        }
                     </button>
 
                     <button type="button" onClick={limpiarCampos} className="btn-reset">
