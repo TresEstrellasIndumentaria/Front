@@ -1,7 +1,8 @@
-import { 
-    REGISTRARSE, LOGIN, RESET_LOGIN, GET_ALL_USUARIOS, 
-    GET_USER_BY_ID, LOADING, GET_USUARIOS_BY_ROL, 
-    GET_ARTICULOS
+import {
+    REGISTRARSE, LOGIN, RESET_LOGIN, GET_ALL_USUARIOS,
+    GET_USER_BY_ID, LOADING, GET_USUARIOS_BY_ROL,
+    GET_ARTICULOS, GET_CATEGORIAS,
+    CREA_CATEGORIA
 } from "../Actions/actionsType";
 
 const initialState = {
@@ -10,12 +11,14 @@ const initialState = {
     usuarios: [],
     usuariosRol: [],
     articulos: [],
+    categorias: [],
+    categoriaAct: {},
 }
 
 export default function rootReducer(state = initialState, action) {
     switch (action.type) {
         case LOADING:
-            return{
+            return {
                 ...state,
                 loading: action.payload
             }
@@ -36,11 +39,11 @@ export default function rootReducer(state = initialState, action) {
             }
         case GET_ALL_USUARIOS:
             return {
-                ...state, 
+                ...state,
                 usuarios: action.payload,
             }
         case GET_USUARIOS_BY_ROL:
-            return{
+            return {
                 ...state,
                 usuariosRol: action.payload,
             }
@@ -50,9 +53,19 @@ export default function rootReducer(state = initialState, action) {
                 dataUsuario: action.payload
             }
         case GET_ARTICULOS:
-            return{
+            return {
                 ...state,
                 articulos: action.payload
+            }
+        case GET_CATEGORIAS:
+            return {
+                ...state,
+                categorias: action.payload
+            };
+        case CREA_CATEGORIA:
+            return {
+                ...state,
+                categorias: [...state.categorias, action.payload]
             }
         default:
             return state;

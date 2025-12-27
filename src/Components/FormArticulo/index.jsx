@@ -1,14 +1,27 @@
 import React, { useState } from "react";
-import PopupCategoria from "./PopupCategoria";
-import "./FormularioArticulo.css";
+import { useDispatch, useSelector } from "react-redux";
+import { creaArticulo, crearCategoria, getAllArticulos } from "../../Redux/Actions";
+import PopupCategoria from "../FormCategoria";
+import InventarioCompuesto from "../FormArtCompuesto";
+import Switch from "@mui/material/Switch";
+import Swal from "sweetalert2";
+import "./styles.css";
 
-function FormularioArticulo({ categorias = [], onCrearCategoria, onSubmit }) {
+const CATEGORIA_DEFAULT = "Sin categoría";
+
+function FormArticulo() {
+    const dispatch = useDispatch();
+
+    const articulos = useSelector(state => state.articulos);
+    const categorias = useSelector(state => state.categorias);
 
     const [mostrarPopup, setMostrarPopup] = useState(false);
+    const [esCompuesto, setEsCompuesto] = useState(false);
+    const [categoriaCreada, setCategoriaCreada] = useState(null);
 
     const [form, setForm] = useState({
         nombre: "",
-        categoria: "Sin categoría",
+        categoria: CATEGORIA_DEFAULT,
         descripcion: "",
         disponible: true,
         vendidoPor: "unidad",
@@ -19,81 +32,162 @@ function FormularioArticulo({ categorias = [], onCrearCategoria, onSubmit }) {
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
 
-        // Detecta si seleccionó "Agregar categoría"
-        if (name === "categoria" && value === "agregar_categoria") {
-            setMostrarPopup(true);
+        setForm(prev => ({
+            ...prev,
+            [name]: type === "checkbox"
+                ? checked
+                : type === "number"
+                    ? Number(value)
+                    : value
+        }));
+    };
+
+    const handleChangeProdCompuesto = (e) => {
+        const checked = e.target.checked;
+        setEsCompuesto(checked);
+
+        if (checked) {
+            setForm(prev => ({ ...prev, coste: "" }));
+        }
+    };
+
+    const agregarCategoria = async (nombre) => {
+        await dispatch(crearCategoria(nombre));
+
+        setCategoriaCreada(nombre);
+        setForm(prev => ({ ...prev, categoria: nombre }));
+        setMostrarPopup(false);
+    };
+
+    const actualizarCoste = (coste) => {
+        setForm(prev => ({ ...prev, coste }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!form.nombre.trim()) {
+            Swal.fire("Falta el nombre", "El artículo debe tener un nombre", "warning");
             return;
         }
 
-        setForm({
+        if (!form.precio || Number(form.precio) <= 0) {
+            Swal.fire("Precio inválido", "El precio debe ser mayor a 0", "warning");
+            return;
+        }
+
+        if (!form.coste || Number(form.coste) <= 0) {
+            Swal.fire(
+                "Coste inválido",
+                esCompuesto
+                    ? "El artículo compuesto debe tener componentes"
+                    : "El coste debe ser mayor a 0",
+                "warning"
+            );
+            return;
+        }
+
+        const data = {
             ...form,
-            [name]: type === "checkbox" ? checked : value
+            precio: Number(form.precio),
+            coste: Number(form.coste),
+            esCompuesto,
+        };
+
+        const resp = await dispatch(creaArticulo(data));
+
+        if (resp?.message && resp.message !== "success") {
+            Swal.fire("Error", resp.message, "error");
+            return;
+        }
+
+        Swal.fire({
+            icon: "success",
+            title: "Artículo creado",
+            timer: 1500,
+            showConfirmButton: false,
         });
-    };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (onSubmit) onSubmit(form);
-    };
-
-    // Cuando se crea una categoría nueva desde el PopUp
-    const agregarCategoria = (nuevoNombre) => {
-        if (onCrearCategoria) onCrearCategoria(nuevoNombre);
-
-        // Asignar recién creada como seleccionada
         setForm({
-            ...form,
-            categoria: nuevoNombre
+            nombre: "",
+            categoria: CATEGORIA_DEFAULT,
+            descripcion: "",
+            disponible: true,
+            vendidoPor: "unidad",
+            precio: "",
+            coste: "",
         });
+
+        setCategoriaCreada(null);
+        setEsCompuesto(false);
+        dispatch(getAllArticulos());
     };
 
     return (
-        <>
+        <div className="cont-creaArt">
+
             {mostrarPopup && (
                 <PopupCategoria
+                    categorias={categorias}
                     onClose={() => setMostrarPopup(false)}
                     onCreate={agregarCategoria}
                 />
             )}
 
             <form className="form-articulo" onSubmit={handleSubmit}>
-                
-                {/* NOMBRE Y CATEGORÍA */}
-                <div className="fila">
-                    <div className="campo">
-                        <label>Nombre</label>
-                        <input 
-                            type="text"
-                            name="nombre"
-                            value={form.nombre}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
 
-                    <div className="campo">
-                        <label>Categoría</label>
+                {/* Nombre */}
+                <div className="campo">
+                    <label>Nombre</label>
+                    <input
+                        type="text"
+                        name="nombre"
+                        value={form.nombre}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+
+                {/* Categoría */}
+                <div className="campo">
+                    <label>Categoría</label>
+
+                    {categoriaCreada ? (
+                        <input
+                            type="text"
+                            value={categoriaCreada}
+                            readOnly
+                            className="input-readonly"
+                        />
+                    ) : (
                         <select
-                            name="categoria"
                             value={form.categoria}
-                            onChange={handleChange}
+                            onChange={(e) => {
+                                if (e.target.value === "__add__") {
+                                    setMostrarPopup(true);
+                                    return;
+                                }
+                                setForm(prev => ({
+                                    ...prev,
+                                    categoria: e.target.value
+                                }));
+                            }}
                         >
                             <option value="Sin categoría">Sin categoría</option>
 
-                            {/* Categorías del backend / Redux */}
                             {categorias.map(cat => (
                                 <option key={cat._id} value={cat.nombre}>
                                     {cat.nombre}
                                 </option>
                             ))}
 
-                            <option value="agregar_categoria">➕ Agregar categoría</option>
+                            <option value="__add__">➕ Agregar categoría</option>
                         </select>
-                    </div>
+                    )}
                 </div>
 
-                {/* DESCRIPCIÓN */}
-                <div className="campo descripcion">
+                {/* Descripción */}
+                <div className="campo">
                     <label>Descripción</label>
                     <textarea
                         name="descripcion"
@@ -102,45 +196,18 @@ function FormularioArticulo({ categorias = [], onCrearCategoria, onSubmit }) {
                     />
                 </div>
 
-                {/* DISPONIBLE */}
+                {/* Disponible */}
                 <div className="checkbox-linea">
-                    <input 
+                    <input
                         type="checkbox"
                         name="disponible"
                         checked={form.disponible}
                         onChange={handleChange}
                     />
-                    <span>El artículo está disponible para la venta</span>
+                    <span>Disponible para la venta</span>
                 </div>
 
-                {/* VENDIDO POR */}
-                <div className="campo">
-                    <label>Vendido por</label>
-
-                    <div className="radio-group">
-                        <label>
-                            <input
-                                type="radio"
-                                name="vendidoPor"
-                                value="unidad"
-                                checked={form.vendidoPor === "unidad"}
-                                onChange={handleChange}
-                            /> Unidad
-                        </label>
-
-                        <label>
-                            <input
-                                type="radio"
-                                name="vendidoPor"
-                                value="peso"
-                                checked={form.vendidoPor === "peso"}
-                                onChange={handleChange}
-                            /> Peso / Volumen
-                        </label>
-                    </div>
-                </div>
-
-                {/* PRECIOS */}
+                {/* Precio / Coste */}
                 <div className="fila">
                     <div className="campo">
                         <label>Precio</label>
@@ -159,17 +226,34 @@ function FormularioArticulo({ categorias = [], onCrearCategoria, onSubmit }) {
                             name="coste"
                             value={form.coste}
                             onChange={handleChange}
+                            readOnly={esCompuesto}
                         />
                     </div>
                 </div>
+
+                {/* Compuesto */}
+                <div className="campo">
+                    <label>Artículo compuesto</label>
+                    <Switch
+                        checked={esCompuesto}
+                        onChange={handleChangeProdCompuesto}
+                    />
+                </div>
+
+                {esCompuesto && (
+                    <InventarioCompuesto
+                        articulos={articulos}
+                        onCosteChange={actualizarCoste}
+                    />
+                )}
 
                 <button type="submit" className="btn-guardar">
                     Guardar artículo
                 </button>
 
             </form>
-        </>
+        </div>
     );
 }
 
-export default FormularioArticulo;
+export default FormArticulo;

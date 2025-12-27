@@ -8,6 +8,8 @@ import ModifUsuario from './Pages/ModifUsuario';
 import ListaUsuariosPorRol from './Pages/ListaUsuariosPorRol';
 import './App.css';
 import ListaArticulos from './Pages/ListaArticulos';
+import FormArticulo from './Components/FormArticulo';
+import ListaCategorias from './Pages/ListaCategorias';
 
 function App() {
   return (
@@ -36,8 +38,11 @@ function App() {
             <Route path="listaProveedores" element={<ListaUsuariosPorRol rol={"proveedor"} />} />
             <Route path="creaProveedor" element={<RegistrarsePage rol='proveedor' operacion='crear'/>} />
             <Route path='modificaUsuario/:rol/:id' element={<ModifUsuario />} />
+            {/* Rutas Categorías */}
+            <Route path='listaCategorias' element={<ListaCategorias/>} />
             {/* Rutas Articulos */}
             <Route path='listaArticulos' element={<ListaArticulos/>} />
+            <Route path='creaArticulo' element={<FormArticulo/>} />
             
             {/*<Route path="informes" element={<Informes />} />
             <Route path="articulos" element={<Articulos />} /> */}

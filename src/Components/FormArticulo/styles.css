@@ -30,12 +30,12 @@
 .campo textarea {
     padding: 10px;
     font-size: 16px;
-    border: 1px solid #ddd;
+    border: 1px solid #b9b8b8;
     border-radius: 6px;
 }
 
 textarea {
-    height: 100px;
+    min-height: 30px;
     resize: vertical;
 }
 
@@ -62,4 +62,38 @@ textarea {
 
 .btn-guardar:hover {
     background: #1e5ed6;
+}
+
+.botones-final {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 30px;
+    gap: 15px;
+}
+
+.btn-cancelar {
+    background: #ccc;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.btn-cancelar:hover {
+    background: #b3b3b3;
+}
+
+.btn-guardar {
+    background: #6aa84f;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.btn-guardar:hover {
+    background: #5b9443;
 }

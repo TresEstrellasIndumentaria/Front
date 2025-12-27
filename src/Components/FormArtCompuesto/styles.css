@@ -1,0 +1,135 @@
+/* --- CONTENEDOR GENERAL --- */
+.inventario-cont {
+    margin-top: 25px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e4e4e4;
+}
+
+.inventario-cont h3 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+
+/* --- TABLA --- */
+.tabla-compuesto {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabla-compuesto thead th {
+    text-align: left;
+    padding-bottom: 8px;
+    color: #555;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.tabla-compuesto tbody td {
+    padding: 10px 5px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+
+/* Cantidad input */
+.tabla-compuesto input[type="number"] {
+    width: 80px;
+    padding: 6px;
+    border: none;
+    border-bottom: 1px solid #aaa;
+    outline: none;
+    text-align: center;
+    font-size: 14px;
+    background: transparent;
+}
+
+.tabla-compuesto input[type="number"]:focus {
+    border-bottom: 1px solid #6aa84f;
+}
+
+
+/* --- BOTÓN ELIMINAR --- */
+.btn-trash {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px 8px;
+    color: #999;
+}
+
+.btn-trash:hover {
+    color: #d9534f;
+}
+
+
+/* --- BUSCADOR --- */
+.buscador {
+    position: relative;
+    margin-top: 10px;
+}
+
+.buscador input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+}
+
+.buscador input:focus {
+    border-color: #6aa84f;
+    outline: none;
+}
+
+
+/* --- DROPDOWN --- */
+.dropdown {
+    position: absolute;
+    top: 42px;
+    left: 0;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    z-index: 10;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    display: none;
+}
+
+/* Mostrar dropdown cuando el input está en foco */
+.buscador input:focus + .dropdown {
+    display: block;
+}
+
+.dropdown .opcion {
+    padding: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid #f3f3f3;
+}
+
+.dropdown .opcion:last-child {
+    border-bottom: none;
+}
+
+.dropdown .opcion:hover {
+    background: #f1f8e9;
+}
+
+
+/* --- TOTAL --- */
+.total {
+    text-align: right;
+    margin-top: 15px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}

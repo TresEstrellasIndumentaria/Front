@@ -14,7 +14,7 @@
 
 /* Barra extendida */
 .sidebar.open {
-  width: 180px;
+  width: 300px;
   display: flex;
   flex-direction: column;
   justify-content: start;
@@ -59,12 +59,12 @@
 }
 
 .cont-item-icono {
-  width: 20%;
+  width: 15%;
   height: 100%;
 }
 
 .cont-item-texto {
-  width: 70%;
+  width: 80%;
   height: 100%;
   overflow: hidden;
   white-space: nowrap;
@@ -72,7 +72,6 @@
 }
 
 .cont-item-btn {
-  width: 10%;
   height: 100%;
 }
 

@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import LoginClasico from '../../Components/LoginClasico';
-import LoginGoogle from '../../Components/LoginGoogle';
 import './styles.css';
 
 function LoginPage() {
@@ -15,10 +14,6 @@ function LoginPage() {
         <div className='cont-login-page'>
             <div className='cont-login-clasico-page'>
                 <LoginClasico />
-            </div>
-            
-            <div className='cont-login-google-page'>
-                <LoginGoogle />
             </div>
         </div>
     )

@@ -1,14 +1,14 @@
 import axios from "axios";
 import { URL } from "../../Urls";
 import {
-    LOGIN, RESET_USER, GET_USER_BY_DNI, GET_ALL_USUARIOS, REGISTRARSE,
-    MODIFICA_USUARIO, GET_USER_BY_ID,
-    LOADING,
-    GET_USUARIOS_BY_ROL,
-    GET_ARTICULOS,
-    CREA_ARTICULO,
+    LOGIN, RESET_USER, GET_USER_BY_DNI, GET_ALL_USUARIOS, REGISTRARSE, CREA_CATEGORIA,
+    MODIFICA_USUARIO, GET_USER_BY_ID, LOADING, GET_USUARIOS_BY_ROL, GET_ARTICULOS, CREA_ARTICULO,
 } from "./actionsType";
-//-------usuario-----------------------------
+
+
+// =================================
+// USUARIOS
+// =================================
 export const login = (data) => {
     return async function (dispatch) {
         const resp = await axios.post(`${URL}/auth/login`, data); console.log("resp: ", resp.data)
@@ -37,7 +37,7 @@ export const loginGoogle = (credential) => {
     }
 }
 
-//-------registrarse-------
+//registrarse
 //action con manejo de errores
 export const registrarse = (data) => {
     return async function (dispatch) {
@@ -59,7 +59,7 @@ export const registrarse = (data) => {
     };
 };
 
-//-----usuario--------------------
+//trea todos los usuarios
 export const getAllUsuarios = () => {
     return async function (dispatch) {
         const resp = await axios.get(`${URL}/usuario`);
@@ -153,7 +153,9 @@ export const ActualizoLoading = () => {
     }
 };
 
-//--ARTICULOS--------------------------------
+// =================================
+// ARTÍCULO
+// =================================
 //trae todos
 export const getAllArticulos = () => {
     return async function (dispatch) {
@@ -168,6 +170,112 @@ export const creaArticulo = (data) => {
         try {
             const resp = await axios.post(`${URL}/articulo`, data);
             dispatch({type: CREA_ARTICULO, payload: resp.data});
+            return resp.data; // 👉 el back debería enviar algo como { message: "success" }
+        } catch (error) {
+            console.error("Error en registrarse:", error);
+
+            // Capturamos y devolvemos el mensaje del backend (si existe)
+            return {
+                message:
+                    error.response?.data?.message ||
+                    error.response?.data ||
+                    "Error al registrar el usuario.",
+            };
+        }
+    };
+};
+
+//elimina 
+export const eliminarArt = (id) => {
+    return async function (dispatch) {
+        try {
+            const resp = await axios.delete(`${URL}/articulo/eliminar/${id}`);
+            
+            return resp.data; // <-- devuelve msg correctamente
+        } catch (error) {
+            return {
+                msg: error.response?.data?.msg || 'Error al eliminar articulo'
+            };
+        }
+    };
+};
+
+// =================================
+// CATEGORIA
+// =================================
+
+//GET TODAS
+export const getCategorias = () => {
+    return async function (dispatch) {
+        try {
+            const resp = await axios.get(`${URL}/categoria`);
+            dispatch({ type: "GET_CATEGORIAS", payload: resp.data });
+        } catch (error) {
+            console.log("Error al obtener categorías:", error);
+        }
+    };
+};
+
+//CREAR
+export const crearCategoria = (nombre) => {
+    return async (dispatch) => {
+        try {
+            const resp = await axios.post(`${URL}/categoria`, { nombre }); 
+
+            dispatch({
+                type: CREA_CATEGORIA,
+                payload: resp.data.nombre, // { _id, nombre }
+            });
+
+            return resp.data; //retorno el nombre de la cat
+        } catch (error) {
+            return {
+                error: true,
+                message: error.response?.data?.message || "Error al crear categoría",
+            };
+        }
+    };
+};
+
+//EDITAR
+export const editarCategoria = (id, nombre) => {
+    return async function () {
+        try {
+            const resp = await axios.put(`${URL}/categorias/${id}`, { nombre });
+            return resp.data;
+        } catch (error) {
+            return { 
+                msg: error.response?.data?.msg || "Error al editar categoría"
+            };
+        }
+    };
+};
+
+//ELIMINAR
+export const eliminarCategoria = (id) => {
+    return async function () {
+        try {
+            const resp = await axios.delete(`${URL}/categorias/${id}`);
+            return resp.data;
+        } catch (error) {
+            return { 
+                msg: error.response?.data?.msg || "Error al eliminar categoría"
+            };
+        }
+    };
+};
+
+// =================================
+// PROVEEDORES
+// =================================
+
+//CREA PROVEEDOR
+//action con manejo de errores
+export const creaProveedor = (data) => {
+    return async function (dispatch) {
+        try {
+            const resp = await axios.post(`${URL}/proveedor`, data);
+            //dispatch({type: REGISTRARSE, payload: resp.data});
             return resp.data; // 👉 el back debería enviar algo como { message: "success" }
         } catch (error) {
             console.error("Error en registrarse:", error);

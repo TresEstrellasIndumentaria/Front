@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { resetLogin } from '../../Redux/Actions';
-import { userData } from '../../LocalStorage';
+import React, { /* useEffect, */ useState } from 'react';
+//import { useDispatch } from 'react-redux';
+//import { resetLogin } from '../../Redux/Actions';
+//import { userData } from '../../LocalStorage';
+import { useNavigate } from 'react-router-dom';
 import EmailIcon from '@mui/icons-material/Email';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import Swal from 'sweetalert2';
 import './styles.css';
-import { useNavigate } from 'react-router-dom';
+
 
 function LoginClasico() {
-    const dispatch = useDispatch();
+    //const dispatch = useDispatch();
     const navigate = useNavigate();
-    //const usuarioLog = useSelector(state => state.dataUsuario);
-    const usuarioLog = userData();
-    console.log("usuarioLog: ", usuarioLog)
+    //const usuarioLog = userData();
+    
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errors, setErrors] = useState({});
@@ -44,40 +44,47 @@ function LoginClasico() {
 
     // LoginClasico (solo la parte relevante)
     const handleLogin = async (e) => {
-        e.preventDefault();
-        if (validate()) return;
+    e.preventDefault();
+    if (validate()) return;
 
-        try {
-            const response = await fetch("http://localhost:3001/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
+    try {
+        const response = await fetch("http://localhost:3001/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            Swal.fire({
+                text: result.message || "Error en login",
+                icon: "error"
             });
-
-            const result = await response.json();
-            console.log('login result', result); // -> útil para ver la forma (shape)
-
-            if (result.message === "ok") {
-                // guardo exactamente el resultado bajo la clave 'userData'
-                localStorage.setItem('userData', JSON.stringify(result));
-
-                // emito un evento custom para notificar al resto de componentes en el mismo tab
-                window.dispatchEvent(new CustomEvent('userChanged', { detail: result }));
-
-                // redirijo al home
-                navigate('/');
-            } else {
-                Swal.fire({ text: result.message || 'Error en login', icon: 'error' });
-            }
-        } catch (error) {
-            console.error('Error login:', error);
-            Swal.fire({ text: 'Error de conexión con el servidor', icon: 'error' });
+            return;
         }
-    };
+
+        // ✅ login OK
+        localStorage.setItem("userData", JSON.stringify(result.user));
+
+        window.dispatchEvent(
+            new CustomEvent("userChanged", { detail: result.user })
+        );
+
+        navigate("/");
+
+    } catch (error) {
+        console.error("Error login:", error);
+        Swal.fire({
+            text: "Error de conexión con el servidor",
+            icon: "error"
+        });
+    }
+};
 
 
-    // Efecto: si usuarioLog se actualiza y fue exitoso, redirigir
-    useEffect(() => {
+    // Efecto SI REDUX maneja el login: si usuarioLog se actualiza y fue exitoso, redirigir
+    /* useEffect(() => {
         if (usuarioLog?.dataUser?.message === 'ok') {
             navigate('/'); // ir al home
         }
@@ -91,7 +98,7 @@ function LoginClasico() {
             Swal.fire({ text: 'Contraseña incorrecta', icon: 'error' });
             dispatch(resetLogin());
         }
-    }, [usuarioLog?.dataUser?.message, dispatch, navigate]);
+    }, [usuarioLog?.dataUser?.message, dispatch, navigate]); */
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') e.preventDefault();
@@ -141,10 +148,7 @@ function LoginClasico() {
                 Recuperar contraseña
             </button>
 
-            <p className='p-login'>Si no estás registrado/a</p>
-            <button type="button" className="register-button-login" onClick={() => navigate('/registrarse')}>
-                Registrate
-            </button>
+
         </div>
     );
 }

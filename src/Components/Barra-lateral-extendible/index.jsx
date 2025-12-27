@@ -7,7 +7,9 @@ import LocalMallIcon from '@mui/icons-material/LocalMall';
 import ContactEmergencyIcon from '@mui/icons-material/ContactEmergency';
 import HailIcon from '@mui/icons-material/Hail';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import InventoryIcon from '@mui/icons-material/Inventory';
 import './estilos.css';
+
 
 const BarraLateral = ({ isOpen }) => {
 
@@ -18,6 +20,7 @@ const BarraLateral = ({ isOpen }) => {
   const [usuarioOpen, setUsuarioOpen] = useState(false);
   const [informesOpen, setInformesOpen] = useState(false);
   const [articulosOpen, setArticulosOpen] = useState(false);
+  const [adminDeInventarioOpen, setAdminDeInventarioOpen] = useState(false);
   const [adminsOpen, setAdminsOpen] = useState(false);
   const [empleadosOpen, setEmpleadosOpen] = useState(false);
   const [clientesOpen, setClientesOpen] = useState(false);
@@ -42,6 +45,7 @@ const BarraLateral = ({ isOpen }) => {
     setUsuarioOpen(menu === 'usuario' ? !usuarioOpen : false);
     setInformesOpen(menu === 'informes' ? !informesOpen : false);
     setArticulosOpen(menu === 'articulos' ? !articulosOpen : false);
+    setAdminDeInventarioOpen(menu === 'adminDeInventario' ? !adminDeInventarioOpen : false);
     setAdminsOpen(menu === 'administradores' ? !adminsOpen : false);
     setEmpleadosOpen(menu === 'empleados' ? !empleadosOpen : false);
     setClientesOpen(menu === 'clientes' ? !clientesOpen : false);
@@ -66,7 +70,7 @@ const BarraLateral = ({ isOpen }) => {
         {/* Usuario */}
         <div className="cont-item-barra" onClick={() => handleToggle('usuario')}>
           <div className="cont-item-icono">
-            <AccountBoxIcon sx={{ width: 30, height: 30, color: 'grey' }} />
+            <AccountBoxIcon sx={{ width: 25, height: 25, color: 'grey' }} />
           </div>
           {isOpen && <div className="cont-item-texto"><p>{nombre}</p></div>}
           {isOpen && (
@@ -85,10 +89,10 @@ const BarraLateral = ({ isOpen }) => {
           {usuarioOpen && (
             <ul className="dropdown-menu">
               <Link to="/creaCliente" className="link-menu">
-                <li className="dropdown-item">Crear Cliente</li>
+                <li className="dropdown-item">Cuenta</li>
               </Link>
               <Link to="/clientes" className="link-menu">
-                <li className="dropdown-item">Listar Clientes</li>
+                <li className="dropdown-item">Cerrar sesión</li>
               </Link>
             </ul>
           )}
@@ -97,7 +101,7 @@ const BarraLateral = ({ isOpen }) => {
         {/* Informes */}
         <div className="cont-item-barra" onClick={() => handleToggle('informes')}>
           <div className="cont-item-icono">
-            <BarChartIcon sx={{ width: 30, height: 30, color: 'green' }} />
+            <BarChartIcon sx={{ width: 25, height: 25, color: 'green' }} />
           </div>
           {isOpen && <div className="cont-item-texto"><p>Informes</p></div>}
           {isOpen && (
@@ -115,11 +119,20 @@ const BarraLateral = ({ isOpen }) => {
           )}
           {informesOpen && (
             <ul className="dropdown-menu">
-              <Link to="/ventasDiarias" className="link-menu">
-                <li className="dropdown-item">Ventas Diarias</li>
+              <Link to="/resumenVentas" className="link-menu">
+                <li className="dropdown-item">Resumen de ventas</li>
               </Link>
-              <Link to="/compras" className="link-menu">
-                <li className="dropdown-item">Compras</li>
+              <Link to="/ventasPorArticulo" className="link-menu">
+                <li className="dropdown-item">Ventas por artículo</li>
+              </Link>
+              <Link to="/ventasPorCategoria" className="link-menu">
+                <li className="dropdown-item">Ventas por categoría</li>
+              </Link>
+              <Link to="/ventasPorTipoPago" className="link-menu">
+                <li className="dropdown-item">Ventas por tipo de pago</li>
+              </Link>
+              <Link to="/recibos" className="link-menu">
+                <li className="dropdown-item">Recibos</li>
               </Link>
             </ul>
           )}
@@ -128,7 +141,7 @@ const BarraLateral = ({ isOpen }) => {
         {/* Artículos */}
         <div className="cont-item-barra" onClick={() => handleToggle('articulos')}>
           <div className="cont-item-icono">
-            <LocalMallIcon sx={{ width: 30, height: 30, color: 'red' }} />
+            <LocalMallIcon sx={{ width: 25, height: 25, color: 'red' }} />
           </div>
           {isOpen && <div className="cont-item-texto"><p>Artículos</p></div>}
           {isOpen && (
@@ -149,6 +162,55 @@ const BarraLateral = ({ isOpen }) => {
               <Link to="/listaArticulos" className="link-menu">
                 <li className="dropdown-item">Listar Artículos</li>
               </Link>
+              <Link to="/listaCategorias" className="link-menu">
+                <li className="dropdown-item">Categorías</li>
+              </Link>
+            </ul>
+          )}
+        </div>
+
+        {/* Administración de Inventario */}
+        <div className="cont-item-barra" onClick={() => handleToggle('adminDeInventario')}>
+          <div className="cont-item-icono">
+            <InventoryIcon sx={{ width: 25, height: 25, color: 'green' }} />
+          </div>
+          {isOpen && <div className="cont-item-texto"><p>Administración de Inventario</p></div>}
+          {isOpen && (
+            <div className="cont-item-btn">
+              <button
+                className="btn-down"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggle('adminDeInventario');
+                }}
+              >
+                <KeyboardArrowDownIcon />
+              </button>
+            </div>
+          )}
+          {adminDeInventarioOpen && (
+            <ul className="dropdown-menu">
+              <Link to="/creaOrdenCompra" className="link-menu">
+                <li className="dropdown-item">Órdenes de compra</li>
+              </Link>
+              <Link to="/ajusteStock" className="link-menu">
+                <li className="dropdown-item">Ajustes de stock</li>
+              </Link>
+              <Link to="/recuentoInventario" className="link-menu">
+                <li className="dropdown-item">Recuento de inventario</li>
+              </Link>
+              <Link to="/producciones" className="link-menu">
+                <li className="dropdown-item">Produccionnes</li>
+              </Link>
+              <Link to="/proveedores" className="link-menu">
+                <li className="dropdown-item">Proveedores</li>
+              </Link>
+              <Link to="/historialInventario" className="link-menu">
+                <li className="dropdown-item">Historial de inventario</li>
+              </Link>
+              <Link to="/valoracionInventario" className="link-menu">
+                <li className="dropdown-item">Valoración de inventario</li>
+              </Link>
             </ul>
           )}
         </div>
@@ -156,7 +218,7 @@ const BarraLateral = ({ isOpen }) => {
         {/* Administradores */}
         <div className="cont-item-barra" onClick={() => handleToggle('administradores')}>
           <div className="cont-item-icono">
-            <HailIcon sx={{ width: 30, height: 30, color: 'green' }} />
+            <HailIcon sx={{ width: 25, height: 25, color: 'green' }} />
           </div>
           {isOpen && <div className="cont-item-texto"><p>Administradores</p></div>}
           {isOpen && (
@@ -187,7 +249,7 @@ const BarraLateral = ({ isOpen }) => {
         {/* Empleados */}
         <div className="cont-item-barra" onClick={() => handleToggle('empleados')}>
           <div className="cont-item-icono">
-            <ContactEmergencyIcon sx={{ width: 30, height: 30, color: 'green' }} />
+            <ContactEmergencyIcon sx={{ width: 25, height: 25, color: 'green' }} />
           </div>
           {isOpen && <div className="cont-item-texto"><p>Empleados</p></div>}
           {isOpen && (
@@ -218,7 +280,7 @@ const BarraLateral = ({ isOpen }) => {
         {/* Clientes */}
         <div className="cont-item-barra" onClick={() => handleToggle('clientes')}>
           <div className="cont-item-icono">
-            <HailIcon sx={{ width: 30, height: 30, color: 'grey' }} />
+            <HailIcon sx={{ width: 25, height: 25, color: 'grey' }} />
           </div>
           {isOpen && <div className="cont-item-texto"><p>Clientes</p></div>}
           {isOpen && (
@@ -249,7 +311,7 @@ const BarraLateral = ({ isOpen }) => {
         {/* Proveedores */}
         <div className="cont-item-barra" onClick={() => handleToggle('proveedores')}>
           <div className="cont-item-icono">
-            <HailIcon sx={{ width: 30, height: 30, color: 'grey' }} />
+            <HailIcon sx={{ width: 25, height: 25, color: 'grey' }} />
           </div>
           {isOpen && <div className="cont-item-texto"><p>Proveedores</p></div>}
           {isOpen && (
