@@ -1,41 +1,106 @@
 import React, { useState, useEffect, useMemo } from "react";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import Switch from "@mui/material/Switch";
 import "./styles.css";
 
-function InventarioCompuesto({ articulos = [], onCosteChange }) {
-    const [componentes, setComponentes] = useState([]);
+const getArticuloCosteBase = (articulo) => {
+    if (!articulo) return 0;
+    if (Number.isFinite(Number(articulo.coste))) return Number(articulo.coste);
+    if (Array.isArray(articulo.talles) && articulo.talles.length) {
+        const primerTalleConCoste = articulo.talles.find((t) => Number.isFinite(Number(t?.coste)));
+        if (primerTalleConCoste) return Number(primerTalleConCoste.coste);
+    }
+    return 0;
+};
+
+function InventarioCompuesto({
+    articulos = [],
+    componentesIniciales = [],
+    onCosteChange,
+    onComposicionChange
+}) {
     const [articuloSeleccionado, setArticuloSeleccionado] = useState("");
+    const [cantidad, setCantidad] = useState(1);
+    const [componentes, setComponentes] = useState([]);
 
-    // 👉 Agregar componente
-    const agregarComponente = (articuloId) => {
-        if (!articuloId) return;
+    useEffect(() => {
+        if (!componentesIniciales?.length) return;
 
-        const articulo = articulos.find(a => a._id === articuloId);
+        const normalizados = componentesIniciales.map((c) => {
+            const id = c?._id || c?.articulo?._id || c?.articulo;
+            const articulo = articulos.find((a) => a._id === id);
+            const qty = Number(c?.cantidad ?? 1);
+            const costeTotal = Number(c?.costeTotal ?? c?.coste ?? 0);
+            const costeUnitario = Number(
+                c?.costeUnitario ?? (qty > 0 ? (costeTotal / qty) : articulo?.coste ?? 0)
+            );
+
+            return {
+                _id: id,
+                nombre: c?.nombre || c?.articulo?.nombre || articulo?.nombre || "Componente",
+                costeUnitario,
+                cantidad: qty,
+                costeTotal: qty * costeUnitario
+            };
+        }).filter((c) => c._id);
+
+        setComponentes(normalizados);
+    }, [componentesIniciales, articulos]);
+
+    const agregarComponente = () => {
+        if (!articuloSeleccionado || cantidad <= 0) return;
+
+        const articulo = articulos.find((a) => a._id === articuloSeleccionado);
         if (!articulo) return;
 
-        setComponentes(prev => {
-            if (prev.some(c => c._id === articulo._id)) return prev;
-
-            return [
-                ...prev,
-                {
-                    _id: articulo._id,
-                    nombre: articulo.nombre,
-                    costeUnitario: Number(articulo.coste) || 0,
-                    cantidad: 1,
-                    costeTotal: Number(articulo.coste) || 0
-                }
-            ];
-        });
+        setComponentes((prev) => [
+            ...prev,
+            {
+                _id: articulo._id,
+                nombre: articulo.nombre,
+                costeUnitario: getArticuloCosteBase(articulo),
+                cantidad,
+                costeTotal: getArticuloCosteBase(articulo) * cantidad
+            }
+        ]);
 
         setArticuloSeleccionado("");
+        setCantidad(1);
     };
 
-    // 👉 Actualizar cantidad
-    const actualizarCantidad = (id, cantidad) => {
-        const qty = Math.max(0, cantidad);
+    const agregarComponentePorId = (articuloId) => {
+        if (!articuloId || cantidad <= 0) return;
 
-        setComponentes(prev =>
-            prev.map(c =>
+        const articulo = articulos.find((a) => a._id === articuloId);
+        if (!articulo) return;
+
+        setComponentes((prev) => [
+            ...prev,
+            {
+                _id: articulo._id,
+                nombre: articulo.nombre,
+                costeUnitario: getArticuloCosteBase(articulo),
+                cantidad,
+                costeTotal: getArticuloCosteBase(articulo) * cantidad
+            }
+        ]);
+
+        setArticuloSeleccionado("");
+        setCantidad(1);
+    };
+
+    const eliminarTodos = () => {
+        setComponentes([]);
+        setArticuloSeleccionado("");
+        setCantidad(1);
+    };
+
+    const actualizarCantidad = (id, nuevaCantidad) => {
+        const qty = Math.max(0, nuevaCantidad);
+
+        setComponentes((prev) =>
+            prev.map((c) =>
                 c._id === id
                     ? {
                         ...c,
@@ -47,25 +112,67 @@ function InventarioCompuesto({ articulos = [], onCosteChange }) {
         );
     };
 
-    // 👉 Eliminar componente
     const eliminarComponente = (id) => {
-        setComponentes(prev => prev.filter(c => c._id !== id));
+        setComponentes((prev) => prev.filter((c) => c._id !== id));
     };
 
-    // 👉 Total general
-    const totalGeneral = useMemo(() => {
-        return componentes.reduce((acc, c) => acc + c.costeTotal, 0);
+    const totalGeneral = useMemo(
+        () => componentes.reduce((acc, c) => acc + c.costeTotal, 0),
+        [componentes]
+    );
+
+    const articuloPreview = useMemo(
+        () => articulos.find((a) => a._id === articuloSeleccionado) || null,
+        [articulos, articuloSeleccionado]
+    );
+
+    const costePreview = useMemo(
+        () => getArticuloCosteBase(articuloPreview) * Number(cantidad || 0),
+        [articuloPreview, cantidad]
+    );
+
+    const formatMoney = (value) =>
+        Number(value || 0).toLocaleString("es-AR", {
+            style: "currency",
+            currency: "ARS",
+            minimumFractionDigits: 2
+        });
+
+    useEffect(() => {
+        const composicion = componentes.map((c) => ({
+            articulo: c._id,
+            cantidad: c.cantidad,
+            coste: c.costeTotal
+        }));
+
+        onComposicionChange(composicion);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [componentes]);
 
-    // 👉 Enviar coste total al padre
     useEffect(() => {
-        onCosteChange?.(Number(totalGeneral.toFixed(2)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        onCosteChange(Number(totalGeneral.toFixed(2)));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [totalGeneral]);
 
     return (
         <div className="inventario-cont">
             <h3>Inventario</h3>
+
+            <div className="inventario-switch-row">
+                <div className="inventario-switch-label">
+                    <span>Articulo compuesto</span>
+                    <InfoOutlinedIcon fontSize="small" />
+                </div>
+                <Switch checked disabled />
+            </div>
+
+            {/* <div className="inventario-switch-row">
+                <div className="inventario-switch-label">
+                    <span>Usar produccion</span>
+                    <InfoOutlinedIcon fontSize="small" />
+                </div>
+                <Switch checked={false} disabled />
+            </div> */}
 
             <table className="tabla-compuesto">
                 <thead>
@@ -78,78 +185,98 @@ function InventarioCompuesto({ articulos = [], onCosteChange }) {
                 </thead>
 
                 <tbody>
-                    {/* COMPONENTES */}
-                    {componentes.map(c => (
+                    {componentes.map((c) => (
                         <tr key={c._id}>
-                            <td><strong>{c.nombre}</strong></td>
-
+                            <td>
+                                <strong>{c.nombre}</strong>
+                                <span className="componente-ref">REF {String(c._id).slice(-5)}</span>
+                            </td>
                             <td>
                                 <input
                                     type="number"
                                     min={0}
                                     value={c.cantidad}
-                                    onChange={(e) =>
-                                        actualizarCantidad(
-                                            c._id,
-                                            Number(e.target.value)
-                                        )
-                                    }
-                                    className="input-cantidad"
+                                    onChange={(e) => actualizarCantidad(c._id, Number(e.target.value))}
                                 />
                             </td>
-
-                            <td>${c.costeTotal.toFixed(2)}</td>
-
+                            <td>{formatMoney(c.costeTotal)}</td>
                             <td>
                                 <button
                                     type="button"
                                     className="btn-trash"
                                     onClick={() => eliminarComponente(c._id)}
+                                    aria-label={`Eliminar ${c.nombre}`}
                                 >
-                                    🗑
+                                    <DeleteOutlineIcon fontSize="small" />
                                 </button>
                             </td>
                         </tr>
                     ))}
-
-                    {/* SELECT */}
-                    <tr>
-                        <td colSpan="4">
+                </tbody>
+                <tfoot>
+                    <tr className="tabla-compuesto-add-row">
+                        <td>
                             <select
-                                className="select-articulo"
+                                className="inventario-busqueda"
                                 value={articuloSeleccionado}
                                 onChange={(e) => {
-                                    setArticuloSeleccionado(e.target.value);
-                                    agregarComponente(e.target.value);
+                                    const value = e.target.value;
+                                    setArticuloSeleccionado(value);
+                                    if (value) agregarComponentePorId(value);
                                 }}
                             >
-                                <option value="">➕ Agregar componente</option>
-
-                                {articulos.map(a => (
+                                <option value="">Busqueda de articulos</option>
+                                {articulos.map((a) => (
                                     <option
                                         key={a._id}
                                         value={a._id}
-                                        disabled={componentes.some(c => c._id === a._id)}
+                                        disabled={componentes.some((c) => c._id === a._id)}
                                     >
-                                        {a.nombre} - $
-                                        {Number(a.coste || 0).toFixed(2)}
+                                        {a.nombre}
                                     </option>
                                 ))}
                             </select>
                         </td>
-                    </tr>
-                </tbody>
-
-                <tfoot>
-                    <tr>
-                        <td colSpan="2"></td>
-                        <td><strong>Total</strong></td>
                         <td>
-                            <strong>${totalGeneral.toFixed(2)}</strong>
+                            <input
+                                className="inventario-add-cantidad"
+                                type="number"
+                                min={1}
+                                value={cantidad}
+                                onChange={(e) => setCantidad(Number(e.target.value))}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        agregarComponente();
+                                    }
+                                }}
+                            />
+                        </td>
+                        <td>
+                            <div className="inventario-coste-preview">
+                                {formatMoney(costePreview)}
+                            </div>
+                        </td>
+                        <td>
+                            <button
+                                type="button"
+                                className="inventario-clear-btn"
+                                onClick={eliminarTodos}
+                                disabled={!componentes.length}
+                                aria-label="Eliminar todos los componentes"
+                                title="Eliminar todos los componentes"
+                            >
+                                <DeleteOutlineIcon fontSize="small" />
+                            </button>
                         </td>
                     </tr>
                 </tfoot>
             </table>
+
+            <div className="inventario-total">
+                <span>Coste total</span>
+                <strong>{formatMoney(totalGeneral)}</strong>
+            </div>
         </div>
     );
 }

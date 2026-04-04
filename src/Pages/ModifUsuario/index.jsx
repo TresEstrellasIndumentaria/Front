@@ -6,7 +6,7 @@ import Registrarse from '../../Components/Registrarse';
 
 function ModifUsuario() {
     
-    const { rol, id } = useParams(); console.log("rol:", rol)
+    const { rol, id } = useParams();
     const dispatch = useDispatch();
 
     const usuario = useSelector(state => state.dataUsuario);

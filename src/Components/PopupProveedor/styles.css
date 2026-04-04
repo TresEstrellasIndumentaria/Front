@@ -1,0 +1,136 @@
+/* ===== Overlay ===== */
+.popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* ===== Popup ===== */
+.popup {
+    background: #ffffff;
+    width: 600px;
+    max-width: 95%;
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+    animation: popupFade 0.25s ease-out;
+}
+
+/* Variante proveedor */
+.popup-proveedor {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ===== Título ===== */
+.popup h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* ===== Inputs ===== */
+.popup input,
+.popup textarea {
+    width: 90%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #d0d0d0;
+    font-size: 14px;
+    outline: none;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.popup textarea {
+    min-height: 70px;
+    resize: vertical;
+}
+
+.popup input::placeholder,
+.popup textarea::placeholder {
+    color: #999;
+}
+
+.popup input:focus,
+.popup textarea:focus {
+    border-color: #2b7cff;
+    box-shadow: 0 0 0 2px rgba(43, 124, 255, 0.15);
+}
+
+/* ===== Fila (teléfono) ===== */
+.popup .fila {
+    width: 95%;
+    display: flex;
+    gap: 10px;
+}
+
+.popup .fila input {
+    flex: 1;
+}
+
+/* ===== Acciones ===== */
+.popup .acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Botón cancelar */
+.popup .acciones button:first-child {
+    background: transparent;
+    border: none;
+    color: #555;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 12px;
+}
+
+/* Botón crear */
+.popup .btn-crear {
+    background: #2b7cff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.05s ease;
+}
+
+.popup .btn-crear:hover {
+    background: #1f63d6;
+}
+
+.popup .btn-crear:active {
+    transform: scale(0.97);
+}
+
+/* ===== Animación ===== */
+@keyframes popupFade {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 480px) {
+    .popup {
+        padding: 18px;
+    }
+
+    .popup h3 {
+        font-size: 16px;
+    }
+}

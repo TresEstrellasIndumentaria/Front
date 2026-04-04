@@ -1,0 +1,146 @@
+/* CONTENEDOR GENERAL */
+.modif-datos-container {
+    max-width: 460px;
+    padding: 30px;
+    background: linear-gradient(180deg, #ffffff, #f9fafb);
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+    animation: fadeIn 0.4s ease;
+}
+
+/* TITULO */
+.modif-datos-container h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 1.6rem;
+    color: black;
+    position: relative;
+}
+
+/* FORM */
+.modif-datos-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* LABEL */
+.modif-datos-container label {
+    font-size: 0.9rem;
+    color: black;
+    font-weight: 500;
+}
+
+/* INPUT */
+.modif-datos-container input {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    background-color: #fff;
+}
+
+.modif-datos-container input:focus {
+    outline: none;
+    border-color: var(--color-barra);
+    box-shadow: 0 0 0 3px var(--color-barra);
+}
+
+/* SEPARADOR */
+.modif-datos-container hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right,
+            transparent,
+            #e5e7eb,
+            transparent);
+    margin: 18px 0;
+}
+
+/* MENSAJES */
+.error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.success {
+    background-color: #dcfce7;
+    color: #166534;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* BOTON */
+.modif-datos-container button {
+    margin-top: 10px;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--color-barra);
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.modif-datos-container button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+}
+
+.modif-datos-container button:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* ANIMACION */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* CAMPO PASSWORD CON BOTON */
+.password-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-field input {
+    width: 100%;
+    padding-right: 42px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 0px;
+    top: -10px;
+    background: none;
+    border: none;
+
+    padding: 0;
+    /* CLAVE */
+    margin: 0;
+    /* CLAVE */
+    font-size: 18px;
+    /* tamaño del icono */
+    line-height: 1;
+
+    cursor: pointer;
+    color: #6b7280;
+}

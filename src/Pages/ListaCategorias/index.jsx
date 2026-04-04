@@ -1,30 +1,64 @@
 import React, { useEffect, useState, useContext, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppContext } from '../../Context';
-import { getCategorias, crearCategoria } from '../../Redux/Actions';
+import { getCategorias, crearCategoria, editarCategoria } from '../../Redux/Actions';
 import PopupCategoria from "../../Components/FormCategoria";
-import SearchBar from '../../Components/SearchBar';
-import BotonEliminarArt from '../../Components/BotonEliminarArt';
+import SearchBar from '../../Components/BuscaArticulo';
+import BotonEliminarCategoria from '../../Components/BotonEliminarCategoria';
+import Swal from 'sweetalert2';
 
 function ListaCategorias() {
     const dispatch = useDispatch();
     const contexto = useContext(AppContext);
 
     const [mostrarPopup, setMostrarPopup] = useState(false);
+    const [modoPopup, setModoPopup] = useState('crear');
+    const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
 
     const categorias = useSelector(state => state.categorias);
 
-    // Traer categorías
+    // Traer categorias
     useEffect(() => {
         if (!categorias?.length) {
             dispatch(getCategorias());
         }
     }, [dispatch, categorias?.length]);
 
-    // Crear categoría desde popup
-    const agregarCategoria = async (nombre) => {
-        await dispatch(crearCategoria(nombre));
+    const cerrarPopup = () => {
         setMostrarPopup(false);
+        setCategoriaSeleccionada(null);
+        setModoPopup('crear');
+    };
+
+    // Crear/editar categoria desde popup
+    const guardarCategoria = async (categoriaData) => {
+        let resp;
+
+        if (modoPopup === 'modificar' && categoriaSeleccionada?._id) {
+            resp = await dispatch(editarCategoria(categoriaSeleccionada._id, categoriaData));
+            await dispatch(getCategorias());
+        } else {
+            resp = await dispatch(crearCategoria(categoriaData));
+        }
+
+        const errorMsg = resp?.message || resp?.msg;
+        if (resp?.error || errorMsg?.toLowerCase()?.includes('error')) {
+            Swal.fire({
+                icon: 'error',
+                title: 'No se pudo guardar la categoria',
+                text: errorMsg || 'Ocurrio un error inesperado'
+            });
+            return;
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: modoPopup === 'modificar' ? 'Categoria actualizada' : 'Categoria creada',
+            timer: 1400,
+            showConfirmButton: false
+        });
+
+        cerrarPopup();
     };
 
     // Filtro por search
@@ -42,24 +76,30 @@ function ListaCategorias() {
 
                 {mostrarPopup && (
                     <PopupCategoria
-                        onClose={() => setMostrarPopup(false)}
-                        onCreate={agregarCategoria}
+                        categorias={categorias}
+                        modo={modoPopup}
+                        categoriaInicial={categoriaSeleccionada}
+                        onClose={cerrarPopup}
+                        onCreate={guardarCategoria}
                     />
                 )}
 
-                <h2>Lista Categorías</h2>
+                <h2>Lista Categorias</h2>
 
                 <SearchBar
                     handleOnChange={e => contexto.setSearch(e.target.value)}
                     vista="categoria"
                 />
 
-                {/* 🔥 BOTÓN QUE ABRE EL POPUP */}
                 <button
                     className="btn-add"
-                    onClick={() => setMostrarPopup(true)}
+                    onClick={() => {
+                        setModoPopup('crear');
+                        setCategoriaSeleccionada(null);
+                        setMostrarPopup(true);
+                    }}
                 >
-                    + Añadir Categoría
+                    + Anadir Categoria
                 </button>
             </div>
 
@@ -67,7 +107,7 @@ function ListaCategorias() {
                 <thead>
                     <tr>
                         <th>Nombre</th>
-                        <th>Cantidad de artículos</th>
+                        <th>Cantidad de articulos</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -78,8 +118,18 @@ function ListaCategorias() {
                             <td>{cat.nombre}</td>
                             <td>{cat.cantidadArticulos}</td>
                             <td className="acciones">
-                                <button className="btn-edit">Editar</button>
-                                <BotonEliminarArt _id={cat._id} nombre={cat.nombre} />
+                                <button
+                                    className="btn-edit"
+                                    onClick={() => {
+                                        setModoPopup('modificar');
+                                        setCategoriaSeleccionada(cat);
+                                        setMostrarPopup(true);
+                                    }}
+                                >
+                                    Editar
+                                </button>
+
+                                <BotonEliminarCategoria _id={cat._id} nombre={cat.nombre} />
                             </td>
                         </tr>
                     ))}

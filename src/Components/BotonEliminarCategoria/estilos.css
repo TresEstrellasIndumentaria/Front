@@ -1,0 +1,13 @@
+.btn-elim-cliente {
+    color: #dc2626;
+    background-color: #fef2f2;
+    margin-left: 10px;
+    cursor: pointer;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 6px 8px;
+}
+
+.btn-elim-cliente:hover {
+    background-color: #fee2e2;
+}

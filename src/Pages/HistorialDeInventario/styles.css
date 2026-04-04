@@ -1,0 +1,154 @@
+.hist-page {
+    width: min(1360px, calc(100% - 24px));
+    margin: 14px auto;
+}
+
+.hist-filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.hist-filter {
+    background: #fff;
+    border: 1px solid #d8dde3;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+}
+
+.hist-filter select {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 1rem;
+    appearance: none;
+}
+
+.hist-date-range input {
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+    color: #111827;
+}
+
+.muted {
+    color: #6b7280;
+}
+
+.hist-card {
+    background: #fff;
+    border: 1px solid #d8dde3;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.hist-toolbar {
+    padding: 14px 20px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.hist-export-group {
+    display: inline-flex;
+    gap: 8px;
+}
+
+.hist-export-btn {
+    border: 1px solid #d1d5db;
+    background: #fff;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: #111827;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.hist-export-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.hist-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.hist-table th,
+.hist-table td {
+    text-align: left;
+    padding: 14px 16px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.hist-table th {
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.hist-empty {
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #6b7280;
+    padding: 24px;
+}
+
+.hist-empty-icon {
+    width: 150px;
+    height: 150px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    display: grid;
+    place-items: center;
+    margin-bottom: 16px;
+}
+
+.hist-empty-icon svg {
+    font-size: 70px;
+    color: #9ca3af;
+}
+
+.hist-empty h3 {
+    margin: 0 0 10px;
+    font-size: 2rem;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.hist-empty p {
+    margin: 0;
+    max-width: 560px;
+    font-size: 1.8rem;
+}
+
+.hist-empty-help {
+    margin-top: 10px !important;
+    font-size: 0.95rem !important;
+    color: #9ca3af;
+}
+
+@media (max-width: 980px) {
+    .hist-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .hist-empty h3 {
+        font-size: 1.6rem;
+    }
+
+    .hist-empty p {
+        font-size: 1rem;
+    }
+}

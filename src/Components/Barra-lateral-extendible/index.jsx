@@ -8,10 +8,13 @@ import ContactEmergencyIcon from '@mui/icons-material/ContactEmergency';
 import HailIcon from '@mui/icons-material/Hail';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import Tooltip from '@mui/material/Tooltip';
+
 import './estilos.css';
 
 
-const BarraLateral = ({ isOpen }) => {
+const BarraLateral = ({ isOpen, onClose, menuButtonRef }) => {
 
   const userLog = userData();
   const nombre = userLog?.user?.nombre;
@@ -25,6 +28,9 @@ const BarraLateral = ({ isOpen }) => {
   const [empleadosOpen, setEmpleadosOpen] = useState(false);
   const [clientesOpen, setClientesOpen] = useState(false);
   const [proveedoresOpen, setProveedoresOpen] = useState(false);
+  const [ventasOpen, setVentasOpen] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(null);
+
 
   // Referencia a la barra lateral
   const sidebarRef = useRef(null);
@@ -34,14 +40,18 @@ const BarraLateral = ({ isOpen }) => {
     setUsuarioOpen(false);
     setInformesOpen(false);
     setArticulosOpen(false);
+    setAdminDeInventarioOpen(false);
     setAdminsOpen(false);
     setEmpleadosOpen(false);
     setClientesOpen(false);
     setProveedoresOpen(false);
+    setVentasOpen(false);
+    setTooltipOpen(null);
   };
 
   // Función para alternar el menú correspondiente
   const handleToggle = (menu) => {
+    setTooltipOpen(null);
     setUsuarioOpen(menu === 'usuario' ? !usuarioOpen : false);
     setInformesOpen(menu === 'informes' ? !informesOpen : false);
     setArticulosOpen(menu === 'articulos' ? !articulosOpen : false);
@@ -50,28 +60,59 @@ const BarraLateral = ({ isOpen }) => {
     setEmpleadosOpen(menu === 'empleados' ? !empleadosOpen : false);
     setClientesOpen(menu === 'clientes' ? !clientesOpen : false);
     setProveedoresOpen(menu === 'proveedores' ? !proveedoresOpen : false);
+    setVentasOpen(menu === 'ventas' ? !ventasOpen : false);
   };
+
 
   // Detectar clic fuera del sidebar
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+      if (
+        sidebarRef.current &&
+        !sidebarRef.current.contains(e.target) &&
+        !menuButtonRef?.current?.contains(e.target)
+      ) {
         closeAllMenus();
+        onClose();
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose, menuButtonRef]);
 
   return (
-    <div ref={sidebarRef} className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+    <div
+      ref={sidebarRef}
+      className={`sidebar ${isOpen ? 'open' : 'closed'}`}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
       <div className="content">
         {/* Usuario */}
         <div className="cont-item-barra" onClick={() => handleToggle('usuario')}>
-          <div className="cont-item-icono">
-            <AccountBoxIcon sx={{ width: 25, height: 25, color: 'grey' }} />
-          </div>
+          {isOpen ? (
+            <div className="cont-item-icono">
+              <AccountBoxIcon sx={{ width: 25, height: 25, color: 'grey' }} />
+            </div>
+          ) : (
+            <Tooltip
+              title="Datos personales"
+              placement="right"
+              open={!isOpen && tooltipOpen === 'usuario'}
+              disableHoverListener
+              disableFocusListener
+              disableTouchListener
+            >
+              <div
+                className="cont-item-icono"
+                onMouseEnter={() => setTooltipOpen('usuario')}
+                onMouseLeave={() => setTooltipOpen(null)}
+              >
+                <AccountBoxIcon sx={{ width: 25, height: 25, color: 'grey' }} />
+              </div>
+            </Tooltip>
+
+          )}
           {isOpen && <div className="cont-item-texto"><p>{nombre}</p></div>}
           {isOpen && (
             <div className="cont-item-btn">
@@ -88,11 +129,8 @@ const BarraLateral = ({ isOpen }) => {
           )}
           {usuarioOpen && (
             <ul className="dropdown-menu">
-              <Link to="/creaCliente" className="link-menu">
+              <Link to="/mis-datos" className="link-menu">
                 <li className="dropdown-item">Cuenta</li>
-              </Link>
-              <Link to="/clientes" className="link-menu">
-                <li className="dropdown-item">Cerrar sesión</li>
               </Link>
             </ul>
           )}
@@ -100,9 +138,29 @@ const BarraLateral = ({ isOpen }) => {
 
         {/* Informes */}
         <div className="cont-item-barra" onClick={() => handleToggle('informes')}>
-          <div className="cont-item-icono">
-            <BarChartIcon sx={{ width: 25, height: 25, color: 'green' }} />
-          </div>
+          {isOpen ? (
+            <div className="cont-item-icono">
+              <BarChartIcon sx={{ width: 25, height: 25, color: 'green' }} />
+            </div>
+          ) : (
+            <Tooltip
+              title="Informes"
+              placement="right"
+              open={!isOpen && tooltipOpen === 'informes'}
+              disableHoverListener
+              disableFocusListener
+              disableTouchListener
+            >
+              <div
+                className="cont-item-icono"
+                onMouseEnter={() => setTooltipOpen('informes')}
+                onMouseLeave={() => setTooltipOpen(null)}
+              >
+                <BarChartIcon sx={{ width: 25, height: 25, color: 'green' }} />
+              </div>
+            </Tooltip>
+
+          )}
           {isOpen && <div className="cont-item-texto"><p>Informes</p></div>}
           {isOpen && (
             <div className="cont-item-btn">
@@ -140,9 +198,29 @@ const BarraLateral = ({ isOpen }) => {
 
         {/* Artículos */}
         <div className="cont-item-barra" onClick={() => handleToggle('articulos')}>
-          <div className="cont-item-icono">
-            <LocalMallIcon sx={{ width: 25, height: 25, color: 'red' }} />
-          </div>
+          {isOpen ? (
+            <div className="cont-item-icono">
+              <LocalMallIcon sx={{ width: 25, height: 25, color: 'green' }} />
+            </div>
+          ) : (
+            <Tooltip
+              title="Artículos"
+              placement="right"
+              open={!isOpen && tooltipOpen === 'articulos'}
+              disableHoverListener
+              disableFocusListener
+              disableTouchListener
+            >
+              <div
+                className="cont-item-icono"
+                onMouseEnter={() => setTooltipOpen('articulos')}
+                onMouseLeave={() => setTooltipOpen(null)}
+              >
+                <LocalMallIcon sx={{ width: 25, height: 25, color: 'red' }} />
+              </div>
+            </Tooltip>
+
+          )}
           {isOpen && <div className="cont-item-texto"><p>Artículos</p></div>}
           {isOpen && (
             <div className="cont-item-btn">
@@ -171,10 +249,29 @@ const BarraLateral = ({ isOpen }) => {
 
         {/* Administración de Inventario */}
         <div className="cont-item-barra" onClick={() => handleToggle('adminDeInventario')}>
-          <div className="cont-item-icono">
-            <InventoryIcon sx={{ width: 25, height: 25, color: 'green' }} />
-          </div>
-          {isOpen && <div className="cont-item-texto"><p>Administración de Inventario</p></div>}
+          {isOpen ? (
+            <div className="cont-item-icono">
+              <InventoryIcon sx={{ width: 25, height: 25, color: 'green' }} />
+            </div>
+          ) : (
+            <Tooltip
+              title="Administración de inventario"
+              placement="right"
+              open={!isOpen && tooltipOpen === 'adminDeInventario'}
+              disableHoverListener
+              disableFocusListener
+              disableTouchListener
+            >
+              <div
+                className="cont-item-icono"
+                onMouseEnter={() => setTooltipOpen('adminDeInventario')}
+                onMouseLeave={() => setTooltipOpen(null)}
+              >
+                <InventoryIcon sx={{ width: 25, height: 25, color: 'green' }} />
+              </div>
+            </Tooltip>
+          )}
+          {isOpen && <div className="cont-item-texto"><p>Admin de Inventario</p></div>}
           {isOpen && (
             <div className="cont-item-btn">
               <button
@@ -190,36 +287,50 @@ const BarraLateral = ({ isOpen }) => {
           )}
           {adminDeInventarioOpen && (
             <ul className="dropdown-menu">
-              <Link to="/creaOrdenCompra" className="link-menu">
+              <Link to="/ordenesDeCompras" className="link-menu">
                 <li className="dropdown-item">Órdenes de compra</li>
               </Link>
-              <Link to="/ajusteStock" className="link-menu">
+              <Link to="/ajusteDeStock" className="link-menu">
                 <li className="dropdown-item">Ajustes de stock</li>
               </Link>
-              <Link to="/recuentoInventario" className="link-menu">
-                <li className="dropdown-item">Recuento de inventario</li>
-              </Link>
-              <Link to="/producciones" className="link-menu">
-                <li className="dropdown-item">Produccionnes</li>
-              </Link>
-              <Link to="/proveedores" className="link-menu">
+              <Link to="/ListaProveedores" className="link-menu">
                 <li className="dropdown-item">Proveedores</li>
               </Link>
               <Link to="/historialInventario" className="link-menu">
                 <li className="dropdown-item">Historial de inventario</li>
               </Link>
-              <Link to="/valoracionInventario" className="link-menu">
+              <Link to="/valoracionDeInventario" className="link-menu">
                 <li className="dropdown-item">Valoración de inventario</li>
               </Link>
             </ul>
           )}
-        </div>
+        </div>        
 
         {/* Administradores */}
         <div className="cont-item-barra" onClick={() => handleToggle('administradores')}>
-          <div className="cont-item-icono">
-            <HailIcon sx={{ width: 25, height: 25, color: 'green' }} />
-          </div>
+          {isOpen ? (
+            <div className="cont-item-icono">
+              <HailIcon sx={{ width: 25, height: 25, color: 'green' }} />
+            </div>
+          ) : (
+            <Tooltip
+              title="Administradores"
+              placement="right"
+              open={!isOpen && tooltipOpen === 'administradores'}
+              disableHoverListener
+              disableFocusListener
+              disableTouchListener
+            >
+              <div
+                className="cont-item-icono"
+                onMouseEnter={() => setTooltipOpen('administradores')}
+                onMouseLeave={() => setTooltipOpen(null)}
+              >
+                <HailIcon sx={{ width: 25, height: 25, color: 'green' }} />
+              </div>
+            </Tooltip>
+
+          )}
           {isOpen && <div className="cont-item-texto"><p>Administradores</p></div>}
           {isOpen && (
             <div className="cont-item-btn">
@@ -248,9 +359,29 @@ const BarraLateral = ({ isOpen }) => {
 
         {/* Empleados */}
         <div className="cont-item-barra" onClick={() => handleToggle('empleados')}>
-          <div className="cont-item-icono">
-            <ContactEmergencyIcon sx={{ width: 25, height: 25, color: 'green' }} />
-          </div>
+          {isOpen ? (
+            <div className="cont-item-icono">
+              <ContactEmergencyIcon sx={{ width: 25, height: 25, color: 'green' }} />
+            </div>
+          ) : (
+            <Tooltip
+              title="Empleados"
+              placement="right"
+              open={!isOpen && tooltipOpen === 'empleados'}
+              disableHoverListener
+              disableFocusListener
+              disableTouchListener
+            >
+              <div
+                className="cont-item-icono"
+                onMouseEnter={() => setTooltipOpen('empleados')}
+                onMouseLeave={() => setTooltipOpen(null)}
+              >
+                <ContactEmergencyIcon sx={{ width: 25, height: 25, color: 'green' }} />
+              </div>
+            </Tooltip>
+
+          )}
           {isOpen && <div className="cont-item-texto"><p>Empleados</p></div>}
           {isOpen && (
             <div className="cont-item-btn">
@@ -279,9 +410,29 @@ const BarraLateral = ({ isOpen }) => {
 
         {/* Clientes */}
         <div className="cont-item-barra" onClick={() => handleToggle('clientes')}>
-          <div className="cont-item-icono">
-            <HailIcon sx={{ width: 25, height: 25, color: 'grey' }} />
-          </div>
+          {isOpen ? (
+            <div className="cont-item-icono">
+              <HailIcon sx={{ width: 25, height: 25, color: 'green' }} />
+            </div>
+          ) : (
+            <Tooltip
+              title="Clientes"
+              placement="right"
+              open={!isOpen && tooltipOpen === 'clientes'}
+              disableHoverListener
+              disableFocusListener
+              disableTouchListener
+            >
+              <div
+                className="cont-item-icono"
+                onMouseEnter={() => setTooltipOpen('clientes')}
+                onMouseLeave={() => setTooltipOpen(null)}
+              >
+                <HailIcon sx={{ width: 25, height: 25, color: 'grey' }} />
+              </div>
+            </Tooltip>
+
+          )}
           {isOpen && <div className="cont-item-texto"><p>Clientes</p></div>}
           {isOpen && (
             <div className="cont-item-btn">
@@ -310,9 +461,29 @@ const BarraLateral = ({ isOpen }) => {
 
         {/* Proveedores */}
         <div className="cont-item-barra" onClick={() => handleToggle('proveedores')}>
-          <div className="cont-item-icono">
-            <HailIcon sx={{ width: 25, height: 25, color: 'grey' }} />
-          </div>
+          {isOpen ? (
+            <div className="cont-item-icono">
+              <HailIcon sx={{ width: 25, height: 25, color: 'green' }} />
+            </div>
+          ) : (
+            <Tooltip
+              title="Proveedores"
+              placement="right"
+              open={!isOpen && tooltipOpen === 'proveedores'}
+              disableHoverListener
+              disableFocusListener
+              disableTouchListener
+            >
+              <div
+                className="cont-item-icono"
+                onMouseEnter={() => setTooltipOpen('proveedores')}
+                onMouseLeave={() => setTooltipOpen(null)}
+              >
+                <HailIcon sx={{ width: 25, height: 25, color: 'grey' }} />
+              </div>
+            </Tooltip>
+
+          )}
           {isOpen && <div className="cont-item-texto"><p>Proveedores</p></div>}
           {isOpen && (
             <div className="cont-item-btn">
@@ -332,8 +503,56 @@ const BarraLateral = ({ isOpen }) => {
               <Link to="/listaProveedores" className="link-menu">
                 <li className="dropdown-item">Listar Proveedores</li>
               </Link>
-              <Link to="/crearProveedores" className="link-menu">
-                <li className="dropdown-item">otra opc</li>
+              <Link to="/creaArticuloProveedor" className="link-menu">
+                <li className="dropdown-item">Cargar articulo</li>
+              </Link>
+            </ul>
+          )}
+        </div>
+
+        {/* Lista Ventas */}
+        <div className="cont-item-barra" onClick={() => handleToggle('ventas')}>
+          {isOpen ? (
+            <div className="cont-item-icono">
+              <ReceiptLongIcon sx={{ width: 25, height: 25, color: 'green' }} />
+            </div>
+          ) : (
+            <Tooltip
+              title="Ventas"
+              placement="right"
+              open={!isOpen && tooltipOpen === 'ventas'}
+              disableHoverListener
+              disableFocusListener
+              disableTouchListener
+            >
+              <div
+                className="cont-item-icono"
+                onMouseEnter={() => setTooltipOpen('ventas')}
+                onMouseLeave={() => setTooltipOpen(null)}
+              >
+                <ReceiptLongIcon sx={{ width: 25, height: 25, color: 'green' }} />
+              </div>
+            </Tooltip>
+
+          )}
+          {isOpen && <div className="cont-item-texto"><p>Ventas</p></div>}
+          {isOpen && (
+            <div className="cont-item-btn">
+              <button
+                className="btn-down"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggle('ventas');
+                }}
+              >
+                <KeyboardArrowDownIcon />
+              </button>
+            </div>
+          )}
+          {ventasOpen && (
+            <ul className="dropdown-menu">
+              <Link to="/listaVentas" className="link-menu">
+                <li className="dropdown-item">Listar ventas</li>
               </Link>
             </ul>
           )}

@@ -1,0 +1,296 @@
+.form-venta-section {
+    width: 90%;
+    margin: 0 auto;
+}
+
+.form-venta-card {
+    padding: 28px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #d9e4f2;
+    box-shadow: 0 20px 46px rgba(31, 56, 96, 0.12);
+}
+
+.form-venta-header {
+    margin-bottom: 22px;
+}
+
+.form-venta-kicker {
+    margin: 0 0 8px;
+    color: #4d70a9;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.form-venta-header h2 {
+    margin: 0;
+    color: #17345d;
+    font-size: 1.8rem;
+}
+
+.form-venta-copy {
+    margin: 8px 0 0;
+    color: #5d718d;
+    line-height: 1.5;
+}
+
+.form-venta {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.form-venta-row {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 1.4fr 1.2fr 1fr 1fr;
+    gap: 14px;
+    align-items: start;
+}
+
+.form-venta-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-venta-field label {
+    color: #21446f;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.form-venta-field input {
+    height: 46px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid #cdd8e6;
+    background: #fbfdff;
+    color: #1b3557;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.form-venta-field select {
+    height: 46px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid #cdd8e6;
+    background: #fbfdff;
+    color: #1b3557;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.form-venta-field input:focus {
+    border-color: #3c7be0;
+    box-shadow: 0 0 0 4px rgba(60, 123, 224, 0.12);
+    background: #fff;
+}
+
+.form-venta-field select:focus {
+    border-color: #3c7be0;
+    box-shadow: 0 0 0 4px rgba(60, 123, 224, 0.12);
+    background: #fff;
+}
+
+.form-venta-field.is-error input,
+.form-venta-field.is-error select {
+    border-color: #d14343;
+    background: #fff8f8;
+    box-shadow: 0 0 0 4px rgba(209, 67, 67, 0.08);
+}
+
+.form-venta-error {
+    font-size: 0.78rem;
+    color: #c53a3a;
+    font-weight: 600;
+}
+
+.form-venta-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.form-venta-items-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px;
+    border: 1px solid #d9e4f2;
+    border-radius: 18px;
+    background: #f8fbff;
+}
+
+.form-venta-items-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.form-venta-items-header h3 {
+    margin: 0;
+    color: #17345d;
+    font-size: 1.1rem;
+}
+
+.form-venta-items-header p {
+    margin: 6px 0 0;
+    color: #5d718d;
+    font-size: 0.9rem;
+}
+
+.form-venta-add-item {
+    border: none;
+    border-radius: 999px;
+    padding: 11px 16px;
+    background: #e8f1ff;
+    color: #1d5cb8;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.form-venta-items-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-venta-items-grid-head {
+    color: #5e7698;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.form-venta-item-row {
+    display: grid;
+    grid-template-columns: 64px 1.2fr 120px 1.35fr 1.15fr 1.2fr 60px;
+    gap: 12px;
+    align-items: center;
+    padding: 14px;
+    border: 1px solid #dce7f4;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.form-venta-item-cell,
+.form-venta-item-field,
+.form-venta-item-remove-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-venta-item-label,
+.form-venta-item-field label {
+    color: #5e7698;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.15;
+    min-height: 34px;
+    display: flex;
+    align-items: flex-end;
+}
+
+.form-venta-item-index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #dbe8ff 0%, #eef4ff 100%);
+    color: #1f4f9c;
+    font-weight: 800;
+}
+
+.form-venta-item-row .form-venta-field {
+    gap: 8px;
+}
+
+.form-venta-item-remove-cell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.form-venta-item-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 12px;
+    background: #fff1f1;
+    color: #ca4a4a;
+    cursor: pointer;
+}
+
+.form-venta-submit {
+    border: none;
+    border-radius: 14px;
+    padding: 13px 22px;
+    background: linear-gradient(135deg, #1e7cdf 0%, #144ea8 100%);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 16px 34px rgba(20, 78, 168, 0.22);
+}
+
+.form-venta-submit:hover {
+    filter: brightness(1.05);
+}
+
+@media (max-width: 1180px) {
+    .form-venta-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .form-venta-item-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 780px) {
+    .form-venta-card {
+        padding: 20px;
+    }
+
+    .form-venta-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-venta-actions {
+        justify-content: stretch;
+    }
+
+    .form-venta-items-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-venta-item-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-venta-item-index {
+        width: 100%;
+    }
+
+    .form-venta-item-remove-cell {
+        justify-content: flex-start;
+    }
+
+    .form-venta-submit {
+        width: 100%;
+    }
+}

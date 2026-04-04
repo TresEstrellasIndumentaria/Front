@@ -1,77 +1,54 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import "./styles.css";
 
 export default function ProveedorSelect({
-    proveedores,
+    proveedores = [],
     value,
     onSelect,
-    onNuevoProveedor,
+    onNuevoProveedor
 }) {
     const [abierto, setAbierto] = useState(false);
-    const [busqueda, setBusqueda] = useState("");
-    const ref = useRef(null);
-
-    /* =======================
-       CLICK AFUERA
-    ======================= */
-    useEffect(() => {
-        const handler = (e) => {
-            if (ref.current && !ref.current.contains(e.target)) {
-                setAbierto(false);
-            }
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, []);
-
-    const filtrados = proveedores.filter((p) =>
-        p.nombre.toLowerCase().includes(busqueda.toLowerCase())
-    );
 
     return (
-        <div className="select-container" ref={ref}>
-            <input
-                value={value ? value.nombre : busqueda}
-                placeholder="Selecciona un proveedor"
-                onChange={(e) => {
-                    setBusqueda(e.target.value);
-                    setAbierto(true);
-                }}
-                onFocus={() => setAbierto(true)}
-                className="select-input"
-            />
+        <div className="proveedor-select">
+            <label>Proveedor</label>
+
+            <div className="input-con-boton">
+                <input
+                    type="text"
+                    readOnly
+                    value={value ? value.nombre : ""}
+                    placeholder="Seleccionar proveedor"
+                    onClick={() => setAbierto(!abierto)}
+                />
+
+                <button
+                    type="button"
+                    className="btn-nuevo"
+                    onClick={onNuevoProveedor}
+                >
+                    + Nuevo
+                </button>
+            </div>
 
             {abierto && (
-                <div className="dropdown">
-                    {filtrados.length === 0 && (
-                        <div className="dropdown-item disabled">
-                            Todavía no tienes proveedores
-                        </div>
+                <ul className="dropdown">
+                    {proveedores.length === 0 && (
+                        <li className="vacio">No hay proveedores</li>
                     )}
 
-                    {filtrados.map((p) => (
-                        <div
-                            key={p._id}
-                            className="dropdown-item"
+                    {proveedores.map((prov) => (
+                        <li
+                            key={prov._id}
                             onClick={() => {
-                                onSelect(p);
-                                setBusqueda("");
+                                onSelect(prov);
                                 setAbierto(false);
                             }}
                         >
-                            {p.nombre}
-                        </div>
+                            {prov.nombre}
+                        </li>
                     ))}
-
-                    <div
-                        className="dropdown-item agregar"
-                        onClick={() => {
-                            setAbierto(false);
-                            onNuevoProveedor();
-                        }}
-                    >
-                        + Añadir proveedor
-                    </div>
-                </div>
+                </ul>
             )}
         </div>
     );

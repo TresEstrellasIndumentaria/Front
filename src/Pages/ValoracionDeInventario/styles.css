@@ -1,0 +1,225 @@
+.valoracion-page {
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 24px;
+    color: #1f2937;
+}
+
+.valoracion-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.valoracion-filter {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 0 14px;
+    border: 1px solid #d7dee8;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.valoracion-filter input,
+.valoracion-filter select {
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: #111827;
+    font-size: 14px;
+}
+
+.valoracion-filter--select select {
+    min-width: 220px;
+    appearance: none;
+    padding-right: 18px;
+}
+
+.muted {
+    color: #6b7280;
+}
+
+.valoracion-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
+    border: 1px solid #d7e8ff;
+    color: #1d4ed8;
+}
+
+.valoracion-note p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.valoracion-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.valoracion-summary-card,
+.valoracion-table-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.valoracion-summary-card {
+    padding: 20px;
+}
+
+.valoracion-summary-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.valoracion-summary-card strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #0f172a;
+    font-size: clamp(24px, 3vw, 34px);
+    line-height: 1.05;
+}
+
+.valoracion-summary-card p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.valoracion-table-card {
+    overflow: hidden;
+}
+
+.valoracion-table-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px 24px 12px;
+}
+
+.valoracion-table-head h2 {
+    margin: 0 0 4px;
+    color: #111827;
+    font-size: 20px;
+}
+
+.valoracion-table-head p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.valoracion-table-wrap {
+    overflow-x: auto;
+    padding: 0 10px 10px;
+}
+
+.valoracion-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 980px;
+}
+
+.valoracion-table thead th {
+    padding: 14px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.valoracion-table tbody td {
+    padding: 14px;
+    border-bottom: 1px solid #eef2f7;
+    color: #111827;
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+.valoracion-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.valoracion-stock-negativo {
+    color: #b91c1c !important;
+    font-weight: 700;
+}
+
+.valoracion-empty {
+    padding: 24px;
+    text-align: center;
+}
+
+.valoracion-empty h3 {
+    margin: 0 0 8px;
+    color: #111827;
+}
+
+.valoracion-empty p {
+    margin: 0;
+    color: #6b7280;
+}
+
+@media (max-width: 1200px) {
+    .valoracion-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .valoracion-page {
+        padding: 16px;
+    }
+
+    .valoracion-toolbar {
+        flex-direction: column;
+    }
+
+    .valoracion-filter,
+    .valoracion-filter--select {
+        width: 100%;
+    }
+
+    .valoracion-filter--select select,
+    .valoracion-filter input {
+        width: 100%;
+    }
+
+    .valoracion-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .valoracion-summary-card {
+        padding: 18px;
+    }
+
+    .valoracion-table-head {
+        padding: 18px 18px 10px;
+    }
+}

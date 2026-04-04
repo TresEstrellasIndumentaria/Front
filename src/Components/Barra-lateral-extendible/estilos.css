@@ -14,7 +14,7 @@
 
 /* Barra extendida */
 .sidebar.open {
-  width: 300px;
+  width: 300px; /* debe coincidir con margin-left: 300px;  ancho sidebar abierta de .dashboard-content*/
   display: flex;
   flex-direction: column;
   justify-content: start;

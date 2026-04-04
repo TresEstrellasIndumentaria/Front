@@ -1,66 +1,72 @@
-import React, { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppContext } from '../../Context';
-import { NavLink } from 'react-router-dom';
 import { getUsuarioByRol } from '../../Redux/Actions';
+import PopupPersona from '../../Components/PopupPersona';
 import BotonEliminarUsuario from '../../Components/BotonEliminarUsuario';
-import SearchBar from '../../Components/SearchBar';
+import SearchBar from '../../Components/BuscaArticulo';
 import './styles.css';
 
-function ListaUsuariosPorRol({rol}) {
+function ListaUsuariosPorRol({ rol }) {
+    const dispatch = useDispatch();
+    const { search, setSearch } = useContext(AppContext);
 
     const allUsuarios = useSelector(state => state.usuariosRol);
-    const [buscaUsuario, setBuscaUsuario] = useState(allUsuarios);
-    //const [usuarioAeditar, setUsuarioAeditar] = useState(null);
-    const dispatch = useDispatch();
-    const contexto = useContext(AppContext);
+    const [mostrarPopup, setMostrarPopup] = useState(false);
+    const [personaSeleccionada, setPersonaSeleccionada] = useState(null);
 
-    //onChange para pasarle al comp. hijo searchbar - a pesar q el input está en el hijo
-    const handleOnChangeBuscaUsuario = (e) => {
-        contexto.setSearch(e.target.value);
+    const refrescarLista = () => {
+        dispatch(getUsuarioByRol(rol));
     };
 
-    /* const handleEdit = (empleado) => {
-        setUsuarioAeditar(empleado);
-    }; */
-
-    //trae usuarios
-        useEffect(() => {
-            dispatch(getUsuarioByRol(rol));
-        }, [dispatch, rol]);
-
-    //para la SearchBar
     useEffect(() => {
-        setBuscaUsuario(
-            allUsuarios?.filter(c =>
-                (c.nombreApellido || "")
-                    .toLowerCase()
-                    .includes((contexto.search || "").toLowerCase())
-            )
-        );
-    }, [allUsuarios, contexto.search]);
+        refrescarLista();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rol]);
 
+    const usuariosFiltrados = useMemo(() => {
+        return allUsuarios?.filter(u =>
+            `${u.nombre} ${u.apellido}`.toLowerCase()
+                .includes((search || "").toLowerCase())
+        );
+    }, [allUsuarios, search]);
 
     return (
-        <div className='cont-principal-listaEmp'>
+        <div className="cont-principal-listaEmp">
             <div className="header-lista">
-                <h2>
-                    Lista de {
-                        rol === "administrador" 
-                        ? "Administradores"
-                        : rol === "empleado" 
-                        ? "Emplados"
-                        : rol === "cliente"
-                        ? "Clientes"
-                        : "Proveedores"
-                    }
-                </h2>
-                {/* searchBar */}
-                <SearchBar handleOnChange={handleOnChangeBuscaUsuario} vista={"usuario"} />
-                <NavLink to='/creaEmpleado' className='navLink-btnCreaEmp'>
-                    <button className="btn-add">+ Añadir Empleado</button>
-                </NavLink>
+                <h2>Lista de {rol.toLowerCase()}s</h2>
+
+                <SearchBar
+                    handleOnChange={(e) => setSearch(e.target.value)}
+                    vista="usuario"
+                />
+
+                <button
+                    className="btn-add"
+                    onClick={() => {
+                        setPersonaSeleccionada(null);
+                        setMostrarPopup(true);
+                    }}
+                >
+                    + Añadir {rol.toLowerCase()}
+                </button>
             </div>
+
+            {mostrarPopup && (
+                <PopupPersona
+                    rol={rol}
+                    persona={personaSeleccionada}
+                    onClose={() => {
+                        setMostrarPopup(false);
+                        setPersonaSeleccionada(null);
+                    }}
+                    onSuccess={() => {
+                        refrescarLista();
+                        setMostrarPopup(false);
+                        setPersonaSeleccionada(null);
+                    }}
+                />
+            )}
 
             <table className="tabla-empleados">
                 <thead>
@@ -74,19 +80,42 @@ function ListaUsuariosPorRol({rol}) {
                     </tr>
                 </thead>
                 <tbody>
-                    {buscaUsuario?.map((emp, i) => (
-                        <tr key={i}>
+                    {usuariosFiltrados?.length === 0 && (
+                        <tr>
+                            <td colSpan="6" align="center">
+                                No hay usuarios
+                            </td>
+                        </tr>
+                    )}
+
+                    {usuariosFiltrados?.map(emp => (
+                        <tr key={emp._id}>
                             <td>{emp.nombre}</td>
                             <td>{emp.apellido}</td>
                             <td>{emp.email}</td>
-                            <td>{emp.telefono.area+emp.telefono.numero}</td>
-                            <td>{emp.rolAsignado}</td>
+                            <td>
+                                {emp.telefono
+                                    ? `(${emp.telefono.area}) ${emp.telefono.numero}`
+                                    : "-"}
+                            </td>
+                            <td>{emp.rol}</td>
                             <td className="acciones">
-                                <NavLink to={`/modificaUsuario/${rol}/${emp._id}`} className='nav-modifUsuario'>
-                                    <button className="btn-edit" /* onClick={() => handleEdit(emp)} */>Editar</button>
-                                </NavLink>
+                                <button
+                                    className="btn-edit"
+                                    onClick={() => {
+                                        setPersonaSeleccionada(emp);
+                                        setMostrarPopup(true);
+                                    }}
+                                >
+                                    Editar
+                                </button>
 
-                                <BotonEliminarUsuario _id={emp._id} nombre={emp.nombre} apellido={emp.apellido} />
+                                <BotonEliminarUsuario
+                                    _id={emp._id}
+                                    nombre={emp.nombre}
+                                    apellido={emp.apellido}
+                                    onDelete={refrescarLista}
+                                />
                             </td>
                         </tr>
                     ))}

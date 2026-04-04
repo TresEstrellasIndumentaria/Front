@@ -1,135 +1,248 @@
-/* --- CONTENEDOR GENERAL --- */
 .inventario-cont {
-    margin-top: 25px;
-    padding: 20px;
+    margin-top: 8px;
+    padding: 28px;
     background: #fff;
-    border-radius: 10px;
-    border: 1px solid #e4e4e4;
+    border: 1px solid #dbe3d6;
+    border-radius: 22px;
+    box-shadow: 0 12px 32px rgba(41, 61, 41, 0.06);
 }
 
 .inventario-cont h3 {
-    font-size: 20px;
-    margin-bottom: 15px;
-    font-weight: 600;
-    color: #333;
+    margin: 0 0 26px;
+    font-size: 2rem;
+    font-weight: 500;
+    color: #263327;
 }
 
+.inventario-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+}
 
-/* --- TABLA --- */
+.inventario-switch-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #2f3c30;
+    font-size: 1rem;
+}
+
+.inventario-switch-label svg {
+    color: #8a9489;
+}
+
 .tabla-compuesto {
     width: 100%;
+    margin-top: 18px;
     border-collapse: collapse;
 }
 
 .tabla-compuesto thead th {
+    padding: 14px 0;
+    border-bottom: 1px solid #dfe6dc;
     text-align: left;
-    padding-bottom: 8px;
-    color: #555;
+    color: #6f786f;
+    font-size: 0.95rem;
     font-weight: 600;
-    font-size: 14px;
 }
 
 .tabla-compuesto tbody td {
-    padding: 10px 5px;
+    padding: 18px 0;
+    border-bottom: 1px solid #e9eee7;
     vertical-align: middle;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 14px;
+    color: #273327;
 }
 
-/* Cantidad input */
-.tabla-compuesto input[type="number"] {
-    width: 80px;
-    padding: 6px;
+.tabla-compuesto tfoot td {
+    padding: 18px 0 0;
     border: none;
-    border-bottom: 1px solid #aaa;
-    outline: none;
-    text-align: center;
-    font-size: 14px;
+    vertical-align: bottom;
+}
+
+.tabla-compuesto tbody td:nth-child(2),
+.tabla-compuesto thead th:nth-child(2) {
+    width: 180px;
+}
+
+.tabla-compuesto tbody td:nth-child(3),
+.tabla-compuesto thead th:nth-child(3) {
+    width: 160px;
+}
+
+.tabla-compuesto tbody td:last-child,
+.tabla-compuesto thead th:last-child {
+    width: 56px;
+    text-align: right;
+}
+
+.tabla-compuesto strong {
+    display: block;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.componente-ref {
+    display: block;
+    margin-top: 4px;
+    color: #7f8880;
+    font-size: 0.9rem;
+}
+
+.tabla-compuesto input[type="number"] {
+    width: 100px;
+    padding: 8px 6px;
+    border: none;
+    border-bottom: 1px solid #cfd8c9;
     background: transparent;
+    text-align: right;
+    font-size: 1rem;
+    outline: none;
 }
 
 .tabla-compuesto input[type="number"]:focus {
-    border-bottom: 1px solid #6aa84f;
+    border-bottom-color: #6aa84f;
 }
 
-
-/* --- BOTÓN ELIMINAR --- */
 .btn-trash {
-    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
     border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: #7f8680;
     cursor: pointer;
-    font-size: 18px;
-    padding: 5px 8px;
-    color: #999;
+    transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .btn-trash:hover {
-    color: #d9534f;
+    background: #f2f4f1;
+    color: #d34b4b;
 }
 
-
-/* --- BUSCADOR --- */
-.buscador {
-    position: relative;
-    margin-top: 10px;
-}
-
-.buscador input {
+.inventario-busqueda,
+.inventario-add-cantidad {
     width: 100%;
-    padding: 10px 12px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-    font-size: 14px;
-}
-
-.buscador input:focus {
-    border-color: #6aa84f;
+    padding: 12px 0;
+    border: none;
+    border-bottom: 1px solid #d5ddd1;
+    background: transparent;
+    color: #546254;
+    font-size: 0.98rem;
     outline: none;
 }
 
-
-/* --- DROPDOWN --- */
-.dropdown {
-    position: absolute;
-    top: 42px;
-    left: 0;
-    width: 100%;
-    max-height: 250px;
-    overflow-y: auto;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    z-index: 10;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-    display: none;
+.inventario-busqueda:focus,
+.inventario-add-cantidad:focus {
+    border-bottom-color: #6aa84f;
 }
 
-/* Mostrar dropdown cuando el input está en foco */
-.buscador input:focus + .dropdown {
-    display: block;
-}
-
-.dropdown .opcion {
-    padding: 10px;
-    cursor: pointer;
-    font-size: 14px;
-    border-bottom: 1px solid #f3f3f3;
-}
-
-.dropdown .opcion:last-child {
-    border-bottom: none;
-}
-
-.dropdown .opcion:hover {
-    background: #f1f8e9;
-}
-
-
-/* --- TOTAL --- */
-.total {
+.tabla-compuesto-add-row td:nth-child(2) .inventario-add-cantidad {
+    max-width: 100px;
     text-align: right;
-    margin-top: 15px;
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
+}
+
+.inventario-coste-preview {
+    min-height: 46px;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 0 12px;
+    color: #2d382d;
+    font-weight: 500;
+}
+
+.inventario-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid #d6ddd2;
+    border-radius: 999px;
+    background: #f5f7f4;
+    color: #7f8680;
+    cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.inventario-clear-btn:hover:not(:disabled) {
+    background: #ecefea;
+    border-color: #c8d1c4;
+    color: #d34b4b;
+}
+
+.inventario-clear-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.inventario-total {
+    display: flex;
+    justify-content: flex-end;
+    gap: 36px;
+    padding-top: 42px;
+    color: #253026;
+    font-size: 1rem;
+}
+
+.inventario-total strong {
+    min-width: 120px;
+    text-align: right;
+    font-size: 1.05rem;
+}
+
+@media (max-width: 768px) {
+    .inventario-cont {
+        padding: 20px;
+    }
+
+    .inventario-cont h3 {
+        font-size: 1.65rem;
+    }
+
+    .tabla-compuesto thead {
+        display: none;
+    }
+
+    .tabla-compuesto,
+    .tabla-compuesto tbody,
+    .tabla-compuesto tr,
+    .tabla-compuesto td {
+        display: block;
+        width: 100%;
+    }
+
+    .tabla-compuesto tr {
+        padding: 14px 0;
+        border-bottom: 1px solid #e9eee7;
+    }
+
+    .tabla-compuesto tbody td {
+        border: none;
+        padding: 6px 0;
+    }
+
+    .tabla-compuesto tbody td:last-child {
+        text-align: left;
+    }
+
+    .tabla-compuesto tfoot,
+    .tabla-compuesto tfoot tr,
+    .tabla-compuesto tfoot td {
+        display: block;
+        width: 100%;
+    }
+
+    .tabla-compuesto-add-row td {
+        padding: 10px 0 0;
+    }
+
+    .inventario-total {
+        justify-content: space-between;
+        gap: 12px;
+    }
 }

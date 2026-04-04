@@ -3,56 +3,84 @@ import AppProvider from './Context';
 import DashboardLayout from './Components/DashboardLayout';
 import Home from './Pages/Home';
 import LoginPage from './Pages/Login';
-import RegistrarsePage from './Pages/Registrarse';
 import ModifUsuario from './Pages/ModifUsuario';
 import ListaUsuariosPorRol from './Pages/ListaUsuariosPorRol';
-import './App.css';
 import ListaArticulos from './Pages/ListaArticulos';
 import FormArticulo from './Components/FormArticulo';
+import ModifArticulo from './Pages/ModifArticulo';
 import ListaCategorias from './Pages/ListaCategorias';
+import PrivateRoute from './Routes/PrivateRoute';
+import OrdenCompra from './Components/OrdenDeCompra';
+import Registrarse from './Components/Registrarse';
+import ModifDatosPersonales from './Pages/ModifDatosPersonales';
+import ListaOrdenesDeCompraProveedores from './Pages/ListaOrdenesDeCompraProveedores';
+import PopupCategoria from './Components/FormCategoria';
+import AjusteDeStock from './Pages/AjusteDeStock';
+import ListaProveedores from './Pages/ListaProveedores';
+import HistorialDeInventario from './Pages/HistorialDeInventario';
+import ValoracionDeInventario from './Pages/ValoracionDeInventario';
+import ListaVentas from './Pages/ListaVentas';
+import Ventas from './Pages/Ventas';
+import './App.css';
+import FormArticuloProveedoraa from './Components/FormArticuloProveedor';
+
 
 function App() {
   return (
     <AppProvider>
       <div className="App">
         <Routes>
-          {/* rutas publicas */}
-          <Route path='/login' element={<LoginPage />} />
-          <Route path='/registrarse' element={<RegistrarsePage />} /> {/* puede que no se necesite SOLO el Admin va a crear usuarios */}
-          {/* Dashboard con navbar + sidebar fijos */}
-          <Route path="/" element={<DashboardLayout />}>
-            <Route index element={<Home />} />
-            {/* Rutas Admins */}
-            <Route path="listaAdmins" element={<ListaUsuariosPorRol rol={"administrador"} />} />
-            <Route path="creaAdmin" element={<RegistrarsePage rol='administrador' operacion='crear'/>} />
-            <Route path='modificaUsuario/:rol/:id' element={<ModifUsuario />} />
-            {/* Rutas Emp */}
-            <Route path="listaEmpleados" element={<ListaUsuariosPorRol rol={"empleado"} />} />
-            <Route path="creaEmpleado" element={<RegistrarsePage rol='empleado' operacion='crear'/>} />
-            <Route path='modificaUsuario/:rol/:id' element={<ModifUsuario />} />
-            {/* Rutas Cliente */}
-            <Route path="listaClientes" element={<ListaUsuariosPorRol rol={"cliente"} />} />
-            <Route path="creaCliente" element={<RegistrarsePage rol='cliente' operacion='crear'/>} />
-            <Route path='modificaUsuario/:rol/:id' element={<ModifUsuario />} />
-            {/* Rutas Provee */}
-            <Route path="listaProveedores" element={<ListaUsuariosPorRol rol={"proveedor"} />} />
-            <Route path="creaProveedor" element={<RegistrarsePage rol='proveedor' operacion='crear'/>} />
-            <Route path='modificaUsuario/:rol/:id' element={<ModifUsuario />} />
-            {/* Rutas Categorías */}
-            <Route path='listaCategorias' element={<ListaCategorias/>} />
-            {/* Rutas Articulos */}
-            <Route path='listaArticulos' element={<ListaArticulos/>} />
-            <Route path='creaArticulo' element={<FormArticulo/>} />
-            
-            {/*<Route path="informes" element={<Informes />} />
-            <Route path="articulos" element={<Articulos />} /> */}
+          {/* RUTAS PUBLICAS */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* RUTAS PRIVADAS (logueado) */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/" element={<DashboardLayout />}>
+
+              {/* Home */}
+              <Route index element={<Home />} />
+
+              {/*DATOS PERSONALES (cualquier usuario logueado) */}
+              <Route path="mis-datos" element={<ModifDatosPersonales />}/>
+
+              {/*SOLO ADMIN */}
+              <Route element={<PrivateRoute allowedRoles={['ADMIN']} />}>
+
+                <Route path="creaPersona" element={<Registrarse />} />
+
+                <Route path="listaAdmins" element={<ListaUsuariosPorRol rol="ADMIN" />}/>
+
+                <Route path="listaEmpleados" element={<ListaUsuariosPorRol rol="EMPLEADO" />}/>
+
+                {/* Clientes */}
+                <Route path="listaClientes" element={<ListaUsuariosPorRol rol="CLIENTE" />}/>
+
+                <Route path="modificaUsuario/:rol/:id" element={<ModifUsuario />}/>
+                {/* Categorías */}
+                <Route path="listaCategorias" element={<ListaCategorias />} />
+                <Route path="modificaCategoria/:id" element={<PopupCategoria/>} />
+                {/* articulos */}
+                <Route path="listaArticulos" element={<ListaArticulos />} />
+                <Route path="creaArticulo" element={<FormArticulo />} />
+                <Route path="modificaArt/:id" element={<ModifArticulo />} />
+                <Route path="ordenesDeCompras" element={<ListaOrdenesDeCompraProveedores />} />
+                <Route path="ordenesDeCompras/nueva" element={<OrdenCompra />} />
+                <Route path="ordenesDeCompras/:id" element={<OrdenCompra />} />
+                <Route path="ajusteDeStock" element={<AjusteDeStock />} />
+                <Route path="historialDeInventario" element={<HistorialDeInventario/>} />
+                <Route path="historialInventario" element={<HistorialDeInventario/>} />
+                <Route path='valoracionDeInventario' element={<ValoracionDeInventario/>} />
+                {/* Proveedores */}
+                <Route path='/listaProveedores' element={<ListaProveedores/>} />
+                <Route path='/creaArticuloProveedor' element={<FormArticuloProveedoraa/>} />
+                {/* Ventas */}
+                <Route path='/listaVentas' element={<ListaVentas/>} />
+                <Route path='/ventas/nueva' element={<Ventas/>} />
+
+              </Route>
+            </Route>
           </Route>
         </Routes>
-
-
-        <footer>
-
-        </footer>
       </div>
     </AppProvider>
   );

@@ -5,13 +5,12 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import Swal from 'sweetalert2';
 import './estilos.css';
 
-function BotonEliminarUsuario({ _id, nombre, apellido }) {
+function BotonEliminarUsuario({ _id, nombre, apellido, onDelete }) {
     const dispatch = useDispatch();
 
     const handleOnClick = async () => {
         const confirm = await Swal.fire({
-            title: "¿Estás segur@?",
-            text: `De eliminar a ${nombre} ${apellido}!`,
+            title: `Desea eliminar a ${nombre} ${apellido}!`,
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#3085d6",
@@ -22,6 +21,7 @@ function BotonEliminarUsuario({ _id, nombre, apellido }) {
 
         if (confirm.isConfirmed) {
             const resp = await dispatch(eliminaUsuario(_id));
+            onDelete(); //refresca la lista
 
             if (resp?.message === 'Usuario eliminado correctamente') {
                 await Swal.fire({
