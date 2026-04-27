@@ -1,0 +1,73 @@
+.cuenta-corriente-page {
+    padding: 24px 18px 40px;
+    background:
+        radial-gradient(circle at top right, rgba(48, 163, 133, 0.16), transparent 28%),
+        linear-gradient(180deg, #eef7f5 0%, #f7fafc 46%, #edf3f8 100%);
+    min-height: 100%;
+}
+
+.cuenta-corriente-page-shell {
+    width: min(1240px, 100%);
+    margin: 0 auto;
+}
+
+.cuenta-corriente-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.cuenta-corriente-page-kicker {
+    margin: 0 0 6px;
+    color: #1c7d67;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.cuenta-corriente-page-header h1 {
+    margin: 0;
+    color: #133c52;
+    font-size: clamp(1.9rem, 2.5vw, 2.7rem);
+}
+
+.cuenta-corriente-page-subtitle {
+    margin: 8px 0 0;
+    color: #537187;
+    line-height: 1.5;
+}
+
+.cuenta-corriente-page-client {
+    min-width: 250px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(165, 194, 206, 0.4);
+    box-shadow: 0 14px 30px rgba(24, 52, 82, 0.1);
+}
+
+.cuenta-corriente-page-client span,
+.cuenta-corriente-page-client small {
+    display: block;
+    color: #658096;
+}
+
+.cuenta-corriente-page-client strong {
+    display: block;
+    margin: 6px 0 4px;
+    color: #163b53;
+    font-size: 1.05rem;
+}
+
+@media (max-width: 900px) {
+    .cuenta-corriente-page-header {
+        flex-direction: column;
+    }
+
+    .cuenta-corriente-page-client {
+        width: 100%;
+    }
+}

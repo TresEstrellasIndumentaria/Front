@@ -23,6 +23,13 @@ import ListaVentas from './Pages/ListaVentas';
 import Ventas from './Pages/Ventas';
 import './App.css';
 import FormArticuloProveedoraa from './Components/FormArticuloProveedor';
+import CuentaCorrienteCliente from './Pages/CuentaCorrienteCliente';
+import CuentaCorrienteProveedor from './Pages/CuentaCorrienteProveedor';
+import CobrosPage from './Pages/Cobros';
+import ListaCobros from './Pages/ListaCobros';
+import ResumenDeVentas from './Pages/ResumenDeVentas';
+import VentasPorArticulo from './Pages/VentasPorArticulo';
+import VentasPorCategorias from './Pages/VentasPorCategorias';
 
 
 function App() {
@@ -54,6 +61,7 @@ function App() {
 
                 {/* Clientes */}
                 <Route path="listaClientes" element={<ListaUsuariosPorRol rol="CLIENTE" />}/>
+                <Route path='cliente/:id/cuentaCorrient' element={<CuentaCorrienteCliente/>}/>
 
                 <Route path="modificaUsuario/:rol/:id" element={<ModifUsuario />}/>
                 {/* Categorías */}
@@ -71,12 +79,20 @@ function App() {
                 <Route path="historialInventario" element={<HistorialDeInventario/>} />
                 <Route path='valoracionDeInventario' element={<ValoracionDeInventario/>} />
                 {/* Proveedores */}
-                <Route path='/listaProveedores' element={<ListaProveedores/>} />
-                <Route path='/creaArticuloProveedor' element={<FormArticuloProveedoraa/>} />
+                <Route path='listaProveedores' element={<ListaProveedores/>} />
+                <Route path='proveedor/:id/cuentaCorrient' element={<CuentaCorrienteProveedor/>} />
+                <Route path='creaArticuloProveedor' element={<FormArticuloProveedoraa/>} />
                 {/* Ventas */}
-                <Route path='/listaVentas' element={<ListaVentas/>} />
-                <Route path='/ventas/nueva' element={<Ventas/>} />
-
+                <Route path='listaVentas' element={<ListaVentas/>} />
+                <Route path='ventas/nueva' element={<Ventas/>} />
+                <Route path='ventas/editar/:id' element={<Ventas/>} />
+                <Route path='cobros' element={<CobrosPage/>} />
+                <Route path='cobros/editar/:id' element={<CobrosPage/>} />
+                <Route path='listaCobros' element={<ListaCobros/>} />
+                {/* Informes */}
+                <Route path='resumenVentas' element={<ResumenDeVentas/>} />
+                <Route path='ventasPorArticulo' element={<VentasPorArticulo/>} />
+                <Route path='ventasPorCategorias' element={<VentasPorCategorias/>} />
               </Route>
             </Route>
           </Route>

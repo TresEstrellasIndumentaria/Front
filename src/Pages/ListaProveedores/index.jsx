@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -157,6 +158,13 @@ function ListaProveedores() {
                                 <td>{getTelefonoProveedor(prov)}</td>
                                 <td>{prov.email || '-'}</td>
                                 <td className="prov-actions">
+                                    <NavLink
+                                        to={`/proveedor/${prov._id}/cuentaCorrient`}
+                                        state={{ proveedor: prov }}
+                                        className="prov-btn-current-account"
+                                    >
+                                        Cuenta Corriente
+                                    </NavLink>
                                     <button
                                         type="button"
                                         className="prov-btn-edit"

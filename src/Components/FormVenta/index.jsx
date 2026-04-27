@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { getAllArticulos, getUsuarioByRol } from '../../Redux/Actions';
+import { crearRemito, getAllArticulos, getRemitoById, getUsuarioByRol, modificarRemito } from '../../Redux/Actions';
 import './styles.css';
 
 const clientesMock = [
@@ -77,28 +78,91 @@ const emptyForm = {
 };
 
 const createEmptyArticulo = () => ({
-    camiseta: '',
+    nombreCamiseta: '',
     numero: '',
     prenda: '',
     talle: '',
     observaciones: '',
 });
 
+const mapRemitoToForm = (remito) => ({
+    numeroCliente: remito?.numeroCliente || '',
+    razonSocial: remito?.razonSocial || '',
+    nombreApellido: remito?.nombreApellido || '',
+    email: remito?.email || '',
+    telefono: remito?.telefono || '',
+    cuit: remito?.cuit || '',
+});
+
+const resolvePrendaValue = (pedidoItem, articulos) => {
+    const prenda = String(pedidoItem?.prenda || '').trim();
+    if (!prenda) return '';
+
+    const exactId = articulos.find((articulo) => articulo?._id === prenda);
+    if (exactId) return exactId._id;
+
+    const normalizedPrenda = normalize(prenda);
+    const byName = articulos.find((articulo) => normalize(articulo?.nombre) === normalizedPrenda);
+    if (byName?._id) return byName._id;
+
+    const byContains = articulos.find((articulo) => normalize(articulo?.nombre).includes(normalizedPrenda));
+    if (byContains?._id) return byContains._id;
+
+    const containedByPrenda = articulos.find((articulo) => normalizedPrenda.includes(normalize(articulo?.nombre)));
+    if (containedByPrenda?._id) return containedByPrenda._id;
+
+    return prenda;
+};
+
+const mapPedidoToArticulos = (pedido, articulos) => {
+    if (!Array.isArray(pedido) || !pedido.length) return [createEmptyArticulo()];
+
+    return pedido.map((item) => ({
+        nombreCamiseta: item?.nombreCamiseta || '',
+        numero: item?.numero || '',
+        prenda: resolvePrendaValue(item, articulos),
+        talle: item?.talle || '',
+        observaciones: item?.observaciones || '',
+    }));
+};
+
 function FormVenta() {
     const dispatch = useDispatch();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { id } = useParams();
     const clientesState = useSelector((state) => state.usuariosRol || []);
     const articulosState = useSelector((state) => state.articulos || []);
+    const loading = useSelector((state) => state.loading);
+    const remitoActual = useSelector((state) => state.remitoActual);
     const [form, setForm] = useState(emptyForm);
     const [errors, setErrors] = useState({});
     const [articulosVenta, setArticulosVenta] = useState([createEmptyArticulo()]);
     const [articulosErrors, setArticulosErrors] = useState({});
+    const [remitoEnEdicion, setRemitoEnEdicion] = useState(location.state?.remito || null);
+    const isEditMode = Boolean(id);
 
     useEffect(() => {
         dispatch(getUsuarioByRol('CLIENTE'));
         if (!articulosState?.length) {
             dispatch(getAllArticulos());
         }
-    }, [dispatch, articulosState?.length]);
+        if (id) {
+            dispatch(getRemitoById(id));
+        }
+    }, [dispatch, articulosState?.length, id]);
+
+    useEffect(() => {
+        if (location.state?.remito) {
+            setRemitoEnEdicion(location.state.remito);
+        }
+    }, [location.state]);
+
+    useEffect(() => {
+        if (isEditMode && remitoActual?._id === id) {
+            setRemitoEnEdicion(remitoActual);
+        }
+    }, [id, isEditMode, remitoActual]);
 
     const clientes = useMemo(() => {
         const source = Array.isArray(clientesState) && clientesState.length ? clientesState : clientesMock;
@@ -110,6 +174,15 @@ function FormVenta() {
     const prendasDisponibles = useMemo(() => {
         return (articulosState || []).filter((art) => Array.isArray(art?.talles) && art.talles.length);
     }, [articulosState]);
+
+    useEffect(() => {
+        if (!remitoEnEdicion || !prendasDisponibles.length) return;
+
+        setForm(mapRemitoToForm(remitoEnEdicion));
+        setArticulosVenta(mapPedidoToArticulos(remitoEnEdicion.pedido, prendasDisponibles));
+        setErrors({});
+        setArticulosErrors({});
+    }, [prendasDisponibles, remitoEnEdicion]);
 
     const applyClienteData = (cliente) => {
         setForm({
@@ -201,6 +274,31 @@ function FormVenta() {
         return Array.isArray(articulo?.talles) ? articulo.talles : [];
     };
 
+    const getOpcionesPrenda = (prendaValue) => {
+        const existeEnCatalogo = prendasDisponibles.some((prenda) => prenda._id === prendaValue);
+        if (!prendaValue || existeEnCatalogo) return prendasDisponibles;
+
+        return [
+            {
+                _id: prendaValue,
+                nombre: `${prendaValue} (guardada en remito)`,
+                talles: [],
+            },
+            ...prendasDisponibles,
+        ];
+    };
+
+    const getOpcionesTalle = (articulo) => {
+        const talles = getTallesArticulo(articulo.prenda);
+        const existeTalle = talles.some((talle) => (talle?.talle || '') === articulo.talle);
+
+        if (talles.length || !articulo.talle || existeTalle) {
+            return talles;
+        }
+
+        return [{ talle: articulo.talle, ancho: '-', alto: '-' }];
+    };
+
     const validate = () => {
         const nextErrors = {};
 
@@ -212,25 +310,21 @@ function FormVenta() {
 
         const nextArticulosErrors = {};
         const articulosNormalizados = articulosVenta.filter((articulo) => (
-            articulo.camiseta || articulo.numero || articulo.prenda || articulo.talle || articulo.observaciones
+            articulo.nombreCamiseta || articulo.numero || articulo.prenda || articulo.talle || articulo.observaciones
         ));
 
         if (!articulosNormalizados.length) {
             nextArticulosErrors[0] = {
-                camiseta: true,
-                numero: true,
                 prenda: true,
                 talle: true,
             };
         }
 
         articulosVenta.forEach((articulo, index) => {
-            const hasAnyValue = articulo.camiseta || articulo.numero || articulo.prenda || articulo.talle || articulo.observaciones;
+            const hasAnyValue = articulo.nombreCamiseta || articulo.numero || articulo.prenda || articulo.talle || articulo.observaciones;
             if (!hasAnyValue) return;
 
             const rowErrors = {};
-            if (!articulo.camiseta.trim()) rowErrors.camiseta = true;
-            if (!articulo.numero.trim()) rowErrors.numero = true;
             if (!articulo.prenda) rowErrors.prenda = true;
             if (!articulo.talle) rowErrors.talle = true;
 
@@ -242,7 +336,14 @@ function FormVenta() {
         return { nextErrors, nextArticulosErrors };
     };
 
-    const handleSubmit = (e) => {
+    const resetForm = () => {
+        setForm(emptyForm);
+        setErrors({});
+        setArticulosVenta([createEmptyArticulo()]);
+        setArticulosErrors({});
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         const { nextErrors, nextArticulosErrors } = validate();
@@ -258,13 +359,58 @@ function FormVenta() {
             return;
         }
 
+        const pedido = articulosVenta
+            .filter((articulo) => (
+                articulo.nombreCamiseta || articulo.numero || articulo.prenda || articulo.talle || articulo.observaciones
+            ))
+            .map((articulo) => {
+                const prendaSeleccionada = prendasDisponibles.find((item) => item._id === articulo.prenda);
+                return {
+                    nombreCamiseta: articulo.nombreCamiseta.trim(),
+                    numero: articulo.numero.trim(),
+                    prenda: prendaSeleccionada?.nombre || articulo.prenda,
+                    talle: articulo.talle,
+                    observaciones: articulo.observaciones.trim(),
+                };
+            });
+
+        const payload = {
+            numeroCliente: form.numeroCliente.trim(),
+            razonSocial: form.razonSocial.trim(),
+            nombreApellido: form.nombreApellido.trim(),
+            email: form.email.trim(),
+            telefono: form.telefono.trim(),
+            cuit: form.cuit.trim(),
+            pedido,
+        };
+
+        const response = isEditMode
+            ? await dispatch(modificarRemito(id, payload))
+            : await dispatch(crearRemito(payload));
+
+        if (response?.error) {
+            Swal.fire({
+                icon: 'error',
+                title: isEditMode ? 'No se pudo actualizar el remito' : 'No se pudo crear el remito',
+                text: response.message || 'Revisa los datos e intenta nuevamente.',
+            });
+            return;
+        }
+
+        const remito = response?.remito || response;
         Swal.fire({
             icon: 'success',
-            title: 'Pedido listo para enviar',
-            text: `Cliente seleccionado: ${form.nombreApellido || form.razonSocial}`,
-            timer: 1800,
-            showConfirmButton: false,
+            title: isEditMode ? 'Remito actualizado correctamente' : 'Remito creado correctamente',
+            text: remito?.numeroRemitoFormateado
+                ? `${isEditMode ? 'Se actualizo' : 'Se genero'} ${remito.numeroRemitoFormateado} para ${form.nombreApellido || form.razonSocial}.`
+                : `${isEditMode ? 'Se actualizo' : 'Se genero'} el remito para ${form.nombreApellido || form.razonSocial}.`,
         });
+        if (isEditMode) {
+            navigate('/listaVentas');
+            return;
+        }
+
+        resetForm();
     };
 
     return (
@@ -273,9 +419,11 @@ function FormVenta() {
                 <div className="form-venta-header">
                     <div>
                         <p className="form-venta-kicker">Nueva venta</p>
-                        <h2>Datos del cliente</h2>
+                        <h2>{isEditMode ? 'Editar remito' : 'Datos del cliente'}</h2>
                         <p className="form-venta-copy">
-                            Completa cualquiera de los identificadores del cliente y el resto de los campos se rellenara automaticamente.
+                            {isEditMode
+                                ? 'Modifica los datos del cliente y del pedido, luego guarda los cambios del remito.'
+                                : 'Completa cualquiera de los identificadores del cliente y el resto de los campos se rellenara automaticamente.'}
                         </p>
                     </div>
                 </div>
@@ -385,17 +533,17 @@ function FormVenta() {
                                         <div className="form-venta-item-index">{index + 1}</div>
                                     </div>
 
-                                    <div className={`form-venta-field form-venta-item-field ${articulosErrors[index]?.camiseta ? 'is-error' : ''}`}>
+                                    <div className="form-venta-field form-venta-item-field">
                                         <label>Nombre en Camiseta (Dorsal)</label>
                                         <input
                                             type="text"
-                                            value={articulo.camiseta}
-                                            onChange={(e) => handleArticuloChange(index, 'camiseta', e.target.value)}
+                                            value={articulo.nombreCamiseta}
+                                            onChange={(e) => handleArticuloChange(index, 'nombreCamiseta', e.target.value)}
                                             placeholder="Apellido o nombre"
                                         />
                                     </div>
 
-                                    <div className={`form-venta-field form-venta-item-field ${articulosErrors[index]?.numero ? 'is-error' : ''}`}>
+                                    <div className="form-venta-field form-venta-item-field">
                                         <label>Numero</label>
                                         <input
                                             type="text"
@@ -412,7 +560,7 @@ function FormVenta() {
                                             onChange={(e) => handleArticuloChange(index, 'prenda', e.target.value)}
                                         >
                                             <option value="">Seleccionar prenda</option>
-                                            {prendasDisponibles.map((prenda) => (
+                                            {getOpcionesPrenda(articulo.prenda).map((prenda) => (
                                                 <option key={prenda._id} value={prenda._id}>
                                                     {prenda.nombre}
                                                 </option>
@@ -428,7 +576,7 @@ function FormVenta() {
                                             disabled={!articulo.prenda}
                                         >
                                             <option value="">Seleccionar talle</option>
-                                            {getTallesArticulo(articulo.prenda).map((talle, talleIndex) => (
+                                            {getOpcionesTalle(articulo).map((talle, talleIndex) => (
                                                 <option key={`${articulo.prenda}-${talle?.talle || talleIndex}`} value={talle?.talle || ''}>
                                                     {talle?.talle || '-'} ({talle?.ancho || '-'} x {talle?.alto || '-'})
                                                 </option>
@@ -464,8 +612,8 @@ function FormVenta() {
                     </div>
 
                     <div className="form-venta-actions">
-                        <button type="submit" className="form-venta-submit">
-                            Enviar pedido
+                        <button type="submit" className="form-venta-submit" disabled={loading}>
+                            {loading ? 'Guardando...' : isEditMode ? 'Guardar cambios' : 'Crear remito'}
                         </button>
                     </div>
                 </form>

@@ -5,7 +5,9 @@ import {
     MODIFICA_USUARIO, GET_USER_BY_ID, LOADING, GET_USUARIOS_BY_ROL, GET_ARTICULOS, CREA_ARTICULO, MODIFICA_ARTICULO,
     CREA_ARTICULO_PROVEEDOR, GET_ARTICULOS_PROVEEDOR,
     AJUSTE_STOCK_SUCCESS, GET_HISTORIAL_INVENTARIO_REQUEST, GET_HISTORIAL_INVENTARIO_SUCCESS, GET_HISTORIAL_INVENTARIO_FAIL,
-    CLEAR_HISTORIAL_INVENTARIO_ERROR
+    CLEAR_HISTORIAL_INVENTARIO_ERROR, REMITOS_REQUEST, GET_REMITOS_SUCCESS,
+    GET_REMITO_BY_ID_SUCCESS, CREA_REMITO_SUCCESS, REMITOS_FAIL,
+    RECIBOS_REQUEST, GET_RECIBOS_SUCCESS, GET_RECIBO_BY_ID_SUCCESS, CREA_RECIBO_SUCCESS, RECIBOS_FAIL
 } from "./actionsType";
 
 const getAuthConfig = () => {
@@ -114,6 +116,7 @@ export const getUsuarioById = (id) => {
         const resp = await axios.get(`${URL}/personas/${id}`);
         //localStorage.setItem('dataUser', JSON.stringify(resp.data));
         dispatch({ type: GET_USER_BY_ID, payload: resp.data });
+        return resp.data;
     }
 }
 
@@ -804,6 +807,313 @@ export const getOrdenCompraById = (id) => async (dispatch) => {
 
     dispatch({ type: 'ORDENES_FAIL', payload: 'No se encontro endpoint por id.' });
     return { error: true, message: 'No se encontro endpoint de detalle de orden.' };
+};
+
+// =================================
+// REMITOS / VENTAS
+// =================================
+export const crearRemito = (data) => {
+    return async function (dispatch) {
+        dispatch({ type: REMITOS_REQUEST });
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.post(`${URL}/remitos`, data, config);
+            dispatch({ type: CREA_REMITO_SUCCESS, payload: resp.data });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al crear remito.";
+
+            dispatch({ type: REMITOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+export const getRemitos = (params = {}) => {
+    return async function (dispatch) {
+        dispatch({ type: REMITOS_REQUEST });
+        const config = getAuthConfig();
+        const query = new URLSearchParams(
+            Object.entries(params).reduce((acc, [key, value]) => {
+                if (value !== undefined && value !== null && value !== '') acc[key] = value;
+                return acc;
+            }, {})
+        ).toString();
+
+        try {
+            const endpoint = query ? `${URL}/remitos?${query}` : `${URL}/remitos`;
+            const resp = await axios.get(endpoint, config);
+            dispatch({ type: GET_REMITOS_SUCCESS, payload: resp.data });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al obtener remitos.";
+
+            dispatch({ type: REMITOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+export const getRemitoById = (id) => {
+    return async function (dispatch) {
+        dispatch({ type: REMITOS_REQUEST });
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.get(`${URL}/remitos/${id}`, config);
+            dispatch({ type: GET_REMITO_BY_ID_SUCCESS, payload: resp.data });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al obtener el remito.";
+
+            dispatch({ type: REMITOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+export const getRemitoPorNumero = (numeroRemito) => {
+    return async function (dispatch) {
+        dispatch({ type: REMITOS_REQUEST });
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.get(`${URL}/remitos/numero/${numeroRemito}`, config);
+            dispatch({ type: GET_REMITO_BY_ID_SUCCESS, payload: resp.data });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al obtener el remito.";
+
+            dispatch({ type: REMITOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+export const actualizarEstadoRemito = (id, estado) => {
+    return async function (dispatch) {
+        const config = getAuthConfig();
+        const endpoints = [
+            { method: "patch", url: `${URL}/remitos/${id}/estado` },
+            { method: "put", url: `${URL}/remitos/${id}/estado` },
+        ];
+
+        for (const endpoint of endpoints) {
+            try {
+                const resp = await axios[endpoint.method](endpoint.url, { estado }, config);
+                const remito = resp?.data?.remito || resp?.data;
+                dispatch({ type: GET_REMITO_BY_ID_SUCCESS, payload: remito });
+                return resp.data;
+            } catch (error) {
+                const status = error?.response?.status;
+                if (status && ![404, 405].includes(status)) {
+                    return {
+                        error: true,
+                        message:
+                            error.response?.data?.message ||
+                            error.response?.data?.msg ||
+                            "Error al actualizar estado del remito.",
+                    };
+                }
+            }
+        }
+
+        return {
+            error: true,
+            message: "No se encontro endpoint para actualizar estado del remito.",
+        };
+    };
+};
+
+export const modificarRemito = (id, data) => {
+    return async function (dispatch) {
+        dispatch({ type: REMITOS_REQUEST });
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.put(`${URL}/remitos/modifica/${id}`, data, config);
+            dispatch({ type: GET_REMITO_BY_ID_SUCCESS, payload: resp.data?.remito || resp.data });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al modificar remito.";
+
+            dispatch({ type: REMITOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+export const getRemitosPorCliente = (numeroCliente) => {
+    return async function (dispatch) {
+        dispatch({ type: REMITOS_REQUEST });
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.get(`${URL}/remitos/cliente/${numeroCliente}`, config);
+            dispatch({ type: LOADING, payload: false });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al obtener remitos del cliente.";
+
+            dispatch({ type: REMITOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+// =================================
+// RECIBOS / COBROS
+// =================================
+export const crearRecibo = (data) => {
+    return async function (dispatch) {
+        dispatch({ type: RECIBOS_REQUEST });
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.post(`${URL}/recibos`, data, config);
+            dispatch({ type: CREA_RECIBO_SUCCESS, payload: resp.data });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al crear recibo.";
+
+            dispatch({ type: RECIBOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+export const getRecibos = (params = {}) => {
+    return async function (dispatch) {
+        dispatch({ type: RECIBOS_REQUEST });
+        const config = getAuthConfig();
+        const query = new URLSearchParams(
+            Object.entries(params).reduce((acc, [key, value]) => {
+                if (value !== undefined && value !== null && value !== '') acc[key] = value;
+                return acc;
+            }, {})
+        ).toString();
+
+        try {
+            const endpoint = query ? `${URL}/recibos?${query}` : `${URL}/recibos`;
+            const resp = await axios.get(endpoint, config);
+            dispatch({ type: GET_RECIBOS_SUCCESS, payload: resp.data });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al obtener recibos.";
+
+            dispatch({ type: RECIBOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+export const getReciboById = (id) => {
+    return async function (dispatch) {
+        dispatch({ type: RECIBOS_REQUEST });
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.get(`${URL}/recibos/${id}`, config);
+            dispatch({ type: GET_RECIBO_BY_ID_SUCCESS, payload: resp.data });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al obtener el recibo.";
+
+            dispatch({ type: RECIBOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+export const getRecibosPorCliente = (numeroCliente) => {
+    return async function (dispatch) {
+        dispatch({ type: RECIBOS_REQUEST });
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.get(`${URL}/recibos/cliente/${numeroCliente}`, config);
+            dispatch({ type: LOADING, payload: false });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al obtener recibos del cliente.";
+
+            dispatch({ type: RECIBOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+export const modificarRecibo = (id, data) => {
+    return async function (dispatch) {
+        dispatch({ type: RECIBOS_REQUEST });
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.put(`${URL}/recibos/modifica/${id}`, data, config);
+            dispatch({ type: GET_RECIBO_BY_ID_SUCCESS, payload: resp.data?.recibo || resp.data });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al modificar recibo.";
+
+            dispatch({ type: RECIBOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
+};
+
+export const eliminarRecibo = (id) => {
+    return async function (dispatch) {
+        dispatch({ type: RECIBOS_REQUEST });
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.delete(`${URL}/recibos/eliminar/${id}`, config);
+            dispatch({ type: LOADING, payload: false });
+            return resp.data;
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al eliminar recibo.";
+
+            dispatch({ type: RECIBOS_FAIL, payload: message });
+            return { error: true, message };
+        }
+    };
 };
 
 

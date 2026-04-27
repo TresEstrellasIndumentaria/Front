@@ -1,0 +1,201 @@
+.cuenta-corriente {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.cuenta-corriente-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.cuenta-corriente-summary--secondary .cuenta-corriente-summary-card {
+    background: rgba(249, 252, 255, 0.92);
+}
+
+.cuenta-corriente-summary-card {
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1px solid rgba(164, 190, 207, 0.36);
+    box-shadow: 0 10px 26px rgba(24, 52, 82, 0.08);
+}
+
+.cuenta-corriente-summary-card--wide {
+    grid-column: span 1;
+}
+
+.cuenta-corriente-summary-card span,
+.cuenta-corriente-summary-card small {
+    display: block;
+    color: #698197;
+    font-size: 0.88rem;
+}
+
+.cuenta-corriente-summary-card small {
+    margin-top: 8px;
+}
+
+.cuenta-corriente-summary-card strong {
+    color: #123b52;
+    font-size: 1.25rem;
+}
+
+.cuenta-corriente-saldo-value.is-deudor,
+.cuenta-corriente-total-saldo.is-deudor {
+    color: #9f1239;
+}
+
+.cuenta-corriente-saldo-value.is-favor,
+.cuenta-corriente-total-saldo.is-favor {
+    color: #0f766e;
+}
+
+.cuenta-corriente-summary-card--saldo {
+    background: linear-gradient(180deg, rgba(229, 247, 240, 0.98), rgba(255, 255, 255, 0.88));
+}
+
+.cuenta-corriente-card {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(180, 194, 217, 0.5);
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 20px 45px rgba(30, 53, 92, 0.12);
+}
+
+.cuenta-corriente-filters {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 22px;
+    border-bottom: 1px solid #e7edf5;
+}
+
+.cuenta-corriente-filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 180px;
+}
+
+.cuenta-corriente-filters span {
+    color: #21446f;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.cuenta-corriente-filters input,
+.cuenta-corriente-filters select {
+    height: 44px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid #cdd8e6;
+    background: #fbfdff;
+    color: #1b3557;
+    outline: none;
+}
+
+.cuenta-corriente-table-wrap {
+    overflow-x: auto;
+}
+
+.cuenta-corriente-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cuenta-corriente-table th,
+.cuenta-corriente-table td {
+    padding: 16px 18px;
+    border-bottom: 1px solid #ecf1f7;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.cuenta-corriente-table th {
+    color: #5a7191;
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: #f8fbff;
+}
+
+.cuenta-corriente-table tbody tr:hover {
+    background: #f7fbff;
+}
+
+.cuenta-corriente-table tfoot td {
+    background: #f8fbff;
+    border-top: 1px solid #dce7f3;
+    border-bottom: none;
+    font-weight: 800;
+}
+
+.cuenta-corriente-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 76px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+}
+
+.cuenta-corriente-tag--debe {
+    color: #9f1239;
+    background: rgba(255, 228, 233, 0.95);
+}
+
+.cuenta-corriente-tag--haber {
+    color: #0f766e;
+    background: rgba(220, 252, 231, 0.95);
+}
+
+.cuenta-corriente-money {
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.cuenta-corriente-money--debe {
+    color: #9f1239;
+}
+
+.cuenta-corriente-money--haber {
+    color: #0f766e;
+}
+
+.cuenta-corriente-empty {
+    padding: 40px 16px !important;
+    text-align: center;
+    color: #64748b;
+}
+
+.cuenta-corriente-total-label {
+    color: #17345d;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+}
+
+@media (max-width: 980px) {
+    .cuenta-corriente-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .cuenta-corriente-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .cuenta-corriente-filters {
+        flex-direction: column;
+    }
+
+    .cuenta-corriente-filters label {
+        min-width: 100%;
+    }
+}

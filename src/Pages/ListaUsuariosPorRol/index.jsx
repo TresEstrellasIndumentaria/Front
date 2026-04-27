@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, useMemo } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppContext } from '../../Context';
 import { getUsuarioByRol } from '../../Redux/Actions';
@@ -100,6 +101,16 @@ function ListaUsuariosPorRol({ rol }) {
                             </td>
                             <td>{emp.rol}</td>
                             <td className="acciones">
+                                {rol === 'CLIENTE' && (
+                                    <NavLink
+                                        to={`/cliente/${emp._id}/cuentaCorrient`}
+                                        state={{ cliente: emp }}
+                                        className="btn-edit"
+                                    >
+                                        Cuenta Corriente
+                                    </NavLink>
+                                )}
+
                                 <button
                                     className="btn-edit"
                                     onClick={() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Switch from "@mui/material/Switch";
@@ -7,11 +7,31 @@ import "./styles.css";
 const getArticuloCosteBase = (articulo) => {
     if (!articulo) return 0;
     if (Number.isFinite(Number(articulo.coste))) return Number(articulo.coste);
+    if (Number.isFinite(Number(articulo.precio))) return Number(articulo.precio);
     if (Array.isArray(articulo.talles) && articulo.talles.length) {
         const primerTalleConCoste = articulo.talles.find((t) => Number.isFinite(Number(t?.coste)));
         if (primerTalleConCoste) return Number(primerTalleConCoste.coste);
     }
     return 0;
+};
+
+const normalizarComponente = (componente, articulos = []) => {
+    const id = componente?._id || componente?.articulo?._id || componente?.articulo;
+    const articulo = articulos.find((a) => a._id === id);
+    const qty = Number(componente?.cantidad ?? 1);
+    const costeTotal = Number(componente?.costeTotal ?? componente?.coste ?? 0);
+    const costeUnitario = Number(
+        componente?.costeUnitario ?? (qty > 0 ? (costeTotal / qty) : getArticuloCosteBase(articulo))
+    );
+
+    return {
+        _id: id,
+        nombre: componente?.nombre || componente?.articulo?.nombre || articulo?.nombre || "Componente",
+        costeUnitario,
+        cantidad: qty,
+        costeTotal: qty * costeUnitario,
+        costeInput: String(qty * costeUnitario)
+    };
 };
 
 function InventarioCompuesto({
@@ -23,29 +43,37 @@ function InventarioCompuesto({
     const [articuloSeleccionado, setArticuloSeleccionado] = useState("");
     const [cantidad, setCantidad] = useState(1);
     const [componentes, setComponentes] = useState([]);
+    const ultimaComposicionEnviadaRef = useRef("");
+    const ultimoCosteEnviadoRef = useRef(null);
 
     useEffect(() => {
-        if (!componentesIniciales?.length) return;
+        if (!componentesIniciales?.length) {
+            setComponentes((prev) => (prev.length ? [] : prev));
+            return;
+        }
 
-        const normalizados = componentesIniciales.map((c) => {
-            const id = c?._id || c?.articulo?._id || c?.articulo;
-            const articulo = articulos.find((a) => a._id === id);
-            const qty = Number(c?.cantidad ?? 1);
-            const costeTotal = Number(c?.costeTotal ?? c?.coste ?? 0);
-            const costeUnitario = Number(
-                c?.costeUnitario ?? (qty > 0 ? (costeTotal / qty) : articulo?.coste ?? 0)
-            );
+        const normalizados = componentesIniciales
+            .map((c) => normalizarComponente(c, articulos))
+            .filter((c) => c._id);
 
-            return {
-                _id: id,
-                nombre: c?.nombre || c?.articulo?.nombre || articulo?.nombre || "Componente",
-                costeUnitario,
-                cantidad: qty,
-                costeTotal: qty * costeUnitario
-            };
-        }).filter((c) => c._id);
+        setComponentes((prev) => {
+            const prevComparable = prev.map(({ _id, cantidad, costeTotal, nombre }) => ({
+                _id,
+                cantidad,
+                costeTotal,
+                nombre
+            }));
+            const nextComparable = normalizados.map(({ _id, cantidad, costeTotal, nombre }) => ({
+                _id,
+                cantidad,
+                costeTotal,
+                nombre
+            }));
 
-        setComponentes(normalizados);
+            return JSON.stringify(prevComparable) === JSON.stringify(nextComparable)
+                ? prev
+                : normalizados;
+        });
     }, [componentesIniciales, articulos]);
 
     const agregarComponente = () => {
@@ -61,7 +89,8 @@ function InventarioCompuesto({
                 nombre: articulo.nombre,
                 costeUnitario: getArticuloCosteBase(articulo),
                 cantidad,
-                costeTotal: getArticuloCosteBase(articulo) * cantidad
+                costeTotal: getArticuloCosteBase(articulo) * cantidad,
+                costeInput: String(getArticuloCosteBase(articulo) * cantidad)
             }
         ]);
 
@@ -82,7 +111,8 @@ function InventarioCompuesto({
                 nombre: articulo.nombre,
                 costeUnitario: getArticuloCosteBase(articulo),
                 cantidad,
-                costeTotal: getArticuloCosteBase(articulo) * cantidad
+                costeTotal: getArticuloCosteBase(articulo) * cantidad,
+                costeInput: String(getArticuloCosteBase(articulo) * cantidad)
             }
         ]);
 
@@ -105,8 +135,46 @@ function InventarioCompuesto({
                     ? {
                         ...c,
                         cantidad: qty,
-                        costeTotal: qty * c.costeUnitario
+                        costeTotal: qty * c.costeUnitario,
+                        costeInput: String(qty * c.costeUnitario)
                     }
+                    : c
+            )
+        );
+    };
+
+    const actualizarCoste = (id, nuevoCoste) => {
+        setComponentes((prev) =>
+            prev.map((c) =>
+                c._id === id
+                    ? nuevoCoste === ""
+                        ? {
+                            ...c,
+                            costeInput: ""
+                        }
+                        : {
+                            ...c,
+                            costeTotal: Math.max(0, Number(nuevoCoste) || 0),
+                            costeUnitario: c.cantidad > 0 ? (Math.max(0, Number(nuevoCoste) || 0) / c.cantidad) : c.costeUnitario,
+                            costeInput: nuevoCoste
+                        }
+                    : c
+            )
+        );
+    };
+
+    const normalizarCosteAlSalir = (id) => {
+        setComponentes((prev) =>
+            prev.map((c) =>
+                c._id === id
+                    ? c.costeInput === ""
+                        ? {
+                            ...c,
+                            costeTotal: 0,
+                            costeUnitario: c.cantidad > 0 ? 0 : c.costeUnitario,
+                            costeInput: "0"
+                        }
+                        : c
                     : c
             )
         );
@@ -145,12 +213,20 @@ function InventarioCompuesto({
             coste: c.costeTotal
         }));
 
+        const composicionSerializada = JSON.stringify(composicion);
+        if (ultimaComposicionEnviadaRef.current === composicionSerializada) return;
+
+        ultimaComposicionEnviadaRef.current = composicionSerializada;
         onComposicionChange(composicion);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [componentes]);
 
     useEffect(() => {
-        onCosteChange(Number(totalGeneral.toFixed(2)));
+        const costeNormalizado = Number(totalGeneral.toFixed(2));
+        if (ultimoCosteEnviadoRef.current === costeNormalizado) return;
+
+        ultimoCosteEnviadoRef.current = costeNormalizado;
+        onCosteChange(costeNormalizado);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [totalGeneral]);
 
@@ -199,7 +275,16 @@ function InventarioCompuesto({
                                     onChange={(e) => actualizarCantidad(c._id, Number(e.target.value))}
                                 />
                             </td>
-                            <td>{formatMoney(c.costeTotal)}</td>
+                            <td>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    step="0.01"
+                                    value={c.costeInput ?? c.costeTotal}
+                                    onChange={(e) => actualizarCoste(c._id, e.target.value)}
+                                    onBlur={() => normalizarCosteAlSalir(c._id)}
+                                />
+                            </td>
                             <td>
                                 <button
                                     type="button"

@@ -4,7 +4,9 @@ import {
     GET_ARTICULOS, GET_CATEGORIAS, GET_ARTICULOS_PROVEEDOR, CREA_ARTICULO_PROVEEDOR,
     CREA_CATEGORIA, MODIFICA_ARTICULO, AJUSTE_STOCK_SUCCESS,
     GET_HISTORIAL_INVENTARIO_REQUEST, GET_HISTORIAL_INVENTARIO_SUCCESS, GET_HISTORIAL_INVENTARIO_FAIL,
-    CLEAR_HISTORIAL_INVENTARIO_ERROR
+    CLEAR_HISTORIAL_INVENTARIO_ERROR, REMITOS_REQUEST, GET_REMITOS_SUCCESS,
+    GET_REMITO_BY_ID_SUCCESS, CREA_REMITO_SUCCESS, REMITOS_FAIL,
+    RECIBOS_REQUEST, GET_RECIBOS_SUCCESS, GET_RECIBO_BY_ID_SUCCESS, CREA_RECIBO_SUCCESS, RECIBOS_FAIL
 } from "../Actions/actionsType";
 
 const initialState = {
@@ -21,6 +23,18 @@ const initialState = {
     totalOrdenes: 0,
     page: 1,
     totalPages: 1,
+    remitos: [],
+    remitoActual: null,
+    totalRemitos: 0,
+    remitosPage: 1,
+    remitosTotalPages: 1,
+    remitosError: null,
+    recibos: [],
+    reciboActual: null,
+    totalRecibos: 0,
+    recibosPage: 1,
+    recibosTotalPages: 1,
+    recibosError: null,
     historialInventario: [],
     historialInventarioLoading: false,
     historialInventarioError: null,
@@ -124,6 +138,100 @@ export default function rootReducer(state = initialState, action) {
                 ...state,
                 historialInventarioLoading: false,
                 historialInventarioError: action.payload || "No se pudo cargar el historial de inventario."
+            };
+        case REMITOS_REQUEST:
+            return {
+                ...state,
+                loading: true,
+                remitosError: null
+            };
+        case GET_REMITOS_SUCCESS:
+            return {
+                ...state,
+                loading: false,
+                remitos: Array.isArray(action.payload?.remitos) ? action.payload.remitos : [],
+                totalRemitos: action.payload?.total || 0,
+                remitosPage: action.payload?.page || 1,
+                remitosTotalPages: action.payload?.totalPages || 1
+            };
+        case GET_REMITO_BY_ID_SUCCESS: {
+            const remito = action.payload?.remito || action.payload;
+            const remitoId = remito?._id || remito?.id;
+            const remitosActualizados = remitoId
+                ? (state.remitos || []).some((item) => (item?._id || item?.id) === remitoId)
+                    ? state.remitos.map((item) => ((item?._id || item?.id) === remitoId ? { ...item, ...remito } : item))
+                    : [remito, ...(state.remitos || [])]
+                : state.remitos;
+
+            return {
+                ...state,
+                loading: false,
+                remitoActual: remito,
+                remitos: remitosActualizados
+            };
+        }
+        case CREA_REMITO_SUCCESS: {
+            const remito = action.payload?.remito || action.payload;
+            return {
+                ...state,
+                loading: false,
+                remitoActual: remito,
+                remitos: remito ? [remito, ...(state.remitos || [])] : state.remitos,
+                totalRemitos: remito ? (state.totalRemitos || 0) + 1 : state.totalRemitos
+            };
+        }
+        case REMITOS_FAIL:
+            return {
+                ...state,
+                loading: false,
+                remitosError: action.payload || "No se pudo completar la operacion con remitos."
+            };
+        case RECIBOS_REQUEST:
+            return {
+                ...state,
+                loading: true,
+                recibosError: null
+            };
+        case GET_RECIBOS_SUCCESS:
+            return {
+                ...state,
+                loading: false,
+                recibos: Array.isArray(action.payload?.recibos) ? action.payload.recibos : [],
+                totalRecibos: action.payload?.total || 0,
+                recibosPage: action.payload?.page || 1,
+                recibosTotalPages: action.payload?.totalPages || 1
+            };
+        case GET_RECIBO_BY_ID_SUCCESS: {
+            const recibo = action.payload?.recibo || action.payload;
+            const reciboId = recibo?._id || recibo?.id;
+            const recibosActualizados = reciboId
+                ? (state.recibos || []).some((item) => (item?._id || item?.id) === reciboId)
+                    ? state.recibos.map((item) => ((item?._id || item?.id) === reciboId ? { ...item, ...recibo } : item))
+                    : [recibo, ...(state.recibos || [])]
+                : state.recibos;
+
+            return {
+                ...state,
+                loading: false,
+                reciboActual: recibo,
+                recibos: recibosActualizados
+            };
+        }
+        case CREA_RECIBO_SUCCESS: {
+            const recibo = action.payload?.recibo || action.payload;
+            return {
+                ...state,
+                loading: false,
+                reciboActual: recibo,
+                recibos: recibo ? [recibo, ...(state.recibos || [])] : state.recibos,
+                totalRecibos: recibo ? (state.totalRecibos || 0) + 1 : state.totalRecibos
+            };
+        }
+        case RECIBOS_FAIL:
+            return {
+                ...state,
+                loading: false,
+                recibosError: action.payload || "No se pudo completar la operacion con recibos."
             };
         case CLEAR_HISTORIAL_INVENTARIO_ERROR:
             return {

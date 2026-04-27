@@ -183,7 +183,7 @@ const BarraLateral = ({ isOpen, onClose, menuButtonRef }) => {
               <Link to="/ventasPorArticulo" className="link-menu">
                 <li className="dropdown-item">Ventas por artículo</li>
               </Link>
-              <Link to="/ventasPorCategoria" className="link-menu">
+              <Link to="/ventasPorCategorias" className="link-menu">
                 <li className="dropdown-item">Ventas por categoría</li>
               </Link>
               <Link to="/ventasPorTipoPago" className="link-menu">
@@ -552,7 +552,10 @@ const BarraLateral = ({ isOpen, onClose, menuButtonRef }) => {
           {ventasOpen && (
             <ul className="dropdown-menu">
               <Link to="/listaVentas" className="link-menu">
-                <li className="dropdown-item">Listar ventas</li>
+                <li className="dropdown-item">Lista ventas</li>
+              </Link>
+              <Link to="/listaCobros" className="link-menu">
+                <li className="dropdown-item">Lista cobros</li>
               </Link>
             </ul>
           )}

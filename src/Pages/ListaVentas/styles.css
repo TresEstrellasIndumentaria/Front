@@ -45,6 +45,10 @@
     text-decoration: none;
 }
 
+.ventas-action-link {
+    text-decoration: none;
+}
+
 .ventas-add-btn {
     display: inline-flex;
     align-items: center;
@@ -144,6 +148,12 @@
     outline: none;
 }
 
+.ventas-filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 .ventas-table-wrap {
     overflow-x: auto;
 }
@@ -207,14 +217,51 @@
     font-weight: 700;
 }
 
+.ventas-status-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 150px;
+}
+
+.ventas-estado-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ventas-estado-editor select {
+    border: 1px solid #d5dfed;
+    border-radius: 10px;
+    padding: 9px 10px;
+    background: #fff;
+    color: #17345d;
+    outline: none;
+}
+
 .ventas-status--pagada {
     background: #e8f8ef;
     color: #117245;
 }
 
+.ventas-status--pagado {
+    background: #e8f8ef;
+    color: #117245;
+}
+
+.ventas-status--pendiente {
+    background: #fff8dd;
+    color: #9a6700;
+}
+
 .ventas-status--deudor {
     background: #fff1e1;
     color: #b45309;
+}
+
+.ventas-status--cancelado {
+    background: #f3f4f6;
+    color: #4b5563;
 }
 
 .ventas-actions {
@@ -250,10 +297,46 @@
     color: #506177;
 }
 
+.ventas-btn--state {
+    justify-content: center;
+    background: #e6f7ef;
+    color: #156c49;
+}
+
+.ventas-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
 .ventas-empty {
     padding: 40px 16px !important;
     text-align: center;
     color: #64748b;
+}
+
+.ventas-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 22px 22px;
+    border-top: 1px solid #e7edf5;
+}
+
+.ventas-pagination-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #60758f;
+}
+
+.ventas-pagination-copy strong {
+    color: #17345d;
+}
+
+.ventas-pagination-actions {
+    display: flex;
+    gap: 10px;
 }
 
 @media (max-width: 980px) {
@@ -269,6 +352,20 @@
 
     .ventas-search {
         min-width: 100%;
+    }
+
+    .ventas-pagination {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ventas-pagination-actions {
+        width: 100%;
+    }
+
+    .ventas-pagination-actions .ventas-btn {
+        flex: 1;
+        justify-content: center;
     }
 }
 

@@ -5,6 +5,7 @@ import {
     creaArticulo,
     crearCategoria,
     getAllArticulos,
+    getArticulosProveedor,
     getCategorias,
     modificaArticulo
 } from "../../Redux/Actions";
@@ -64,6 +65,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
     const esModificacion = operacion === "modificar";
 
     const articulos = useSelector(state => state.articulos);
+    const articulosProveedor = useSelector(state => state.articulosProveedor || []);
     const categorias = useSelector(state => state.categorias);
     const categoriasArticulo = categorias.filter((cat) => !esCategoriaProveedor(cat));
 
@@ -83,8 +85,9 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
 
     useEffect(() => {
         if (!articulos?.length) dispatch(getAllArticulos());
+        if (!articulosProveedor?.length) dispatch(getArticulosProveedor());
         if (!categorias?.length) dispatch(getCategorias());
-    }, [dispatch, articulos?.length, categorias?.length]);
+    }, [dispatch, articulos?.length, articulosProveedor?.length, categorias?.length]);
 
     useEffect(() => {
         if (!esModificacion || !articuloInicial?._id) return;
@@ -142,14 +145,20 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
     };
 
     const actualizarCosteTalle = (index, coste) => {
-        setForm(prev => ({
-            ...prev,
-            talles: prev.talles.map((talle, talleIndex) => (
-                talleIndex === index
-                    ? { ...talle, coste: Number(coste || 0) }
-                    : talle
-            ))
-        }));
+        const costeNormalizado = Number(coste || 0);
+
+        setForm(prev => {
+            if (Number(prev.talles[index]?.coste || 0) === costeNormalizado) return prev;
+
+            return {
+                ...prev,
+                talles: prev.talles.map((talle, talleIndex) => (
+                    talleIndex === index
+                        ? { ...talle, coste: costeNormalizado }
+                        : talle
+                ))
+            };
+        });
     };
 
     const handleTalleChange = (index, field, value) => {
@@ -258,14 +267,19 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
     };
 
     const updateComposicionTalle = (index, composicion) => {
-        setForm((prev) => ({
-            ...prev,
-            talles: prev.talles.map((talle, talleIndex) => (
-                talleIndex === index
-                    ? { ...talle, composicion }
-                    : talle
-            ))
-        }));
+        setForm((prev) => {
+            const composicionActual = prev.talles[index]?.composicion || [];
+            if (JSON.stringify(composicionActual) === JSON.stringify(composicion || [])) return prev;
+
+            return {
+                ...prev,
+                talles: prev.talles.map((talle, talleIndex) => (
+                    talleIndex === index
+                        ? { ...talle, composicion }
+                        : talle
+                ))
+            };
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -623,7 +637,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                     </div>
 
                                     <InventarioCompuesto
-                                        articulos={articulos}
+                                        articulos={articulosProveedor}
                                         componentesIniciales={talle.composicion || []}
                                         onCosteChange={(coste) => actualizarCosteTalle(index, coste)}
                                         onComposicionChange={(composicion) => updateComposicionTalle(index, composicion)}

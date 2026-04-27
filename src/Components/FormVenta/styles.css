@@ -246,6 +246,11 @@
     box-shadow: 0 16px 34px rgba(20, 78, 168, 0.22);
 }
 
+.form-venta-submit:disabled {
+    cursor: wait;
+    opacity: 0.75;
+}
+
 .form-venta-submit:hover {
     filter: brightness(1.05);
 }
