@@ -35,25 +35,6 @@
     font-size: 0.95rem;
 }
 
-.stock-select-wrap {
-    display: inline-flex;
-    align-items: center;
-    min-width: 300px;
-    border-bottom: 1px solid #d1d5db;
-    gap: 8px;
-}
-
-.stock-select-wrap select {
-    border: none;
-    outline: none;
-    background: transparent;
-    width: 100%;
-    padding: 6px 0;
-    font-size: 1.85rem;
-    color: #111827;
-    appearance: none;
-}
-
 .stock-field textarea {
     width: 100%;
     border: none;
@@ -159,12 +140,12 @@
 }
 
 .btn-primary {
-    background: #7cb342;
-    color: #fff;
+    background: var(--color-primary);
+    color: var(--color-dark);
 }
 
 .btn-primary:hover {
-    background: #689f38;
+    background: var(--color-primary-hover);
 }
 
 .btn-ghost:disabled,
@@ -176,10 +157,6 @@
 @media (max-width: 900px) {
     .stock-card {
         padding: 16px;
-    }
-
-    .stock-select-wrap {
-        min-width: 100%;
     }
 
     .stock-table {

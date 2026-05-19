@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
     creaArticulo,
     crearCategoria,
     getAllArticulos,
-    getArticulosProveedor,
     getCategorias,
     modificaArticulo
 } from "../../Redux/Actions";
@@ -19,14 +18,11 @@ import "./styles.css";
 const CATEGORIA_DEFAULT = "Sin categoria";
 const createEmptyTalle = () => ({
     talle: "",
-    ancho: "",
-    alto: "",
     precio: "",
     coste: "",
     artCompuesto: false,
     composicion: [],
-    stock: 0,
-    entrantes: 0
+    stock: 0
 });
 
 const getCategoriaId = (categoria, categorias = []) => {
@@ -59,25 +55,67 @@ const esCategoriaProveedor = (categoria) => {
     return Boolean(categoria.esProveedor);
 };
 
+const getTotalStockArticulo = (articulo) => {
+    if (Array.isArray(articulo?.talles) && articulo.talles.length) {
+        return articulo.talles.reduce((total, talle) => total + Number(talle?.stock || 0), 0);
+    }
+
+    return Number(articulo?.stock || 0);
+};
+
+const normalizarTexto = (value) => String(value || "").trim().toLowerCase();
+
+const buildFormFromArticulo = (articulo, categorias = []) => ({
+    codigoArticulo: articulo.codigoArticulo || articulo.codigo || articulo.codArticulo || "",
+    nombre: articulo.nombre || "",
+    categoria: getCategoriaId(articulo.categoria, categorias),
+    descripcion: articulo.descripcion || "",
+    itemProveedor: Boolean(articulo.itemProveedor),
+    disponible: articulo.disponible ?? true,
+    talles: Array.isArray(articulo.talles) && articulo.talles.length
+        ? articulo.talles.map((talle) => ({
+            talle: talle?.talle || "",
+            precio: talle?.precio ?? "",
+            coste: talle?.costo ?? talle?.coste ?? "",
+            artCompuesto: Boolean(talle?.artCompuesto),
+            composicion: Array.isArray(talle?.composicion) ? talle.composicion : [],
+            stock: Number(talle?.stock ?? 0)
+        }))
+        : [createEmptyTalle()],
+    composicion: []
+});
+
+const formsSonIguales = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
 function FormArticulo({ operacion = "crear", articuloInicial = null }) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const esModificacion = operacion === "modificar";
 
     const articulos = useSelector(state => state.articulos);
-    const articulosProveedor = useSelector(state => state.articulosProveedor || []);
     const categorias = useSelector(state => state.categorias);
-    const categoriasArticulo = categorias.filter((cat) => !esCategoriaProveedor(cat));
+    const categoriasArticulo = useMemo(
+        () => categorias.filter((cat) => !esCategoriaProveedor(cat)),
+        [categorias]
+    );
+    const componentesProveedor = useMemo(
+        () => (articulos || []).filter((articulo) => articulo?.itemProveedor === true),
+        [articulos]
+    );
 
     const [mostrarPopup, setMostrarPopup] = useState(false);
     const [categoriaCreada, setCategoriaCreada] = useState(null);
     const [tallesErrors, setTallesErrors] = useState({});
     const [inventarioAbiertoIndex, setInventarioAbiertoIndex] = useState(null);
+    const articuloHidratadoRef = useRef(null);
+    const inventarioAutoAbiertoRef = useRef(null);
 
     const [form, setForm] = useState({
+        codigoArticulo: "",
         nombre: "",
         categoria: CATEGORIA_DEFAULT,
         descripcion: "",
+        itemProveedor: false,
         disponible: true,
         talles: [createEmptyTalle()],
         composicion: []
@@ -85,53 +123,68 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
 
     useEffect(() => {
         if (!articulos?.length) dispatch(getAllArticulos());
-        if (!articulosProveedor?.length) dispatch(getArticulosProveedor());
         if (!categorias?.length) dispatch(getCategorias());
-    }, [dispatch, articulos?.length, articulosProveedor?.length, categorias?.length]);
+    }, [dispatch, articulos?.length, categorias?.length]);
 
     useEffect(() => {
         if (!esModificacion || !articuloInicial?._id) return;
 
-        setForm({
-            nombre: articuloInicial.nombre || "",
-            categoria: getCategoriaId(articuloInicial.categoria, categorias),
-            descripcion: articuloInicial.descripcion || "",
-            disponible: articuloInicial.disponible ?? true,
-            talles: Array.isArray(articuloInicial.talles) && articuloInicial.talles.length
-                ? articuloInicial.talles.map((talle) => ({
-                    talle: talle?.talle || "",
-                    ancho: talle?.ancho || "",
-                    alto: talle?.alto || "",
-                    precio: talle?.precio ?? "",
-                    coste: talle?.coste ?? "",
-                    artCompuesto: Boolean(talle?.artCompuesto),
-                    composicion: Array.isArray(talle?.composicion) ? talle.composicion : [],
-                    stock: Number(talle?.stock ?? 0),
-                    entrantes: Number(talle?.entrantes ?? 0)
-                }))
-                : [createEmptyTalle()],
-            composicion: []
+        const nextForm = buildFormFromArticulo(articuloInicial, categorias);
+        const hydrationKey = `${articuloInicial._id}-${articuloInicial.updatedAt || ''}-${nextForm.categoria}`;
+
+        setForm((prev) => {
+            if (articuloHidratadoRef.current === hydrationKey || formsSonIguales(prev, nextForm)) {
+                articuloHidratadoRef.current = hydrationKey;
+                return prev;
+            }
+
+            articuloHidratadoRef.current = hydrationKey;
+            return nextForm;
         });
     }, [esModificacion, articuloInicial, categorias]);
 
     useEffect(() => {
         if (!esModificacion || !articuloInicial?.talles?.length) return;
+        if (inventarioAutoAbiertoRef.current === articuloInicial._id) return;
+
         const primerCompuesto = articuloInicial.talles.findIndex((talle) => Boolean(talle?.artCompuesto));
         setInventarioAbiertoIndex(primerCompuesto >= 0 ? primerCompuesto : null);
+        inventarioAutoAbiertoRef.current = articuloInicial._id;
     }, [esModificacion, articuloInicial]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
 
-        setForm(prev => ({
-            ...prev,
-            [name]:
-                type === "checkbox"
-                    ? checked
-                    : type === "number"
-                        ? value === "" ? "" : Number(value)
-                        : value
-        }));
+        setForm(prev => {
+            const nextValue = type === "checkbox"
+                ? checked
+                : type === "number"
+                    ? value === "" ? "" : Number(value)
+                    : value;
+
+            if (name === "itemProveedor") {
+                setTallesErrors({});
+                setInventarioAbiertoIndex(null);
+
+                return {
+                    ...prev,
+                    itemProveedor: checked,
+                    talles: [
+                        {
+                            ...createEmptyTalle(),
+                            precio: checked ? (prev.talles[0]?.precio ?? "") : "",
+                            coste: checked ? (prev.talles[0]?.coste ?? "") : "",
+                            stock: checked ? (prev.talles[0]?.stock ?? 0) : 0
+                        }
+                    ]
+                };
+            }
+
+            return {
+                ...prev,
+                [name]: nextValue
+            };
+        });
     };
 
     const agregarCategoria = async (categoriaData) => {
@@ -179,7 +232,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
             talles: prev.talles.map((talle, talleIndex) => {
                 if (talleIndex !== index) return talle;
 
-                const parsedValue = ["precio", "coste", "stock", "entrantes"].includes(field)
+                const parsedValue = ["precio", "coste", "stock"].includes(field)
                     ? value === ""
                         ? ""
                         : Number(value)
@@ -194,7 +247,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
     };
 
     const agregarTalle = () => {
-        const requiredFields = ["talle", "ancho", "alto", "precio", "coste"];
+        const requiredFields = ["talle", "precio", "coste"];
         const lastIndex = form.talles.length - 1;
         const lastTalle = form.talles[lastIndex];
 
@@ -284,9 +337,15 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const esItemProveedor = Boolean(form.itemProveedor);
 
         if (!form.nombre.trim()) {
             Swal.fire("Falta el nombre", "El articulo debe tener un nombre", "warning");
+            return;
+        }
+
+        if (!form.codigoArticulo.trim()) {
+            Swal.fire("Falta el codigo", "El codigoArticulo es obligatorio para crear o modificar articulos.", "warning");
             return;
         }
 
@@ -295,59 +354,87 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
             return;
         }
 
-        const tallesNormalizados = form.talles
-            .map((talle) => ({
-                talle: String(talle.talle || "").trim(),
-                ancho: String(talle.ancho || "").trim(),
-                alto: String(talle.alto || "").trim(),
-                precio: talle.precio === "" ? "" : Number(talle.precio),
-                coste: talle.coste === "" ? "" : Number(talle.coste),
-                artCompuesto: Boolean(talle.artCompuesto),
-                composicion: Array.isArray(talle.composicion) ? talle.composicion : [],
-                stock: talle.stock === "" ? 0 : Number(talle.stock),
-                entrantes: talle.entrantes === "" ? 0 : Number(talle.entrantes)
-            }))
-            .filter((talle) => (
-                talle.talle ||
-                talle.ancho ||
-                talle.alto ||
-                talle.precio !== "" ||
-                talle.coste !== "" ||
-                talle.stock !== 0 ||
-                talle.entrantes !== 0
-            ));
+        const itemProveedorExistenteConStock = (articulos || []).find((articulo) => {
+            if (esModificacion && articulo?._id === articuloInicial?._id) return false;
+            if (!articulo?.itemProveedor) return false;
 
-        if (!tallesNormalizados.length) {
-            Swal.fire("Faltan talles", "Debes cargar al menos un talle con sus datos", "warning");
+            const mismoCodigo = normalizarTexto(articulo.codigoArticulo || articulo.codigo || articulo.codArticulo) === normalizarTexto(form.codigoArticulo);
+            const mismoNombre = normalizarTexto(articulo.nombre) === normalizarTexto(form.nombre);
+
+            return (mismoCodigo || mismoNombre) && getTotalStockArticulo(articulo) > 0;
+        });
+
+        if (esItemProveedor && itemProveedorExistenteConStock) {
+            Swal.fire(
+                "Articulo existente",
+                "Ya existe un articulo de proveedor con ese codigo o nombre y stock cargado. Edita el articulo existente para ajustar el stock.",
+                "warning"
+            );
             return;
         }
 
-        const talleInvalido = tallesNormalizados.find((talle) => (
-            !talle.talle ||
-            !talle.ancho ||
-            !talle.alto ||
-            talle.precio === "" ||
-            Number(talle.precio) < 0 ||
-            talle.coste === "" ||
-            Number(talle.coste) < 0 ||
-            (talle.artCompuesto && !talle.composicion?.length) ||
-            Number(talle.stock) < 0 ||
-            Number(talle.entrantes) < 0
-        ));
+        const tallesNormalizados = esItemProveedor
+            ? [{
+                talle: "",
+                precio: form.talles[0]?.precio === "" ? 0 : Number(form.talles[0]?.precio || 0),
+                costo: form.talles[0]?.coste === "" ? "" : Number(form.talles[0]?.coste),
+                artCompuesto: false,
+                composicion: [],
+                stock: form.talles[0]?.stock === "" ? 0 : Number(form.talles[0]?.stock || 0)
+            }]
+            : form.talles
+            .map((talle) => ({
+                talle: String(talle.talle || "").trim(),
+                precio: talle.precio === "" ? "" : Number(talle.precio),
+                costo: talle.coste === "" ? "" : Number(talle.coste),
+                artCompuesto: Boolean(talle.artCompuesto),
+                composicion: Array.isArray(talle.composicion) ? talle.composicion : [],
+                stock: talle.stock === "" ? 0 : Number(talle.stock)
+            }))
+            .filter((talle) => (
+                talle.talle ||
+                talle.precio !== "" ||
+                talle.costo !== "" ||
+                talle.stock !== 0
+            ));
+
+        const talleInvalido = tallesNormalizados.find((talle) => {
+            if (esItemProveedor) {
+                return (
+                    (talle.precio !== "" && Number(talle.precio) < 0) ||
+                    talle.costo === "" ||
+                    Number(talle.costo) < 0 ||
+                    Number(talle.stock) < 0
+                );
+            }
+
+            return (
+                talle.precio === "" ||
+                Number(talle.precio) < 0 ||
+                talle.costo === "" ||
+                Number(talle.costo) < 0 ||
+                (talle.artCompuesto && !talle.composicion?.length) ||
+                Number(talle.stock) < 0
+            );
+        });
 
         if (talleInvalido) {
             Swal.fire(
-                "Datos de talle invalidos",
-                "Cada talle debe tener talle, ancho, alto, precio, coste y cantidades validas. Si es compuesto, debe incluir componentes.",
+                esItemProveedor ? "Datos invalidos" : "Datos de talle invalidos",
+                esItemProveedor
+                    ? "El costo es obligatorio. Precio y stock pueden quedar vacios, pero no pueden ser negativos."
+                    : "Cada fila cargada debe tener precio, coste y stock validos. El talle puede quedar vacio.",
                 "warning"
             );
             return;
         }
 
         const data = {
+            codigoArticulo: form.codigoArticulo.trim(),
             nombre: form.nombre,
             categoria: form.categoria === CATEGORIA_DEFAULT ? undefined : form.categoria,
             descripcion: form.descripcion,
+            itemProveedor: Boolean(form.itemProveedor),
             talles: tallesNormalizados,
         };
 
@@ -381,9 +468,11 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
         }
 
         setForm({
+            codigoArticulo: "",
             nombre: "",
             categoria: CATEGORIA_DEFAULT,
             descripcion: "",
+            itemProveedor: false,
             disponible: true,
             talles: [createEmptyTalle()],
             composicion: []
@@ -406,6 +495,18 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
             )}
 
             <form className="form-articulo" onSubmit={handleSubmit}>
+
+                <div className="campo">
+                    <label>Codigo articulo</label>
+                    <input
+                        type="text"
+                        name="codigoArticulo"
+                        value={form.codigoArticulo}
+                        onChange={handleChange}
+                        placeholder="Ej. ART-001"
+                        required
+                    />
+                </div>
 
                 <div className="campo">
                     <label>Nombre</label>
@@ -465,11 +566,22 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                 <div className="campo">
                     <label>Descripcion</label>
                     <textarea
+                        className="descripcion-articulo"
                         name="descripcion"
                         value={form.descripcion}
                         onChange={handleChange}
                     />
                 </div>
+
+                <label className="checkbox-linea articulo-proveedor-check">
+                    <input
+                        type="checkbox"
+                        name="itemProveedor"
+                        checked={Boolean(form.itemProveedor)}
+                        onChange={handleChange}
+                    />
+                    <span>Articulo de Proveedor</span>
+                </label>
 
                 {/* <div className="checkbox-linea">
                     <input
@@ -481,11 +593,55 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                     <span>Disponible para la venta</span>
                 </div> */}
 
+                {form.itemProveedor ? (
+                    <div className="campo proveedor-fields">
+                        <div className="talles-header proveedor-fields-header">
+                            <div>
+                                <label>Datos del articulo proveedor</label>
+                                <p>Carga costo obligatorio. Precio y stock son opcionales.</p>
+                            </div>
+                        </div>
+
+                        <div className="proveedor-fields-grid">
+                            <div className="campo">
+                                <label>Precio</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={form.talles[0]?.precio ?? ""}
+                                    onChange={(e) => handleTalleChange(0, "precio", e.target.value)}
+                                    placeholder="Opcional"
+                                />
+                            </div>
+                            <div className="campo">
+                                <label>Costo</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className={tallesErrors[0]?.coste ? "input-error" : ""}
+                                    value={form.talles[0]?.coste ?? ""}
+                                    onChange={(e) => handleTalleChange(0, "coste", e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="campo">
+                                <label>Stock</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={form.talles[0]?.stock ?? ""}
+                                    onChange={(e) => handleTalleChange(0, "stock", e.target.value)}
+                                    placeholder="Opcional"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ) : (
                 <div className="campo">
                     <div className="talles-header">
                         <div>
                             <label>Talles del articulo</label>
-                            <p>Carga talle, medidas, precio, coste, stock y entrantes en filas separadas.</p>
+                            <p>Carga talle, precio, coste, stock y compuesto en filas separadas.</p>
                         </div>
                         <button
                             type="button"
@@ -501,13 +657,10 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                             <thead>
                                 <tr>
                                     <th>Talle</th>
-                                    <th>Ancho</th>
-                                    <th>Alto</th>
                                     <th>Precio</th>
-                                    <th>Coste</th>
+                                    <th>Costo</th>
                                     <th>Compuesto</th>
                                     <th>Stock</th>
-                                    <th>Entrantes</th>
                                     <th>Accion</th>
                                 </tr>
                             </thead>
@@ -521,24 +674,6 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                                 value={talle.talle}
                                                 onChange={(e) => handleTalleChange(index, "talle", e.target.value)}
                                                 placeholder="Ej. M"
-                                            />
-                                        </td>
-                                        <td>
-                                            <input
-                                                type="text"
-                                                className={tallesErrors[index]?.ancho ? "input-error" : ""}
-                                                value={talle.ancho}
-                                                onChange={(e) => handleTalleChange(index, "ancho", e.target.value)}
-                                                placeholder="Ej. 50 cm"
-                                            />
-                                        </td>
-                                        <td>
-                                            <input
-                                                type="text"
-                                                className={tallesErrors[index]?.alto ? "input-error" : ""}
-                                                value={talle.alto}
-                                                onChange={(e) => handleTalleChange(index, "alto", e.target.value)}
-                                                placeholder="Ej. 72 cm"
                                             />
                                         </td>
                                         <td>
@@ -592,14 +727,6 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                             />
                                         </td>
                                         <td>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={talle.entrantes}
-                                                onChange={(e) => handleTalleChange(index, "entrantes", e.target.value)}
-                                            />
-                                        </td>
-                                        <td>
                                             <button
                                                 type="button"
                                                 className="btn-eliminar-talle"
@@ -616,8 +743,9 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                         </table>
                     </div>
                 </div>
+                )}
 
-                {form.talles.some((talle) => talle.artCompuesto) && inventarioAbiertoIndex !== null && (
+                {!form.itemProveedor && form.talles.some((talle) => talle.artCompuesto) && inventarioAbiertoIndex !== null && (
                     <div className="talles-compuestos-grid">
                         {form.talles.map((talle, index) => (
                             talle.artCompuesto && inventarioAbiertoIndex === index ? (
@@ -625,7 +753,6 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                     <div className="talle-compuesto-card-header">
                                         <h3>Composicion del talle {talle.talle || `#${index + 1}`}</h3>
                                         <div className="talle-compuesto-card-header-actions">
-                                            <span>{talle.ancho || "-"} x {talle.alto || "-"}</span>
                                             <button
                                                 type="button"
                                                 className="btn-cerrar-inventario"
@@ -637,7 +764,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                     </div>
 
                                     <InventarioCompuesto
-                                        articulos={articulosProveedor}
+                                        articulos={componentesProveedor}
                                         componentesIniciales={talle.composicion || []}
                                         onCosteChange={(coste) => actualizarCosteTalle(index, coste)}
                                         onComposicionChange={(composicion) => updateComposicionTalle(index, composicion)}

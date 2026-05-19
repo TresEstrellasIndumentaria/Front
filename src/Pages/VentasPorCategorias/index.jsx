@@ -6,10 +6,10 @@ import './styles.css';
 
 const estadoLabel = {
   PENDIENTE: 'Pendiente',
-  DEUDOR: 'Deudor',
   PAGADO: 'Pagado',
-  CANCELADO: 'Cancelado',
 };
+
+const normalizeEstadoVenta = (estado) => (estado === 'PAGADO' ? 'PAGADO' : 'PENDIENTE');
 
 const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -36,15 +36,31 @@ const getItemsPedido = (venta) => (
     : []
 );
 
+const toDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getMesActualRange = () => {
+  const now = new Date();
+  return {
+    desde: toDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1)),
+    hasta: toDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+  };
+};
+
 function VentasPorCategorias() {
   const dispatch = useDispatch();
   const articulos = useSelector((state) => state.articulos || []);
+  const mesActual = useMemo(() => getMesActualRange(), []);
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
-  const [fechaDesde, setFechaDesde] = useState('');
-  const [fechaHasta, setFechaHasta] = useState('');
+  const [fechaDesde, setFechaDesde] = useState(mesActual.desde);
+  const [fechaHasta, setFechaHasta] = useState(mesActual.hasta);
   const [estadoFiltro, setEstadoFiltro] = useState('TODOS');
   const [categoriaFiltro, setCategoriaFiltro] = useState('TODAS');
   const [orden, setOrden] = useState('UNIDADES_DESC');
@@ -133,7 +149,7 @@ function VentasPorCategorias() {
   const ventasFiltradas = useMemo(() => {
     return ventas.filter((venta) => {
       const fecha = String(venta?.createdAt || '').slice(0, 10);
-      const matchEstado = estadoFiltro === 'TODOS' ? true : venta?.estado === estadoFiltro;
+      const matchEstado = estadoFiltro === 'TODOS' ? true : normalizeEstadoVenta(venta?.estado) === estadoFiltro;
       const matchDesde = fechaDesde ? fecha >= fechaDesde : true;
       const matchHasta = fechaHasta ? fecha <= fechaHasta : true;
 
@@ -216,8 +232,8 @@ function VentasPorCategorias() {
 
   const limpiarFiltros = () => {
     setQuery('');
-    setFechaDesde('');
-    setFechaHasta('');
+    setFechaDesde(mesActual.desde);
+    setFechaHasta(mesActual.hasta);
     setEstadoFiltro('TODOS');
     setCategoriaFiltro('TODAS');
     setOrden('UNIDADES_DESC');
@@ -273,9 +289,7 @@ function VentasPorCategorias() {
               <select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)}>
                 <option value="TODOS">Todos los estados</option>
                 <option value="PENDIENTE">Pendientes</option>
-                <option value="DEUDOR">Deudores</option>
                 <option value="PAGADO">Pagados</option>
-                <option value="CANCELADO">Cancelados</option>
               </select>
               <select value={categoriaFiltro} onChange={(e) => setCategoriaFiltro(e.target.value)}>
                 <option value="TODAS">Todas las categorias</option>

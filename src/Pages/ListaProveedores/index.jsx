@@ -6,13 +6,14 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import PopupPersona from '../../Components/PopupPersona';
+import PersonaOrdenSelect from '../../Components/PersonaOrdenSelect';
 import BotonEliminarUsuario from '../../Components/BotonEliminarUsuario';
 import { getUsuarioByRol } from '../../Redux/Actions';
 import './styles.css';
 
 const getNombreProveedor = (prov) => {
     if (!prov) return '-';
-    const nombre = `${prov.nombre || ''} ${prov.apellido || ''}`.trim();
+    const nombre = `${prov.apellido || ''} ${prov.nombre || ''}`.trim();
     return nombre || prov.razonSocial || prov.nombreFantasia || '-';
 };
 
@@ -31,6 +32,13 @@ const getTelefonoProveedor = (prov) => {
     return value || '-';
 };
 
+const getNumeroProveedor = (prov) => prov?.numeroProveedor || prov?.numeroCliente || '-';
+
+const getNumeroProveedorOrden = (prov) => {
+    const numero = Number(getNumeroProveedor(prov));
+    return Number.isFinite(numero) ? numero : Number.MAX_SAFE_INTEGER;
+};
+
 function ListaProveedores() {
     const dispatch = useDispatch();
     const proveedores = useSelector((state) => state.usuariosRol || []);
@@ -38,7 +46,7 @@ function ListaProveedores() {
     const [mostrarPopup, setMostrarPopup] = useState(false);
     const [proveedorSeleccionado, setProveedorSeleccionado] = useState(null);
     const [query, setQuery] = useState('');
-    const [seleccionados, setSeleccionados] = useState([]);
+    const [ordenListado, setOrdenListado] = useState('APELLIDO_ASC');
     const [page, setPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -53,21 +61,39 @@ function ListaProveedores() {
 
     const filtrados = useMemo(() => {
         const q = (query || '').toLowerCase().trim();
-        if (!q) return proveedores;
 
-        return proveedores.filter((prov) => {
+        return [...proveedores].filter((prov) => {
             const nombre = getNombreProveedor(prov).toLowerCase();
             const contacto = getContactoProveedor(prov).toLowerCase();
             const telefono = getTelefonoProveedor(prov).toLowerCase();
+            const numeroProveedor = String(getNumeroProveedor(prov)).toLowerCase();
             const email = String(prov?.email || '').toLowerCase();
+
+            if (!q) return true;
+
             return (
                 nombre.includes(q) ||
+                numeroProveedor.includes(q) ||
                 contacto.includes(q) ||
                 telefono.includes(q) ||
                 email.includes(q)
             );
+        }).sort((a, b) => {
+            if (ordenListado === 'NUMERO_ASC') {
+                return getNumeroProveedorOrden(a) - getNumeroProveedorOrden(b);
+            }
+
+            if (ordenListado === 'NUMERO_DESC') {
+                return getNumeroProveedorOrden(b) - getNumeroProveedorOrden(a);
+            }
+
+            if (ordenListado === 'APELLIDO_DESC') {
+                return getNombreProveedor(b).localeCompare(getNombreProveedor(a), 'es');
+            }
+
+            return getNombreProveedor(a).localeCompare(getNombreProveedor(b), 'es');
         });
-    }, [proveedores, query]);
+    }, [ordenListado, proveedores, query]);
 
     const totalPages = Math.max(1, Math.ceil(filtrados.length / rowsPerPage));
     const currentPage = Math.min(page, totalPages);
@@ -76,28 +102,12 @@ function ListaProveedores() {
 
     useEffect(() => {
         setPage(1);
-    }, [query, rowsPerPage]);
-
-    const idsPagina = rows.map((row) => row?._id).filter(Boolean);
-    const todosSeleccionados = idsPagina.length > 0 && idsPagina.every((id) => seleccionados.includes(id));
-
-    const toggleSeleccion = (id) => {
-        setSeleccionados((prev) => (
-            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-        ));
-    };
-
-    const toggleSeleccionPagina = () => {
-        if (todosSeleccionados) {
-            setSeleccionados((prev) => prev.filter((id) => !idsPagina.includes(id)));
-            return;
-        }
-        setSeleccionados((prev) => Array.from(new Set([...prev, ...idsPagina])));
-    };
+    }, [ordenListado, query, rowsPerPage]);
 
     return (
         <div className="prov-list">
             <div className="prov-card">
+                <h2 className="prov-title">Lista de Proveedores</h2>
                 <div className="prov-toolbar">
                     <button
                         className="prov-add-btn"
@@ -118,22 +128,28 @@ function ListaProveedores() {
                         />
                         <SearchIcon />
                     </div>
-                </div>
 
+                    <div className="prov-filters">
+                        <PersonaOrdenSelect
+                            value={ordenListado}
+                            onChange={setOrdenListado}
+                            includeNumero
+                            numeroMenorLabel="Num Prov menor"
+                            numeroMayorLabel="Num Prov mayor"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="prov-card prov-table-card">
                 <table className="prov-table">
                     <thead>
                         <tr>
-                            <th className="w-check">
-                                <input
-                                    type="checkbox"
-                                    checked={todosSeleccionados}
-                                    onChange={toggleSeleccionPagina}
-                                />
-                            </th>
+                            <th>Num Prov</th>
                             <th>Nombre</th>
-                            <th>Contacto</th>
-                            <th>Numero de telefono</th>
-                            <th>Direccion de correo electronico</th>
+                            <th>Telefono</th>
+                            <th>Email</th>
+                            <th>Nota</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -146,18 +162,19 @@ function ListaProveedores() {
 
                         {rows.map((prov) => (
                             <tr key={prov._id || prov.id}>
-                                <td className="w-check">
-                                    <input
-                                        type="checkbox"
-                                        checked={seleccionados.includes(prov._id)}
-                                        onChange={() => toggleSeleccion(prov._id)}
-                                    />
-                                </td>
+                                <td>{getNumeroProveedor(prov)}</td>
                                 <td>{getNombreProveedor(prov)}</td>
-                                <td>{getContactoProveedor(prov)}</td>
                                 <td>{getTelefonoProveedor(prov)}</td>
                                 <td>{prov.email || '-'}</td>
+                                <td>{prov.nota || '-'}</td>
                                 <td className="prov-actions">
+                                    <NavLink
+                                        to="/ordenesDeCompras/nueva"
+                                        state={{ proveedor: prov }}
+                                        className="prov-btn-current-account"
+                                    >
+                                        Nueva compra
+                                    </NavLink>
                                     <NavLink
                                         to={`/proveedor/${prov._id}/cuentaCorrient`}
                                         state={{ proveedor: prov }}
@@ -227,6 +244,7 @@ function ListaProveedores() {
                 <PopupPersona
                     rol="PROVEEDOR"
                     persona={proveedorSeleccionado}
+                    personas={proveedores || []}
                     onClose={() => {
                         setMostrarPopup(false);
                         setProveedorSeleccionado(null);

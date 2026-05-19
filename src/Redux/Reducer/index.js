@@ -1,12 +1,12 @@
 import {
     REGISTRARSE, LOGIN, RESET_LOGIN, GET_ALL_USUARIOS,
     GET_USER_BY_ID, LOADING, GET_USUARIOS_BY_ROL,
-    GET_ARTICULOS, GET_CATEGORIAS, GET_ARTICULOS_PROVEEDOR, CREA_ARTICULO_PROVEEDOR,
+    GET_ARTICULOS, GET_CATEGORIAS,
     CREA_CATEGORIA, MODIFICA_ARTICULO, AJUSTE_STOCK_SUCCESS,
     GET_HISTORIAL_INVENTARIO_REQUEST, GET_HISTORIAL_INVENTARIO_SUCCESS, GET_HISTORIAL_INVENTARIO_FAIL,
     CLEAR_HISTORIAL_INVENTARIO_ERROR, REMITOS_REQUEST, GET_REMITOS_SUCCESS,
     GET_REMITO_BY_ID_SUCCESS, CREA_REMITO_SUCCESS, REMITOS_FAIL,
-    RECIBOS_REQUEST, GET_RECIBOS_SUCCESS, GET_RECIBO_BY_ID_SUCCESS, CREA_RECIBO_SUCCESS, RECIBOS_FAIL
+	    RECIBOS_REQUEST, GET_RECIBOS_SUCCESS, GET_RECIBO_BY_ID_SUCCESS, CREA_RECIBO_SUCCESS, RECIBOS_FAIL
 } from "../Actions/actionsType";
 
 const initialState = {
@@ -15,7 +15,6 @@ const initialState = {
     usuarios: [],
     usuariosRol: [],
     articulos: [],
-    articulosProveedor: [],
     categorias: [],
     categoriaAct: {},
     ordenes: [],
@@ -39,6 +38,14 @@ const initialState = {
     historialInventarioLoading: false,
     historialInventarioError: null,
 }
+
+const normalizeRemitoEstado = (remito) => {
+    if (!remito) return remito;
+    return {
+        ...remito,
+        estado: remito.estado === "PAGADO" ? "PAGADO" : "PENDIENTE"
+    };
+};
 
 export default function rootReducer(state = initialState, action) {
     switch (action.type) {
@@ -81,19 +88,6 @@ export default function rootReducer(state = initialState, action) {
             return {
                 ...state,
                 articulos: action.payload
-            }
-        case GET_ARTICULOS_PROVEEDOR:
-            return {
-                ...state,
-                articulosProveedor: Array.isArray(action.payload) ? action.payload : []
-            }
-        case CREA_ARTICULO_PROVEEDOR:
-            return {
-                ...state,
-                articulosProveedor: [
-                    ...(state.articulosProveedor || []),
-                    action.payload?.articuloProveedor || action.payload?.articulo || action.payload
-                ]
             }
         case MODIFICA_ARTICULO:
             return {
@@ -149,13 +143,13 @@ export default function rootReducer(state = initialState, action) {
             return {
                 ...state,
                 loading: false,
-                remitos: Array.isArray(action.payload?.remitos) ? action.payload.remitos : [],
+                remitos: Array.isArray(action.payload?.remitos) ? action.payload.remitos.map(normalizeRemitoEstado) : [],
                 totalRemitos: action.payload?.total || 0,
                 remitosPage: action.payload?.page || 1,
                 remitosTotalPages: action.payload?.totalPages || 1
             };
         case GET_REMITO_BY_ID_SUCCESS: {
-            const remito = action.payload?.remito || action.payload;
+            const remito = normalizeRemitoEstado(action.payload?.remito || action.payload);
             const remitoId = remito?._id || remito?.id;
             const remitosActualizados = remitoId
                 ? (state.remitos || []).some((item) => (item?._id || item?.id) === remitoId)
@@ -171,7 +165,7 @@ export default function rootReducer(state = initialState, action) {
             };
         }
         case CREA_REMITO_SUCCESS: {
-            const remito = action.payload?.remito || action.payload;
+            const remito = normalizeRemitoEstado(action.payload?.remito || action.payload);
             return {
                 ...state,
                 loading: false,

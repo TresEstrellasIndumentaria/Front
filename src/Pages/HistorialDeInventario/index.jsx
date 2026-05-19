@@ -11,18 +11,27 @@ import { clearHistorialInventarioError, getHistorialInventario } from '../../Red
 import './styles.css';
 
 const MOTIVO_LABEL = {
-    RECIBIR_ARTICULOS: 'Recibir articulos',
-    RECUENTO_INVENTARIO: 'Recuento de inventario',
+    RECIBIR_ARTICULOS: 'Compra',
+    RECEPCION_COMPRA: 'Compra',
+    ORDEN_COMPRA: 'Compra',
+    COMPRA: 'Compra',
+    VENTA_REMITO: 'Venta',
+    VENTA: 'Venta',
+    AJUSTE_REMITO: 'Ajuste',
+    RECUENTO_INVENTARIO: 'Ajuste',
+    AJUSTE_STOCK: 'Ajuste',
+    AJUSTE: 'Ajuste',
+    ELIMINACION_REMITO: 'Eliminacion',
     PERDIDA: 'Perdida',
-    DANADO: 'Dañado',
-    'DAÑADO': 'Dañado',
+    DANADO: 'Danado',
 };
 
 const normalizarMotivo = (value = '') =>
     String(value || '')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
-        .toUpperCase();
+        .toUpperCase()
+        .replace(/[^A-Z0-9_]/g, '_');
 
 const formatFecha = (value) => {
     if (!value) return '-';
@@ -31,30 +40,56 @@ const formatFecha = (value) => {
     return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-const todayIso = new Date().toISOString().slice(0, 10);
-const monthAgoIso = new Date(Date.now() - (1000 * 60 * 60 * 24 * 30)).toISOString().slice(0, 10);
+const getMotivoLabel = (movimiento) => {
+    const motivoNormalizado = normalizarMotivo(movimiento?.motivo);
+    if (MOTIVO_LABEL[motivoNormalizado]) return MOTIVO_LABEL[motivoNormalizado];
+
+    const anotaciones = normalizarMotivo(movimiento?.anotaciones);
+    if (anotaciones.includes('REMITO')) {
+        return Number(movimiento?.ajuste || 0) < 0 ? 'Venta' : 'Ajuste';
+    }
+
+    if (Number(movimiento?.ajuste || 0) > 0) return 'Compra';
+    if (Number(movimiento?.ajuste || 0) < 0) return 'Venta';
+    return movimiento?.motivo || 'Ajuste';
+};
+
+const toDateInputValue = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const getMesActualRange = () => {
+    const today = new Date();
+    return {
+        desde: toDateInputValue(new Date(today.getFullYear(), today.getMonth(), 1)),
+        hasta: toDateInputValue(today),
+    };
+};
 
 function HistorialDeInventario() {
     const dispatch = useDispatch();
     const movimientos = useSelector((state) => state.historialInventario || []);
     const loading = useSelector((state) => state.historialInventarioLoading);
     const error = useSelector((state) => state.historialInventarioError);
+    const mesActual = useMemo(() => getMesActualRange(), []);
 
-    const [desde, setDesde] = useState(monthAgoIso);
-    const [hasta, setHasta] = useState(todayIso);
+    const [desde, setDesde] = useState(mesActual.desde);
+    const [hasta, setHasta] = useState(mesActual.hasta);
     const [colaborador, setColaborador] = useState('TODOS');
     const [motivo, setMotivo] = useState('TODOS');
 
     useEffect(() => {
         const params = { desde, hasta };
         if (colaborador !== 'TODOS') params.colaborador = colaborador;
-        if (motivo !== 'TODOS') params.motivo = motivo;
         dispatch(getHistorialInventario(params));
 
         return () => {
             dispatch(clearHistorialInventarioError());
         };
-    }, [dispatch, desde, hasta, colaborador, motivo]);
+    }, [dispatch, desde, hasta, colaborador]);
 
     const colaboradores = useMemo(() => {
         const map = new Map();
@@ -72,9 +107,7 @@ function HistorialDeInventario() {
             const hastaOk = fecha ? fecha <= new Date(`${hasta}T23:59:59`) : true;
             const colaboradorNombre = m?.empleadoNombre || m?.empleado || m?.colaborador;
             const colaboradorOk = colaborador === 'TODOS' ? true : colaboradorNombre === colaborador;
-            const motivoMovimiento = normalizarMotivo(m?.motivo);
-            const motivoFiltro = normalizarMotivo(motivo);
-            const motivoOk = motivo === 'TODOS' ? true : motivoMovimiento === motivoFiltro;
+            const motivoOk = motivo === 'TODOS' ? true : getMotivoLabel(m) === motivo;
             return desdeOk && hastaOk && colaboradorOk && motivoOk;
         });
     }, [movimientos, desde, hasta, colaborador, motivo]);
@@ -82,13 +115,12 @@ function HistorialDeInventario() {
     const exportarCSV = () => {
         if (!rows.length) return;
 
-        const headers = ['Fecha', 'Articulo', 'Tienda', 'Empleado', 'Motivo', 'Ajuste', 'Stock final'];
+        const headers = ['Fecha', 'Articulo', 'Empleado', 'Motivo', 'Ajuste', 'Stock final'];
         const data = rows.map((r) => ([
             formatFecha(r.fecha),
             r.articuloNombre || r.articulo || '-',
-            r.tienda || 'Liz',
             r.empleadoNombre || r.empleado || r.colaborador || '-',
-            MOTIVO_LABEL[r.motivo] || MOTIVO_LABEL[normalizarMotivo(r.motivo)] || r.motivo || '-',
+            getMotivoLabel(r),
             Number(r.ajuste || 0),
             Number(r.stockFinal ?? 0),
         ]));
@@ -111,9 +143,8 @@ function HistorialDeInventario() {
             <tr>
                 <td>${formatFecha(r.fecha)}</td>
                 <td>${r.articuloNombre || r.articulo || '-'}</td>
-                <td>${r.tienda || 'Liz'}</td>
                 <td>${r.empleadoNombre || r.empleado || r.colaborador || '-'}</td>
-                <td>${MOTIVO_LABEL[r.motivo] || MOTIVO_LABEL[normalizarMotivo(r.motivo)] || r.motivo || '-'}</td>
+                <td>${getMotivoLabel(r)}</td>
                 <td>${Number(r.ajuste || 0)}</td>
                 <td>${Number(r.stockFinal ?? 0)}</td>
             </tr>
@@ -139,7 +170,7 @@ function HistorialDeInventario() {
                     <table>
                         <thead>
                             <tr>
-                                <th>Fecha</th><th>Articulo</th><th>Tienda</th><th>Empleado</th><th>Motivo</th><th>Ajuste</th><th>Stock final</th>
+                                <th>Fecha</th><th>Articulo</th><th>Empleado</th><th>Motivo</th><th>Ajuste</th><th>Stock final</th>
                             </tr>
                         </thead>
                         <tbody>${htmlRows}</tbody>
@@ -179,10 +210,12 @@ function HistorialDeInventario() {
                     <FilterListIcon className="muted" fontSize="small" />
                     <select value={motivo} onChange={(e) => setMotivo(e.target.value)}>
                         <option value="TODOS">Todos los motivos</option>
-                        <option value="RECIBIR_ARTICULOS">Recibir articulos</option>
-                        <option value="RECUENTO_INVENTARIO">Recuento de inventario</option>
-                        <option value="PERDIDA">Perdida</option>
-                        <option value="DAÑADO">Dañado</option>
+                        <option value="Venta">Venta</option>
+                        <option value="Compra">Compra</option>
+                        <option value="Ajuste">Ajuste</option>
+                        <option value="Eliminacion">Eliminacion</option>
+                        <option value="Perdida">Perdida</option>
+                        <option value="Danado">Danado</option>
                     </select>
                     <KeyboardArrowDownIcon className="muted" fontSize="small" />
                 </div>
@@ -213,7 +246,6 @@ function HistorialDeInventario() {
                             <tr>
                                 <th>Fecha</th>
                                 <th>Articulo</th>
-                                <th>Tienda</th>
                                 <th>Empleado</th>
                                 <th>Motivo</th>
                                 <th>Ajuste</th>
@@ -225,9 +257,8 @@ function HistorialDeInventario() {
                                 <tr key={`${r?._id || 'mov'}-${idx}`}>
                                     <td>{formatFecha(r.fecha)}</td>
                                     <td>{r.articuloNombre || r.articulo || '-'}</td>
-                                    <td>{r.tienda || 'Liz'}</td>
                                     <td>{r.empleadoNombre || r.empleado || r.colaborador || '-'}</td>
-                                    <td>{MOTIVO_LABEL[r.motivo] || MOTIVO_LABEL[normalizarMotivo(r.motivo)] || r.motivo || '-'}</td>
+                                    <td>{getMotivoLabel(r)}</td>
                                     <td>{Number(r.ajuste || 0) > 0 ? `+${r.ajuste}` : Number(r.ajuste || 0)}</td>
                                     <td>{r.stockFinal ?? '-'}</td>
                                 </tr>
@@ -244,7 +275,7 @@ function HistorialDeInventario() {
                         <h3>No hay datos disponibles</h3>
                         <p>No hay movimientos de stock en el periodo de tiempo seleccionado</p>
                         <p className="hist-empty-help">
-                            Este historial se alimenta cuando se modifica stock (ajustes, recepciones, perdidas, dañado).
+                            Este historial se alimenta cuando se modifica stock por ventas, compras y ajustes.
                         </p>
                     </div>
                 )}

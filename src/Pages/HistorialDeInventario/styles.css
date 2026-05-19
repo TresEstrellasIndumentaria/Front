@@ -88,8 +88,9 @@
 }
 
 .hist-table th {
-    color: #6b7280;
+    color: #f9b218;
     font-weight: 600;
+    background: var(--color-dark);
 }
 
 .hist-empty {

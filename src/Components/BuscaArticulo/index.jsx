@@ -31,7 +31,7 @@ function SearchFilterBar({
             <form className='search-form'>
                 <label className='search-label'>
                     {vista === 'articulo'
-                        ? `Buscar por ${searchType === 'categoria' ? 'categoria' : 'nombre de articulo'}`
+                        ? `Buscar por ${searchType === 'categoria' ? 'categoria' : searchType === 'codigo' ? 'codigo de articulo' : 'nombre de articulo'}`
                         : 'Buscar'}
                 </label>
                 <div className='search-controls'>
@@ -42,6 +42,7 @@ function SearchFilterBar({
                             onChange={(e) => onSearchTypeChange?.(e.target.value)}
                         >
                             <option value='nombre'>Nombre articulo</option>
+                            <option value='codigo'>Codigo articulo</option>
                             <option value='categoria'>Categoria</option>
                         </select>
                     )}
@@ -80,8 +81,8 @@ function SearchFilterBar({
                             onChange={handleChange}
                             className='search-input'
                             placeholder={
-                                vista === 'articulo'
-                                    ? (searchType === 'categoria' ? 'Ej: Remeras' : 'Ej: nombre art')
+	                                vista === 'articulo'
+	                                    ? (searchType === 'categoria' ? 'Ej: Remeras' : searchType === 'codigo' ? 'Ej: ART-001' : 'Ej: nombre art')
                                     : (vista === 'producto' ? 'nombre art' : 'nombre art')
                             }
                         />

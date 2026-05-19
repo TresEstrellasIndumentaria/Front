@@ -1,9 +1,75 @@
-import React from 'react'
+import React from 'react';
+import { Link } from 'react-router-dom';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
+import TuneIcon from '@mui/icons-material/Tune';
+import { userData } from '../../LocalStorage';
+import './styles.css';
 
 function Home() {
+    const user = userData();
+    const nombre = user?.user?.nombre || user?.nombre || 'usuario';
+
+    const accesos = [
+        {
+            title: 'Articulos',
+            text: 'Consulta y administra el catalogo de productos.',
+            to: '/listaArticulos',
+            Icon: Inventory2Icon,
+        },
+        {
+            title: 'Ventas',
+            text: 'Revisa operaciones y carga nuevas ventas.',
+            to: '/listaVentas',
+            Icon: PointOfSaleIcon,
+        },
+        {
+            title: 'Inventario',
+            text: 'Gestiona stock, ajustes y movimientos.',
+            to: '/ajusteDeStock',
+            Icon: TuneIcon,
+        },
+        {
+            title: 'Informes',
+            text: 'Analiza resumenes y rendimiento comercial.',
+            to: '/resumenVentas',
+            Icon: AssessmentIcon,
+        },
+    ];
+
     return (
-        <div>BIENVENIDO A 3 ESTRELLAS</div>
-    )
+        <section className="home-welcome">
+            <div className="home-hero">
+                <div>
+                    <span className="home-kicker">Tres Estrellas</span>
+                    <h1>Bienvenido, {nombre}</h1>
+                    <p>
+                        Panel de gestion para operar ventas, inventario, clientes e informes
+                        desde un mismo lugar.
+                    </p>
+                </div>
+
+                <div className="home-brand-mark" aria-hidden="true">
+                    3E
+                </div>
+            </div>
+
+            <div className="home-quick-grid">
+                {accesos.map(({ title, text, to, Icon }) => (
+                    <Link className="home-quick-card" to={to} key={to}>
+                        <div className="home-card-icon">
+                            <Icon />
+                        </div>
+                        <div>
+                            <h2>{title}</h2>
+                            <p>{text}</p>
+                        </div>
+                    </Link>
+                ))}
+            </div>
+        </section>
+    );
 }
 
-export default Home
+export default Home;

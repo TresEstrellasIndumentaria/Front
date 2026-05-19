@@ -101,6 +101,10 @@
     box-shadow: none;
 }
 
+.modif-datos-container .save-changes-button {
+    color: #facc15;
+}
+
 /* ANIMACION */
 @keyframes fadeIn {
     from {
@@ -123,24 +127,82 @@
 
 .password-field input {
     width: 100%;
-    padding-right: 42px;
+    padding-right: 52px;
 }
 
-.toggle-password {
+.modif-datos-container .toggle-password {
     position: absolute;
-    right: 0px;
-    top: -10px;
-    background: none;
+    right: 6px;
+    top: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 30px;
+    background: #111827;
     border: none;
-
+    border-radius: 8px;
     padding: 0;
-    /* CLAVE */
     margin: 0;
-    /* CLAVE */
     font-size: 18px;
-    /* tamaño del icono */
     line-height: 1;
-
+    transform: translateY(-50%);
     cursor: pointer;
-    color: #6b7280;
+    color: #facc15;
+    box-shadow: none;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.modif-datos-container .toggle-password:hover {
+    transform: translateY(-50%);
+    background: #000;
+    box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.22);
+}
+
+.modif-datos-container .toggle-password:active {
+    transform: translateY(-50%);
+    box-shadow: none;
+}
+
+.modif-datos-container .toggle-password span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transform: scale(1);
+    transition:
+        transform 0.22s ease,
+        filter 0.22s ease;
+}
+
+.modif-datos-container .toggle-password:hover span {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.45));
+}
+
+.modif-datos-container .toggle-password:active span {
+    transform: scale(0.92);
+}
+
+.modif-datos-container .toggle-password.is-visible {
+    background: #000;
+    color: #fde047;
+    animation: eyePulse 0.28s ease;
+}
+
+.modif-datos-container .toggle-password.is-visible span {
+    transform: scale(1.08) rotate(-4deg);
+}
+
+@keyframes eyePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.38);
+    }
+
+    100% {
+        box-shadow: 0 0 0 8px rgba(250, 204, 21, 0);
+    }
 }

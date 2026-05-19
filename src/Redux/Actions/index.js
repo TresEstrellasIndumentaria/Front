@@ -3,7 +3,6 @@ import { URL } from "../../Urls";
 import {
     LOGIN, RESET_USER, GET_USER_BY_DNI, GET_ALL_USUARIOS, REGISTRARSE, CREA_CATEGORIA,
     MODIFICA_USUARIO, GET_USER_BY_ID, LOADING, GET_USUARIOS_BY_ROL, GET_ARTICULOS, CREA_ARTICULO, MODIFICA_ARTICULO,
-    CREA_ARTICULO_PROVEEDOR, GET_ARTICULOS_PROVEEDOR,
     AJUSTE_STOCK_SUCCESS, GET_HISTORIAL_INVENTARIO_REQUEST, GET_HISTORIAL_INVENTARIO_SUCCESS, GET_HISTORIAL_INVENTARIO_FAIL,
     CLEAR_HISTORIAL_INVENTARIO_ERROR, REMITOS_REQUEST, GET_REMITOS_SUCCESS,
     GET_REMITO_BY_ID_SUCCESS, CREA_REMITO_SUCCESS, REMITOS_FAIL,
@@ -72,6 +71,14 @@ export const loginGoogle = (credential) => {
     }
 }
 
+const getSessionUser = () => {
+    try {
+        return JSON.parse(localStorage.getItem('dataUser') || localStorage.getItem('userData') || 'null');
+    } catch (error) {
+        return null;
+    }
+};
+
 //registrarse
 //action con manejo de errores
 export const registrarse = (data) => {
@@ -85,10 +92,13 @@ export const registrarse = (data) => {
 
             // Capturamos y devolvemos el mensaje del backend (si existe)
             return {
+                error: true,
                 message:
                     error.response?.data?.message ||
+                    error.response?.data?.msg ||
+                    error.response?.data?.error ||
                     error.response?.data ||
-                    "Error al registrar el usuario.",
+                    "Error al registrar el articulo.",
             };
         }
     };
@@ -97,16 +107,34 @@ export const registrarse = (data) => {
 //trea todos las personas
 export const getAllUsuarios = () => {
     return async function (dispatch) {
-        const resp = await axios.get(`${URL}/personas`);
-        dispatch({ type: GET_ALL_USUARIOS, payload: resp.data });
+        try {
+            const resp = await axios.get(`${URL}/personas`);
+            dispatch({ type: GET_ALL_USUARIOS, payload: resp.data });
+            return resp.data;
+        } catch (error) {
+            if (error?.response?.status === 404) {
+                dispatch({ type: GET_ALL_USUARIOS, payload: [] });
+                return [];
+            }
+            throw error;
+        }
     }
 }
 
 //trae por rol
 export const getUsuarioByRol = (rol) => {
     return async function (dispatch) {
-        const resp = await axios.get(`${URL}/personas/rol/${rol}`);
-        dispatch({ type: GET_USUARIOS_BY_ROL, payload: resp.data });
+        try {
+            const resp = await axios.get(`${URL}/personas/rol/${rol}`);
+            dispatch({ type: GET_USUARIOS_BY_ROL, payload: resp.data });
+            return resp.data;
+        } catch (error) {
+            if (error?.response?.status === 404) {
+                dispatch({ type: GET_USUARIOS_BY_ROL, payload: [] });
+                return [];
+            }
+            throw error;
+        }
     }
 };
 
@@ -222,47 +250,6 @@ export const creaArticulo = (data) => {
     };
 };
 
-// =================================
-// ARTICULOS PROVEEDOR
-// =================================
-export const getArticulosProveedor = () => {
-    return async function (dispatch) {
-        try {
-            const resp = await axios.get(`${URL}/articulosProveedor`);
-            dispatch({ type: GET_ARTICULOS_PROVEEDOR, payload: resp.data });
-            return resp.data;
-        } catch (error) {
-            return {
-                error: true,
-                message:
-                    error.response?.data?.message ||
-                    error.response?.data?.msg ||
-                    error.response?.data ||
-                    "Error al obtener articulos del proveedor.",
-            };
-        }
-    };
-};
-
-export const creaArticuloProveedor = (data) => {
-    return async function (dispatch) {
-        try {
-            const resp = await axios.post(`${URL}/articulosProveedor`, data);
-            dispatch({ type: CREA_ARTICULO_PROVEEDOR, payload: resp.data });
-            return resp.data;
-        } catch (error) {
-            return {
-                error: true,
-                message:
-                    error.response?.data?.message ||
-                    error.response?.data?.msg ||
-                    error.response?.data ||
-                    "Error al registrar el articulo del proveedor.",
-            };
-        }
-    };
-};
-
 //modifica art (intenta endpoints compatibles)
 export const modificaArticulo = (id, data) => {
     return async function (dispatch) {
@@ -280,9 +267,11 @@ export const modificaArticulo = (id, data) => {
                 // Si el endpoint existe pero falla por validacion, cortar y devolver error real
                 if (status && ![404, 405].includes(status)) {
                     return {
+                        error: true,
                         message:
                             error.response?.data?.message ||
                             error.response?.data?.msg ||
+                            error.response?.data?.error ||
                             "Error al modificar el articulo.",
                     };
                 }
@@ -290,17 +279,46 @@ export const modificaArticulo = (id, data) => {
         }
 
         return {
+            error: true,
             message: "No se encontro endpoint de modificacion de articulos en el backend.",
         };
     };
 };
 
-const getSessionUser = () => {
-    try {
-        return JSON.parse(localStorage.getItem('dataUser') || localStorage.getItem('userData') || 'null');
-    } catch (error) {
-        return null;
-    }
+export const actualizarPermisosEmpleado = (id, permisos = []) => {
+    return async function () {
+        const config = getAuthConfig();
+        try {
+            const resp = await axios.put(`${URL}/personas/${id}/permisos`, { permisos }, config);
+            return resp.data;
+        } catch (error) {
+            return {
+                error: true,
+                message:
+                    error.response?.data?.message ||
+                    error.response?.data?.msg ||
+                    "Error al actualizar permisos del empleado.",
+            };
+        }
+    };
+};
+
+export const resetPasswordEmpleado = (id, password) => {
+    return async function () {
+        const config = getAuthConfig();
+        try {
+            const resp = await axios.put(`${URL}/personas/${id}/reset-password`, { password }, config);
+            return resp.data;
+        } catch (error) {
+            return {
+                error: true,
+                message:
+                    error.response?.data?.message ||
+                    error.response?.data?.msg ||
+                    "Error al resetear la contrasena.",
+            };
+        }
+    };
 };
 
 //ajuste de stock (requiere endpoint de inventario en backend)
@@ -462,6 +480,32 @@ export const getHistorialInventario = (params = {}) => {
 export const clearHistorialInventarioError = () => ({
     type: CLEAR_HISTORIAL_INVENTARIO_ERROR,
 });
+
+export const getValoracionInventario = (params = {}) => {
+    return async function () {
+        const config = getAuthConfig();
+        const query = new URLSearchParams(
+            Object.entries(params).reduce((acc, [key, value]) => {
+                if (value !== undefined && value !== null && value !== '') acc[key] = value;
+                return acc;
+            }, {})
+        ).toString();
+
+        try {
+            const endpoint = `${URL}/articulos/valoracion-inventario${query ? `?${query}` : ''}`;
+            const resp = await axios.get(endpoint, config);
+            return resp.data;
+        } catch (error) {
+            return {
+                error: true,
+                message:
+                    error.response?.data?.message ||
+                    error.response?.data?.msg ||
+                    "Error al obtener valoracion de inventario.",
+            };
+        }
+    };
+};
 
 //elimina ART
 export const eliminarArt = (id) => {
@@ -718,6 +762,67 @@ export const cancelarOrdenCompra = (id) => {
     };
 };
 
+export const registrarPagoProveedor = (ordenId, data = {}) => {
+    return async function () {
+        const config = getAuthConfig();
+        const endpoints = ordenId
+            ? [
+                { method: "post", url: `${URL}/ordenesCompraProv/${ordenId}/pagos` },
+                { method: "post", url: `${URL}/ordenesCompraProv/${ordenId}/pago` },
+                { method: "post", url: `${URL}/ordenesCompraProv/${ordenId}/pagosProveedor` },
+                { method: "post", url: `${URL}/pagos-proveedor` },
+            ]
+            : [
+                { method: "post", url: `${URL}/pagos-proveedor` },
+            ];
+
+        const payload = {
+            ...data,
+            ...(ordenId ? { ordenCompra: ordenId, orden: ordenId } : {}),
+        };
+
+        for (const endpoint of endpoints) {
+            try {
+                const resp = await axios[endpoint.method](endpoint.url, payload, config);
+                return resp.data;
+            } catch (error) {
+                const status = error?.response?.status;
+                if (status && ![404, 405].includes(status)) {
+                    return {
+                        error: true,
+                        message:
+                            error.response?.data?.message ||
+                            error.response?.data?.msg ||
+                            "Error al registrar el pago del proveedor.",
+                    };
+                }
+            }
+        }
+
+        return {
+            error: true,
+            message: "No se encontro endpoint para registrar pagos de proveedor.",
+        };
+    };
+};
+
+export const getPagosProveedorPorProveedor = (proveedorId) => async () => {
+    const config = getAuthConfig();
+
+    try {
+        const resp = await axios.get(`${URL}/pagos-proveedor/proveedor/${proveedorId}`, config);
+        return resp.data;
+    } catch (error) {
+        return {
+            error: true,
+            message:
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al obtener pagos del proveedor.",
+        };
+    }
+};
+
 export const getOrdenesCompra = (params = {}) => async (dispatch) => {
     dispatch({ type: 'ORDENES_REQUEST' });
     const config = getAuthConfig();
@@ -906,6 +1011,7 @@ export const getRemitoPorNumero = (numeroRemito) => {
 export const actualizarEstadoRemito = (id, estado) => {
     return async function (dispatch) {
         const config = getAuthConfig();
+        const estadoRemito = estado === "PAGADO" ? "PAGADO" : "PENDIENTE";
         const endpoints = [
             { method: "patch", url: `${URL}/remitos/${id}/estado` },
             { method: "put", url: `${URL}/remitos/${id}/estado` },
@@ -913,7 +1019,7 @@ export const actualizarEstadoRemito = (id, estado) => {
 
         for (const endpoint of endpoints) {
             try {
-                const resp = await axios[endpoint.method](endpoint.url, { estado }, config);
+                const resp = await axios[endpoint.method](endpoint.url, { estado: estadoRemito }, config);
                 const remito = resp?.data?.remito || resp?.data;
                 dispatch({ type: GET_REMITO_BY_ID_SUCCESS, payload: remito });
                 return resp.data;

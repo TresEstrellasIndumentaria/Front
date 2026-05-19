@@ -82,17 +82,12 @@ function LoginClasico() {
         }
     };
 
-    const handleKeyDown = (e) => {
-        if (e.key === "Enter") e.preventDefault();
-    };
-
     return (
         <div className="login-container">
             <h2 className="login-title">Iniciar Sesión</h2>
 
             <form
                 onSubmit={handleLogin}
-                onKeyDown={handleKeyDown}
                 className="login-form"
             >
                 {/* EMAIL */}
@@ -149,7 +144,14 @@ function LoginClasico() {
             <button
                 type="button"
                 className="register-button-login"
-                onClick={() => navigate("/recuperarDatosUsuario")}
+                onClick={() => {
+                    Swal.fire({
+                        icon: "info",
+                        title: "Recuperar contraseña",
+                        text: "Solicitá a un administrador el reseteo de tu contraseña.",
+                        confirmButtonText: "Entendido",
+                    });
+                }}
             >
                 Recuperar contraseña
             </button>

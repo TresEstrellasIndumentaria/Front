@@ -1,5 +1,14 @@
 :root {
-  --color-barra: #4baf4f;
+  --color-primary: #f9b218;
+  --color-primary-hover: #e0a014;
+  --color-dark: #1b1b1b;
+  --color-dark-soft: #1b1b1b;
+  --color-page: #f4f4f4;
+  --color-surface: #ffffff;
+  --color-text: #1f1f1f;
+  --color-text-inverse: #ffffff;
+  --color-border: #d8d8d8;
+  --color-barra: var(--color-dark);
 }
 
 .app-container {
@@ -16,5 +25,253 @@
   display: flex;
   flex-direction: column;
   justify-content: start;
-  align-items: start;
+  align-items: center;
+}
+
+.App {
+  min-height: 100vh;
+  background: var(--color-page);
+  color: var(--color-text);
+}
+
+.App button,
+.App a {
+  font-family: inherit;
+}
+
+.swal2-container {
+  z-index: 20000 !important;
+}
+
+.btn-add,
+.btn-primary,
+.form-venta-submit,
+.ventas-add-btn,
+.oc-primary,
+.oc-search-btn,
+.hist-export-btn,
+.form-cobro-submit,
+.articulo-prov-actions .btn-articulo-prov-primary {
+  background: var(--color-primary) !important;
+  color: var(--color-dark) !important;
+  border-color: var(--color-primary) !important;
+  box-shadow: none;
+}
+
+.btn-add:hover,
+.btn-primary:hover,
+.form-venta-submit:hover,
+.ventas-add-btn:hover,
+.oc-primary:hover,
+.oc-search-btn:hover,
+.hist-export-btn:hover,
+.form-cobro-submit:hover,
+.articulo-prov-actions .btn-articulo-prov-primary:hover {
+  background: var(--color-primary-hover) !important;
+}
+
+.btn-edit,
+.ventas-btn--edit,
+.articulos-acciones .btn-edit {
+  background: var(--color-dark) !important;
+  color: var(--color-text-inverse) !important;
+  border-color: var(--color-dark) !important;
+}
+
+.btn-edit:hover,
+.ventas-btn--edit:hover,
+.articulos-acciones .btn-edit:hover {
+  background: var(--color-dark-soft) !important;
+}
+
+.tabla-empleados thead,
+.articulos-table thead th,
+.ventas-table th,
+.ventas-articulo-table th,
+.ventas-categoria-table th {
+  background: var(--color-dark) !important;
+  color: var(--color-primary) !important;
+}
+
+/* Formato universal para vistas con tablas, alineado a Resumen de compras */
+.dashboard-content :where(
+  .articulos-page,
+  .ventas-page,
+  .hist-page,
+  .valoracion-page,
+  .ventas-articulo-page,
+  .ventas-categoria-page,
+  .resumen-ventas-page
+) {
+  background: var(--color-page) !important;
+  border-radius: 0 !important;
+  box-sizing: border-box;
+  padding: 14px 0 40px !important;
+}
+
+.dashboard-content :where(
+  .articulos-page,
+  .hist-page,
+  .valoracion-page
+) {
+  width: min(1180px, calc(100% - 24px)) !important;
+}
+
+.dashboard-content :where(
+  .ventas-categoria-shell,
+  .resumen-ventas-shell
+) {
+  width: min(1180px, calc(100% - 24px)) !important;
+}
+
+.dashboard-content .ventas-articulo-shell {
+  width: min(1380px, calc(100% - 24px)) !important;
+}
+
+.dashboard-content :where(
+  .articulos-table-shell,
+  .hist-card,
+  .valoracion-table-card,
+  .ventas-articulo-card,
+  .ventas-categoria-card,
+  .resumen-ventas-card,
+  .ventas-card,
+  .usuarios-table-card,
+  .prov-table-card
+) {
+  background: var(--color-surface) !important;
+  border: 1px solid #d8dde3 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  overflow: hidden;
+}
+
+.dashboard-content :where(
+  .ventas-articulo-summary-card,
+  .ventas-categoria-summary-card,
+  .resumen-ventas-summary-card,
+  .valoracion-summary-card
+) {
+  padding: 12px 18px !important;
+  border-radius: 6px !important;
+  background: var(--color-surface) !important;
+  border: 1px solid #d8dde3 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+.dashboard-content :where(
+  .ventas-articulo-summary-card--top,
+  .ventas-categoria-summary-card--top,
+  .resumen-ventas-summary-card--warn
+) {
+  background: var(--color-surface) !important;
+}
+
+.dashboard-content :where(
+  .ventas-articulo-toolbar,
+  .ventas-categoria-toolbar,
+  .resumen-ventas-toolbar,
+  .hist-toolbar,
+  .valoracion-table-head
+) {
+  padding: 18px 28px 24px !important;
+  border-bottom: none !important;
+}
+
+.dashboard-content :where(
+  .articulos-table,
+  .hist-table,
+  .valoracion-table,
+  .ventas-articulo-table,
+  .ventas-categoria-table,
+  .ventas-table,
+  .resumen-ventas-table,
+  .tabla-empleados,
+  .prov-table,
+  .lista-cobros-table,
+  .cuenta-corriente-table,
+  .stock-table
+) {
+  width: 100%;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+}
+
+.dashboard-content :where(
+  .articulos-table,
+  .hist-table,
+  .valoracion-table,
+  .ventas-articulo-table,
+  .ventas-categoria-table,
+  .ventas-table,
+  .resumen-ventas-table,
+  .tabla-empleados,
+  .prov-table,
+  .lista-cobros-table,
+  .cuenta-corriente-table,
+  .stock-table
+) :where(th, td) {
+  padding: 16px 10px !important;
+  border-bottom: 1px solid #eef2f7 !important;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.dashboard-content :where(
+  .articulos-table,
+  .hist-table,
+  .valoracion-table,
+  .ventas-articulo-table,
+  .ventas-categoria-table,
+  .ventas-table,
+  .resumen-ventas-table,
+  .tabla-empleados,
+  .prov-table,
+  .lista-cobros-table,
+  .cuenta-corriente-table,
+  .stock-table
+) thead th {
+  background: var(--color-dark) !important;
+  color: var(--color-primary) !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.dashboard-content :where(
+  .articulos-table,
+  .hist-table,
+  .valoracion-table,
+  .ventas-articulo-table,
+  .ventas-categoria-table,
+  .ventas-table,
+  .resumen-ventas-table,
+  .tabla-empleados,
+  .prov-table,
+  .lista-cobros-table,
+  .cuenta-corriente-table,
+  .stock-table
+) tbody tr:hover {
+  background: #f9fafb !important;
+}
+
+.dashboard-content :where(
+  .articulos-table,
+  .hist-table,
+  .valoracion-table,
+  .ventas-articulo-table,
+  .ventas-categoria-table,
+  .ventas-table,
+  .resumen-ventas-table,
+  .tabla-empleados,
+  .prov-table,
+  .lista-cobros-table,
+  .cuenta-corriente-table,
+  .stock-table
+) tfoot td {
+  background: #fff !important;
+  border-top: 1px solid #eef2f7 !important;
+  border-bottom: none !important;
+  font-weight: 800 !important;
 }

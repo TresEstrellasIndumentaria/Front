@@ -60,14 +60,20 @@
 .campo input:focus,
 .campo select:focus,
 .campo textarea:focus {
-    border-color: #62ae5e;
+    border-color: var(--color-primary);
     background: #fff;
-    box-shadow: 0 0 0 4px rgba(98, 174, 94, 0.14);
+    box-shadow: 0 0 0 4px rgba(249, 178, 24, 0.18);
 }
 
 .campo textarea {
     min-height: 120px;
     resize: vertical;
+}
+
+.campo textarea.descripcion-articulo {
+    min-height: 60px;
+    height: 60px;
+    line-height: 1.35;
 }
 
 .input-readonly {
@@ -90,7 +96,12 @@
 .checkbox-linea input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #6aa84f;
+    accent-color: var(--color-primary);
+}
+
+.articulo-proveedor-check {
+    width: fit-content;
+    min-width: 260px;
 }
 
 .talles-header {
@@ -119,13 +130,13 @@
     white-space: nowrap;
     padding: 11px 16px;
     border-radius: 999px;
-    background: #edf7ea;
-    color: #3d7a3a;
-    box-shadow: inset 0 0 0 1px #cce0c5;
+    background: var(--color-primary);
+    color: var(--color-dark);
+    box-shadow: inset 0 0 0 1px rgba(20, 20, 20, 0.18), 0 8px 18px rgba(249, 178, 24, 0.22);
 }
 
 .btn-agregar-talle:hover {
-    background: #e2f2dd;
+    background: #ffd15a;
     transform: translateY(-1px);
 }
 
@@ -138,7 +149,7 @@
 
 .talles-tabla {
     width: 100%;
-    min-width: 860px;
+    min-width: 680px;
     border-collapse: collapse;
 }
 
@@ -150,8 +161,8 @@
     vertical-align: middle;
 }
 
-.talles-tabla th:nth-child(6),
-.talles-tabla td:nth-child(6) {
+.talles-tabla th:nth-child(4),
+.talles-tabla td:nth-child(4) {
     width: 92px;
     min-width: 92px;
     padding-left: 6px;
@@ -160,8 +171,8 @@
 }
 
 .talles-tabla th {
-    background: #f2f7ef;
-    color: #476149;
+    background: var(--color-dark);
+    color: var(--color-primary);
     font-size: 0.88rem;
     font-weight: 700;
 }
@@ -177,6 +188,12 @@
 }
 
 .talles-tabla td input.input-error {
+    border-color: #d94c4c;
+    background: #fff5f5;
+    box-shadow: 0 0 0 3px rgba(217, 76, 76, 0.12);
+}
+
+.campo input.input-error {
     border-color: #d94c4c;
     background: #fff5f5;
     box-shadow: 0 0 0 3px rgba(217, 76, 76, 0.12);
@@ -208,15 +225,15 @@
     width: 16px;
     height: 16px;
     margin: 0;
-    accent-color: #6aa84f;
+    accent-color: var(--color-primary);
 }
 
 .btn-abrir-inventario,
 .btn-cerrar-inventario {
     border: none;
     border-radius: 999px;
-    background: #edf7ea;
-    color: #3d7a3a;
+    background: var(--color-primary);
+    color: var(--color-dark);
     font-size: 0.82rem;
     font-weight: 700;
     cursor: pointer;
@@ -229,8 +246,8 @@
     width: 30px;
     height: 30px;
     padding: 0;
-    border: 1px solid #cfe0c8;
-    box-shadow: 0 2px 4px rgba(61, 122, 58, 0.08);
+    border: 1px solid rgba(20, 20, 20, 0.18);
+    box-shadow: 0 2px 4px rgba(20, 20, 20, 0.08);
 }
 
 .btn-cerrar-inventario {
@@ -239,7 +256,24 @@
 
 .btn-abrir-inventario:hover,
 .btn-cerrar-inventario:hover {
-    background: #e2f2dd;
+    background: #ffd15a;
+}
+
+.proveedor-fields {
+    border: 1px solid #d7d1bf;
+    border-radius: 18px;
+    background: #fffdfa;
+    padding: 18px;
+}
+
+.proveedor-fields-header {
+    margin-bottom: 14px;
+}
+
+.proveedor-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
 }
 
 .talles-compuestos-grid {
@@ -319,24 +353,24 @@
 }
 
 .btn-cancelar {
-    background: #e9eeea;
-    color: #425644;
+    background: #1f1f1f;
+    color: #ffffff;
 }
 
 .btn-cancelar:hover {
-    background: #dde5de;
+    background: #343434;
     transform: translateY(-1px);
 }
 
 .btn-guardar {
-    background: linear-gradient(135deg, #6aa84f 0%, #4baf4f 100%);
-    color: #fff;
-    box-shadow: 0 12px 24px rgba(75, 175, 79, 0.24);
+    background: var(--color-primary);
+    color: var(--color-dark);
+    box-shadow: 0 12px 24px rgba(249, 178, 24, 0.24);
 }
 
 .btn-guardar:hover {
     transform: translateY(-1px);
-    box-shadow: 0 14px 28px rgba(75, 175, 79, 0.32);
+    box-shadow: 0 14px 28px rgba(249, 178, 24, 0.32);
 }
 
 @media (max-width: 768px) {
@@ -361,6 +395,10 @@
     }
 
     .fila {
+        grid-template-columns: 1fr;
+    }
+
+    .proveedor-fields-grid {
         grid-template-columns: 1fr;
     }
 

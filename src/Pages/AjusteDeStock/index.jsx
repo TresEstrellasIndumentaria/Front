@@ -2,16 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { ajustarStockArticulos, getAllArticulos } from '../../Redux/Actions';
 import './styles.css';
-
-const MOTIVOS = [
-    { value: 'RECIBIR_ARTICULOS', label: 'Recibir articulos' },
-    { value: 'RECUENTO_INVENTARIO', label: 'Recuento de inventario' },
-    { value: 'PERDIDA', label: 'Perdida' },
-    { value: 'DAÑADO', label: 'Dañado' },
-];
 
 const toNumberOrZero = (value) => {
     const parsed = Number(value);
@@ -22,15 +14,35 @@ const esInputNumericoValido = (value) => /^-?\d*([.,]\d*)?$/.test(value);
 
 const normalizarInputNumerico = (value) => value.replace(',', '.');
 
-const getDeltaPorMotivo = (motivo, cantidad) => {
-    const value = toNumberOrZero(cantidad);
-    if (motivo === 'PERDIDA' || motivo === 'DAÑADO' || motivo === 'DANADO') return -Math.abs(value);
-    return value;
-};
-
 const limpiarInputNumerico = (value) => {
     if (value === '' || value === '-' || value === '.' || value === '-.') return 0;
     return toNumberOrZero(value);
+};
+
+const getCodigoArticulo = (articulo) => (
+    articulo?.codigoArticulo || articulo?.codigo || articulo?.codArticulo || ''
+);
+
+const getStockArticulo = (articulo) => {
+    const stockRaiz = Number(articulo?.stock || 0);
+    const stockTalles = Array.isArray(articulo?.talles)
+        ? articulo.talles.reduce((total, talle) => total + Number(talle?.stock || 0), 0)
+        : 0;
+
+    return Math.max(stockRaiz, stockTalles);
+};
+
+const getCosteArticulo = (articulo) => {
+    if (Number.isFinite(Number(articulo?.costo ?? articulo?.coste))) {
+        return Number(articulo?.costo ?? articulo?.coste);
+    }
+
+    if (Array.isArray(articulo?.talles) && articulo.talles.length) {
+        const talleConCoste = articulo.talles.find((talle) => Number.isFinite(Number(talle?.costo ?? talle?.coste)));
+        if (talleConCoste) return Number(talleConCoste.costo ?? talleConCoste.coste);
+    }
+
+    return 0;
 };
 
 function AjusteDeStock() {
@@ -38,7 +50,6 @@ function AjusteDeStock() {
     const navigate = useNavigate();
     const articulos = useSelector((state) => state.articulos || []);
 
-    const [motivo, setMotivo] = useState('RECIBIR_ARTICULOS');
     const [anotaciones, setAnotaciones] = useState('');
     const [articuloSelect, setArticuloSelect] = useState('');
     const [itemsAjuste, setItemsAjuste] = useState([]);
@@ -57,7 +68,9 @@ function AjusteDeStock() {
         return map;
     }, [articulos]);
 
-    const puedeEditarCoste = motivo === 'RECIBIR_ARTICULOS';
+    const articulosOrdenados = useMemo(() => (
+        [...articulos].sort((a, b) => String(a?.nombre || '').localeCompare(String(b?.nombre || ''), 'es'))
+    ), [articulos]);
 
     const agregarArticulo = (id) => {
         if (!id) return;
@@ -74,9 +87,9 @@ function AjusteDeStock() {
             {
                 articulo: id,
                 nombre: art.nombre,
-                stockActual: Number(art.stock || 0),
+                stockActual: getStockArticulo(art),
                 cantidad: '',
-                coste: String(Number(art.coste || 0)),
+                coste: String(getCosteArticulo(art)),
             },
         ]);
         setArticuloSelect('');
@@ -97,20 +110,19 @@ function AjusteDeStock() {
     };
 
     const getStockFinal = (item) => {
-        const delta = getDeltaPorMotivo(motivo, item.cantidad);
-        return Number(item.stockActual || 0) + delta;
+        return Number(item.stockActual || 0) + toNumberOrZero(item.cantidad);
     };
 
     const handleAjustar = async () => {
         if (!itemsAjuste.length) {
-            setErrorItems('Por favor, añada al menos un articulo.');
+            setErrorItems('Por favor, anada al menos un articulo.');
             return;
         }
 
         const payloadItems = itemsAjuste
             .filter((item) => Number(item.cantidad || 0) !== 0)
             .map((item) => {
-                const delta = getDeltaPorMotivo(motivo, item.cantidad);
+                const delta = toNumberOrZero(item.cantidad);
                 return {
                     articulo: item.articulo,
                     cantidad: delta,
@@ -124,9 +136,7 @@ function AjusteDeStock() {
             return;
         }
 
-        const itemNegativo = payloadItems.find((item) => {
-            return Number(item.stockFinal || 0) < 0;
-        });
+        const itemNegativo = payloadItems.find((item) => Number(item.stockFinal || 0) < 0);
 
         if (itemNegativo) {
             Swal.fire('Stock invalido', 'El stock final no puede ser negativo.', 'warning');
@@ -134,7 +144,6 @@ function AjusteDeStock() {
         }
 
         const payload = {
-            motivo,
             anotaciones,
             items: payloadItems,
         };
@@ -152,7 +161,6 @@ function AjusteDeStock() {
             await Swal.fire('Ajuste realizado', msg || 'Se ajusto el stock correctamente.', 'success');
             setItemsAjuste([]);
             setAnotaciones('');
-            setMotivo('RECIBIR_ARTICULOS');
             setErrorItems('');
             dispatch(getAllArticulos());
         } finally {
@@ -163,18 +171,6 @@ function AjusteDeStock() {
     return (
         <div className="stock-ajuste-page">
             <div className="stock-card">
-                <div className="stock-field">
-                    <label>Motivo</label>
-                    <div className="stock-select-wrap">
-                        <select value={motivo} onChange={(e) => setMotivo(e.target.value)}>
-                            {MOTIVOS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
-                        <KeyboardArrowDownIcon fontSize="small" />
-                    </div>
-                </div>
-
                 <div className="stock-field">
                     <label>Anotaciones</label>
                     <textarea
@@ -194,7 +190,7 @@ function AjusteDeStock() {
                             <th>Articulo</th>
                             <th>En stock</th>
                             <th>Ajuste (+/-)</th>
-                            <th>Coste</th>
+                            <th>Costo</th>
                             <th>Stock final</th>
                             <th></th>
                         </tr>
@@ -232,7 +228,6 @@ function AjusteDeStock() {
                                             onBlur={() => {
                                                 actualizarItem(item.articulo, 'coste', limpiarInputNumerico(item.coste));
                                             }}
-                                            disabled={!puedeEditarCoste}
                                         />
                                     </td>
                                     <td className={stockFinal < 0 ? 'stock-final-danger' : ''}>{stockFinal}</td>
@@ -254,8 +249,10 @@ function AjusteDeStock() {
                                         }}
                                     >
                                         <option value="">Buscar articulo</option>
-                                        {articulos.map((art) => (
-                                            <option key={art._id} value={art._id}>{art.nombre}</option>
+                                        {articulosOrdenados.map((art) => (
+                                            <option key={art._id} value={art._id}>
+                                                {art.nombre}{getCodigoArticulo(art) ? ` | ${getCodigoArticulo(art)}` : ''} {art.itemProveedor ? '(Proveedor)' : '(Venta)'}
+                                            </option>
                                         ))}
                                     </select>
                                 </div>

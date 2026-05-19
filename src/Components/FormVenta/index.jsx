@@ -3,7 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { crearRemito, getAllArticulos, getRemitoById, getUsuarioByRol, modificarRemito } from '../../Redux/Actions';
+import {
+    crearRemito,
+    getAllArticulos,
+    getRemitoById,
+    getUsuarioByRol,
+    modificarRemito
+} from '../../Redux/Actions';
 import './styles.css';
 
 const clientesMock = [
@@ -78,11 +84,12 @@ const emptyForm = {
 };
 
 const createEmptyArticulo = () => ({
-    nombreCamiseta: '',
-    numero: '',
-    prenda: '',
+    numeroArticulo: '',
+    articulo: '',
+    nombreArticulo: '',
     talle: '',
-    observaciones: '',
+    cantidad: '1',
+    importeUnitario: '',
 });
 
 const mapRemitoToForm = (remito) => ({
@@ -94,37 +101,101 @@ const mapRemitoToForm = (remito) => ({
     cuit: remito?.cuit || '',
 });
 
-const resolvePrendaValue = (pedidoItem, articulos) => {
-    const prenda = String(pedidoItem?.prenda || '').trim();
-    if (!prenda) return '';
+const getCodigoArticulo = (articulo) => (
+    articulo?.codigoArticulo || articulo?.codigo || articulo?.codArticulo || ''
+);
 
-    const exactId = articulos.find((articulo) => articulo?._id === prenda);
+const getPrecioArticulo = (articulo, talleValue = '') => {
+    const talles = Array.isArray(articulo?.talles) ? articulo.talles : [];
+    if (!talles.length) return '';
+
+    const normalizedTalle = normalize(talleValue);
+    const talleSeleccionado = normalizedTalle
+        ? talles.find((talle) => normalize(talle?.talle) === normalizedTalle)
+        : null;
+    const precio = talleSeleccionado?.precio ?? talles[0]?.precio ?? '';
+    return precio === '' || precio === undefined || precio === null ? '' : String(precio);
+};
+
+const calcularImporteTotal = (articulo) => {
+    const cantidad = Number(articulo?.cantidad || 0);
+    const importeUnitario = Number(articulo?.importeUnitario || 0);
+    return cantidad > 0 && importeUnitario >= 0 ? cantidad * importeUnitario : 0;
+};
+
+const resolveArticuloValue = (pedidoItem, articulos) => {
+    const articuloValue = String(
+        pedidoItem?.articulo ||
+        pedidoItem?.articuloId ||
+        pedidoItem?.prenda ||
+        pedidoItem?.nombreArticulo ||
+        ''
+    ).trim();
+    if (!articuloValue) return '';
+
+    const exactId = articulos.find((articulo) => articulo?._id === articuloValue);
     if (exactId) return exactId._id;
 
-    const normalizedPrenda = normalize(prenda);
-    const byName = articulos.find((articulo) => normalize(articulo?.nombre) === normalizedPrenda);
+    const normalizedArticulo = normalize(articuloValue);
+    const byCode = articulos.find((articulo) => normalize(getCodigoArticulo(articulo)) === normalizedArticulo);
+    if (byCode?._id) return byCode._id;
+
+    const byName = articulos.find((articulo) => normalize(articulo?.nombre) === normalizedArticulo);
     if (byName?._id) return byName._id;
 
-    const byContains = articulos.find((articulo) => normalize(articulo?.nombre).includes(normalizedPrenda));
+    const byContains = articulos.find((articulo) => normalize(articulo?.nombre).includes(normalizedArticulo));
     if (byContains?._id) return byContains._id;
 
-    const containedByPrenda = articulos.find((articulo) => normalizedPrenda.includes(normalize(articulo?.nombre)));
-    if (containedByPrenda?._id) return containedByPrenda._id;
+    const containedByArticulo = articulos.find((articulo) => normalizedArticulo.includes(normalize(articulo?.nombre)));
+    if (containedByArticulo?._id) return containedByArticulo._id;
 
-    return prenda;
+    return articuloValue;
 };
 
 const mapPedidoToArticulos = (pedido, articulos) => {
     if (!Array.isArray(pedido) || !pedido.length) return [createEmptyArticulo()];
 
-    return pedido.map((item) => ({
-        nombreCamiseta: item?.nombreCamiseta || '',
-        numero: item?.numero || '',
-        prenda: resolvePrendaValue(item, articulos),
-        talle: item?.talle || '',
-        observaciones: item?.observaciones || '',
-    }));
+    return pedido.map((item) => {
+        const articuloId = resolveArticuloValue(item, articulos);
+        const articuloSeleccionado = articulos.find((articulo) => articulo?._id === articuloId);
+        const cantidad = item?.cantidad ?? 1;
+        const importeUnitario = item?.precioUnitario ?? item?.importeUnitario ?? getPrecioArticulo(articuloSeleccionado, item?.talle);
+
+        return {
+            numeroArticulo: item?.numeroArticulo || item?.codigoArticulo || getCodigoArticulo(articuloSeleccionado),
+            articulo: articuloId,
+            nombreArticulo: item?.nombreArticulo || item?.prenda || articuloSeleccionado?.nombre || '',
+            talle: item?.talle || '',
+            cantidad: cantidad === undefined || cantidad === null ? '' : String(cantidad),
+            importeUnitario: importeUnitario === undefined || importeUnitario === null ? '' : String(importeUnitario),
+        };
+    });
 };
+
+const getArticuloCodigoByValue = (articulos, articuloValue, numeroArticulo = '') => {
+    const articuloSeleccionado = articulos.find((item) => item._id === articuloValue);
+    return getCodigoArticulo(articuloSeleccionado) || numeroArticulo || '';
+};
+
+const getOpcionesArticulo = (articulos, articuloValue, nombreArticulo = '') => {
+    const existeEnCatalogo = articulos.some((articulo) => articulo._id === articuloValue);
+    if (!articuloValue || existeEnCatalogo) return articulos;
+
+    return [
+        {
+            _id: articuloValue,
+            nombre: `${nombreArticulo || articuloValue} (guardado en remito)`,
+            codigoArticulo: articuloValue,
+        },
+        ...articulos,
+    ];
+};
+
+const getTallesArticulo = (articulo) => (
+    Array.isArray(articulo?.talles)
+        ? articulo.talles.map((talle) => talle?.talle).filter(Boolean)
+        : []
+);
 
 function FormVenta() {
     const dispatch = useDispatch();
@@ -140,6 +211,7 @@ function FormVenta() {
     const [articulosVenta, setArticulosVenta] = useState([createEmptyArticulo()]);
     const [articulosErrors, setArticulosErrors] = useState({});
     const [remitoEnEdicion, setRemitoEnEdicion] = useState(location.state?.remito || null);
+    const [clientePrecargado, setClientePrecargado] = useState(location.state?.cliente || null);
     const isEditMode = Boolean(id);
 
     useEffect(() => {
@@ -156,6 +228,9 @@ function FormVenta() {
         if (location.state?.remito) {
             setRemitoEnEdicion(location.state.remito);
         }
+        if (location.state?.cliente) {
+            setClientePrecargado(location.state.cliente);
+        }
     }, [location.state]);
 
     useEffect(() => {
@@ -171,18 +246,32 @@ function FormVenta() {
         ));
     }, [clientesState]);
 
-    const prendasDisponibles = useMemo(() => {
-        return (articulosState || []).filter((art) => Array.isArray(art?.talles) && art.talles.length);
+    useEffect(() => {
+        if (!clientePrecargado || isEditMode) return;
+
+        applyClienteData(buildClienteOption(clientePrecargado, 0));
+        setClientePrecargado(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [clientePrecargado, isEditMode]);
+
+    const articulosDisponibles = useMemo(() => {
+        return Array.isArray(articulosState)
+            ? articulosState.filter((articulo) => articulo?.itemProveedor !== true)
+            : [];
     }, [articulosState]);
 
+    const totalVenta = useMemo(() => (
+        articulosVenta.reduce((total, articulo) => total + calcularImporteTotal(articulo), 0)
+    ), [articulosVenta]);
+
     useEffect(() => {
-        if (!remitoEnEdicion || !prendasDisponibles.length) return;
+        if (!remitoEnEdicion || !articulosDisponibles.length) return;
 
         setForm(mapRemitoToForm(remitoEnEdicion));
-        setArticulosVenta(mapPedidoToArticulos(remitoEnEdicion.pedido, prendasDisponibles));
+        setArticulosVenta(mapPedidoToArticulos(remitoEnEdicion.pedido, articulosDisponibles));
         setErrors({});
         setArticulosErrors({});
-    }, [prendasDisponibles, remitoEnEdicion]);
+    }, [articulosDisponibles, remitoEnEdicion]);
 
     const applyClienteData = (cliente) => {
         setForm({
@@ -233,11 +322,23 @@ function FormVenta() {
 
         setArticulosVenta((prev) => prev.map((articulo, articuloIndex) => {
             if (articuloIndex !== index) return articulo;
-            if (field === 'prenda') {
+            if (field === 'articulo') {
+                const articuloSeleccionado = articulosDisponibles.find((item) => item._id === value);
                 return {
                     ...articulo,
-                    prenda: value,
+                    articulo: value,
+                    nombreArticulo: articuloSeleccionado?.nombre || '',
+                    numeroArticulo: getCodigoArticulo(articuloSeleccionado),
                     talle: '',
+                    importeUnitario: getPrecioArticulo(articuloSeleccionado),
+                };
+            }
+            if (field === 'talle') {
+                const articuloSeleccionado = articulosDisponibles.find((item) => item._id === articulo.articulo);
+                return {
+                    ...articulo,
+                    talle: value,
+                    importeUnitario: articulo.importeUnitario || getPrecioArticulo(articuloSeleccionado, value),
                 };
             }
             return {
@@ -269,36 +370,6 @@ function FormVenta() {
         });
     };
 
-    const getTallesArticulo = (articuloId) => {
-        const articulo = prendasDisponibles.find((item) => item._id === articuloId);
-        return Array.isArray(articulo?.talles) ? articulo.talles : [];
-    };
-
-    const getOpcionesPrenda = (prendaValue) => {
-        const existeEnCatalogo = prendasDisponibles.some((prenda) => prenda._id === prendaValue);
-        if (!prendaValue || existeEnCatalogo) return prendasDisponibles;
-
-        return [
-            {
-                _id: prendaValue,
-                nombre: `${prendaValue} (guardada en remito)`,
-                talles: [],
-            },
-            ...prendasDisponibles,
-        ];
-    };
-
-    const getOpcionesTalle = (articulo) => {
-        const talles = getTallesArticulo(articulo.prenda);
-        const existeTalle = talles.some((talle) => (talle?.talle || '') === articulo.talle);
-
-        if (talles.length || !articulo.talle || existeTalle) {
-            return talles;
-        }
-
-        return [{ talle: articulo.talle, ancho: '-', alto: '-' }];
-    };
-
     const validate = () => {
         const nextErrors = {};
 
@@ -310,23 +381,35 @@ function FormVenta() {
 
         const nextArticulosErrors = {};
         const articulosNormalizados = articulosVenta.filter((articulo) => (
-            articulo.nombreCamiseta || articulo.numero || articulo.prenda || articulo.talle || articulo.observaciones
+            articulo.numeroArticulo ||
+            articulo.articulo ||
+            articulo.nombreArticulo ||
+            articulo.talle ||
+            articulo.cantidad ||
+            articulo.importeUnitario
         ));
 
         if (!articulosNormalizados.length) {
             nextArticulosErrors[0] = {
-                prenda: true,
-                talle: true,
+                articulo: true,
+                cantidad: true,
+                importeUnitario: true,
             };
         }
 
         articulosVenta.forEach((articulo, index) => {
-            const hasAnyValue = articulo.nombreCamiseta || articulo.numero || articulo.prenda || articulo.talle || articulo.observaciones;
+            const hasAnyValue = articulo.numeroArticulo ||
+                articulo.articulo ||
+                articulo.nombreArticulo ||
+                articulo.talle ||
+                articulo.cantidad ||
+                articulo.importeUnitario;
             if (!hasAnyValue) return;
 
             const rowErrors = {};
-            if (!articulo.prenda) rowErrors.prenda = true;
-            if (!articulo.talle) rowErrors.talle = true;
+            if (!articulo.articulo) rowErrors.articulo = true;
+            if (!articulo.cantidad || Number(articulo.cantidad) <= 0) rowErrors.cantidad = true;
+            if (articulo.importeUnitario === '' || Number(articulo.importeUnitario) < 0) rowErrors.importeUnitario = true;
 
             if (Object.keys(rowErrors).length) {
                 nextArticulosErrors[index] = rowErrors;
@@ -361,18 +444,37 @@ function FormVenta() {
 
         const pedido = articulosVenta
             .filter((articulo) => (
-                articulo.nombreCamiseta || articulo.numero || articulo.prenda || articulo.talle || articulo.observaciones
+                articulo.numeroArticulo ||
+                articulo.articulo ||
+                articulo.nombreArticulo ||
+                articulo.talle ||
+                articulo.cantidad ||
+                articulo.importeUnitario
             ))
             .map((articulo) => {
-                const prendaSeleccionada = prendasDisponibles.find((item) => item._id === articulo.prenda);
+                const articuloSeleccionado = articulosDisponibles.find((item) => item._id === articulo.articulo);
+                const nombreArticulo = articuloSeleccionado?.nombre || articulo.nombreArticulo || articulo.articulo;
+                const numeroArticulo = getArticuloCodigoByValue(articulosDisponibles, articulo.articulo, articulo.numeroArticulo);
+                const cantidad = Number(articulo.cantidad);
+                const importeUnitario = Number(articulo.importeUnitario);
+                const importeTotal = calcularImporteTotal(articulo);
+
                 return {
-                    nombreCamiseta: articulo.nombreCamiseta.trim(),
-                    numero: articulo.numero.trim(),
-                    prenda: prendaSeleccionada?.nombre || articulo.prenda,
-                    talle: articulo.talle,
-                    observaciones: articulo.observaciones.trim(),
+                    numeroArticulo,
+                    codigoArticulo: numeroArticulo,
+                    articulo: articulo.articulo,
+                    articuloId: articulo.articulo,
+                    nombreArticulo,
+                    prenda: nombreArticulo,
+                    talle: articulo.talle.trim(),
+                    cantidad,
+                    precioUnitario: importeUnitario,
+                    subtotal: importeTotal,
+                    importeUnitario,
+                    importeTotal,
                 };
             });
+        const importeTotal = pedido.reduce((total, item) => total + Number(item.importeTotal || 0), 0);
 
         const payload = {
             numeroCliente: form.numeroCliente.trim(),
@@ -381,7 +483,11 @@ function FormVenta() {
             email: form.email.trim(),
             telefono: form.telefono.trim(),
             cuit: form.cuit.trim(),
+            estado: remitoEnEdicion?.estado === 'PAGADO' ? 'PAGADO' : 'PENDIENTE',
             pedido,
+            subtotal: importeTotal,
+            descuento: 0,
+            importeTotal,
         };
 
         const response = isEditMode
@@ -510,7 +616,8 @@ function FormVenta() {
                             />
                         </div>
                     </div>
-
+                    
+                    {/* Articulos */}
                     <div className="form-venta-items-card">
                         <div className="form-venta-items-header">
                             <div>
@@ -534,63 +641,88 @@ function FormVenta() {
                                     </div>
 
                                     <div className="form-venta-field form-venta-item-field">
-                                        <label>Nombre en Camiseta (Dorsal)</label>
-                                        <input
-                                            type="text"
-                                            value={articulo.nombreCamiseta}
-                                            onChange={(e) => handleArticuloChange(index, 'nombreCamiseta', e.target.value)}
-                                            placeholder="Apellido o nombre"
-                                        />
-                                    </div>
-
-                                    <div className="form-venta-field form-venta-item-field">
-                                        <label>Numero</label>
-                                        <input
-                                            type="text"
-                                            value={articulo.numero}
-                                            onChange={(e) => handleArticuloChange(index, 'numero', e.target.value)}
-                                            placeholder="Ej. 10"
-                                        />
-                                    </div>
-
-                                    <div className={`form-venta-field form-venta-item-field ${articulosErrors[index]?.prenda ? 'is-error' : ''}`}>
-                                        <label>Prenda</label>
+                                        <label>N° de Art.</label>
                                         <select
-                                            value={articulo.prenda}
-                                            onChange={(e) => handleArticuloChange(index, 'prenda', e.target.value)}
+                                            value={articulo.articulo}
+                                            onChange={(e) => handleArticuloChange(index, 'articulo', e.target.value)}
                                         >
-                                            <option value="">Seleccionar prenda</option>
-                                            {getOpcionesPrenda(articulo.prenda).map((prenda) => (
-                                                <option key={prenda._id} value={prenda._id}>
-                                                    {prenda.nombre}
+                                            <option value="">Seleccionar codigo</option>
+                                            {getOpcionesArticulo(articulosDisponibles, articulo.articulo, articulo.nombreArticulo).map((item) => (
+                                                <option key={`codigo-${item._id}`} value={item._id}>
+                                                    {getCodigoArticulo(item) || getArticuloCodigoByValue(articulosDisponibles, articulo.articulo, articulo.numeroArticulo) || 'Sin codigo'} - {item.nombre}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
 
-                                    <div className={`form-venta-field form-venta-item-field ${articulosErrors[index]?.talle ? 'is-error' : ''}`}>
+                                    <div className={`form-venta-field form-venta-item-field ${articulosErrors[index]?.articulo ? 'is-error' : ''}`}>
+                                        <label>Nombre. Articulo.</label>
+                                        <select
+                                            value={articulo.articulo}
+                                            onChange={(e) => handleArticuloChange(index, 'articulo', e.target.value)}
+                                        >
+                                            <option value="">Seleccionar articulo</option>
+                                            {getOpcionesArticulo(articulosDisponibles, articulo.articulo, articulo.nombreArticulo).map((item) => (
+                                                <option key={item._id} value={item._id}>
+                                                    {item.nombre}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-venta-field form-venta-item-field">
                                         <label>Talle</label>
-                                        <select
-                                            value={articulo.talle}
-                                            onChange={(e) => handleArticuloChange(index, 'talle', e.target.value)}
-                                            disabled={!articulo.prenda}
-                                        >
-                                            <option value="">Seleccionar talle</option>
-                                            {getOpcionesTalle(articulo).map((talle, talleIndex) => (
-                                                <option key={`${articulo.prenda}-${talle?.talle || talleIndex}`} value={talle?.talle || ''}>
-                                                    {talle?.talle || '-'} ({talle?.ancho || '-'} x {talle?.alto || '-'})
-                                                </option>
-                                            ))}
-                                        </select>
+                                        {getTallesArticulo(articulosDisponibles.find((item) => item._id === articulo.articulo)).length ? (
+                                            <select
+                                                value={articulo.talle}
+                                                onChange={(e) => handleArticuloChange(index, 'talle', e.target.value)}
+                                            >
+                                                <option value="">Sin talle</option>
+                                                {getTallesArticulo(articulosDisponibles.find((item) => item._id === articulo.articulo)).map((talle) => (
+                                                    <option key={`${articulo.articulo}-${talle}`} value={talle}>{talle}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={articulo.talle}
+                                                onChange={(e) => handleArticuloChange(index, 'talle', e.target.value)}
+                                                placeholder="Opcional"
+                                            />
+                                        )}
+                                    </div>
+
+                                    <div className={`form-venta-field form-venta-item-field ${articulosErrors[index]?.cantidad ? 'is-error' : ''}`}>
+                                        <label>Cantidad</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            step="1"
+                                            value={articulo.cantidad}
+                                            onChange={(e) => handleArticuloChange(index, 'cantidad', e.target.value)}
+                                            placeholder="0"
+                                        />
+                                    </div>
+
+                                    <div className={`form-venta-field form-venta-item-field ${articulosErrors[index]?.importeUnitario ? 'is-error' : ''}`}>
+                                        <label>Imp. Unitario</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={articulo.importeUnitario}
+                                            onChange={(e) => handleArticuloChange(index, 'importeUnitario', e.target.value)}
+                                            placeholder="0"
+                                        />
                                     </div>
 
                                     <div className="form-venta-field form-venta-item-field">
-                                        <label>Observaciones</label>
+                                        <label>Imp. Total</label>
                                         <input
-                                            type="text"
-                                            value={articulo.observaciones}
-                                            onChange={(e) => handleArticuloChange(index, 'observaciones', e.target.value)}
-                                            placeholder="Observaciones"
+                                            type="number"
+                                            value={calcularImporteTotal(articulo)}
+                                            readOnly
+                                            placeholder="0"
                                         />
                                     </div>
 
@@ -612,6 +744,10 @@ function FormVenta() {
                     </div>
 
                     <div className="form-venta-actions">
+                        <div className="form-venta-total">
+                            <span>Total venta</span>
+                            <strong>${totalVenta.toLocaleString('es-AR')}</strong>
+                        </div>
                         <button type="submit" className="form-venta-submit" disabled={loading}>
                             {loading ? 'Guardando...' : isEditMode ? 'Guardar cambios' : 'Crear remito'}
                         </button>

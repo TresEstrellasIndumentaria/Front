@@ -6,33 +6,65 @@ import "./styles.css";
 
 const getArticuloCosteBase = (articulo) => {
     if (!articulo) return 0;
+    if (Number.isFinite(Number(articulo.costo))) return Number(articulo.costo);
     if (Number.isFinite(Number(articulo.coste))) return Number(articulo.coste);
     if (Number.isFinite(Number(articulo.precio))) return Number(articulo.precio);
     if (Array.isArray(articulo.talles) && articulo.talles.length) {
-        const primerTalleConCoste = articulo.talles.find((t) => Number.isFinite(Number(t?.coste)));
-        if (primerTalleConCoste) return Number(primerTalleConCoste.coste);
+        const primerTalleConCoste = articulo.talles.find((t) => Number.isFinite(Number(t?.costo ?? t?.coste)));
+        if (primerTalleConCoste) return Number(primerTalleConCoste.costo ?? primerTalleConCoste.coste);
     }
     return 0;
+};
+
+const getTallesArticulo = (articulo) => (
+    Array.isArray(articulo?.talles)
+        ? articulo.talles.map((t) => t?.talle).filter(Boolean)
+        : []
+);
+
+const getDefaultTalleComponente = (articulo) => {
+    const talles = getTallesArticulo(articulo);
+    return talles.length > 1 ? talles[0] : "";
 };
 
 const normalizarComponente = (componente, articulos = []) => {
     const id = componente?._id || componente?.articulo?._id || componente?.articulo;
     const articulo = articulos.find((a) => a._id === id);
     const qty = Number(componente?.cantidad ?? 1);
-    const costeTotal = Number(componente?.costeTotal ?? componente?.coste ?? 0);
+    const costeTotalGuardado = Number(componente?.costeTotal ?? 0);
     const costeUnitario = Number(
-        componente?.costeUnitario ?? (qty > 0 ? (costeTotal / qty) : getArticuloCosteBase(articulo))
+        componente?.costeUnitario ??
+        componente?.costo ??
+        componente?.coste ??
+        (qty > 0 && costeTotalGuardado > 0 ? costeTotalGuardado / qty : getArticuloCosteBase(articulo))
     );
 
     return {
         _id: id,
         nombre: componente?.nombre || componente?.articulo?.nombre || articulo?.nombre || "Componente",
+        talle: componente?.talle || getDefaultTalleComponente(articulo),
         costeUnitario,
         cantidad: qty,
         costeTotal: qty * costeUnitario,
         costeInput: String(qty * costeUnitario)
     };
 };
+
+const serializarComposicion = (componentes = []) => JSON.stringify(componentes.map((c) => ({
+    articulo: c._id,
+    ...(c.talle ? { talle: c.talle } : {}),
+    cantidad: c.cantidad,
+    costo: c.costeUnitario
+})));
+
+const serializarComponentesVista = (componentes = []) => JSON.stringify(componentes.map((c) => ({
+    _id: c._id,
+    nombre: c.nombre,
+    talle: c.talle,
+    cantidad: c.cantidad,
+    costeUnitario: c.costeUnitario,
+    costeTotal: c.costeTotal
+})));
 
 function InventarioCompuesto({
     articulos = [],
@@ -45,36 +77,41 @@ function InventarioCompuesto({
     const [componentes, setComponentes] = useState([]);
     const ultimaComposicionEnviadaRef = useRef("");
     const ultimoCosteEnviadoRef = useRef(null);
+    const usuarioModificoRef = useRef(false);
+    const componentesInicialesKey = JSON.stringify(componentesIniciales || []);
+    const articulosKey = JSON.stringify((articulos || []).map((articulo) => ({
+        _id: articulo?._id,
+        nombre: articulo?.nombre,
+        talles: articulo?.talles
+    })));
+    const componentesNormalizados = useMemo(() => (
+        (componentesIniciales || [])
+            .map((c) => normalizarComponente(c, articulos))
+            .filter((c) => c._id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ), [componentesInicialesKey, articulosKey]);
 
     useEffect(() => {
-        if (!componentesIniciales?.length) {
+        if (!componentesNormalizados.length) {
+            ultimaComposicionEnviadaRef.current = "[]";
+            ultimoCosteEnviadoRef.current = 0;
+            usuarioModificoRef.current = false;
             setComponentes((prev) => (prev.length ? [] : prev));
             return;
         }
 
-        const normalizados = componentesIniciales
-            .map((c) => normalizarComponente(c, articulos))
-            .filter((c) => c._id);
+        const costeInicial = Number(componentesNormalizados.reduce((acc, c) => acc + Number(c.costeTotal || 0), 0).toFixed(2));
+
+        ultimaComposicionEnviadaRef.current = serializarComposicion(componentesNormalizados);
+        ultimoCosteEnviadoRef.current = costeInicial;
+        usuarioModificoRef.current = false;
 
         setComponentes((prev) => {
-            const prevComparable = prev.map(({ _id, cantidad, costeTotal, nombre }) => ({
-                _id,
-                cantidad,
-                costeTotal,
-                nombre
-            }));
-            const nextComparable = normalizados.map(({ _id, cantidad, costeTotal, nombre }) => ({
-                _id,
-                cantidad,
-                costeTotal,
-                nombre
-            }));
-
-            return JSON.stringify(prevComparable) === JSON.stringify(nextComparable)
+            return serializarComponentesVista(prev) === serializarComponentesVista(componentesNormalizados)
                 ? prev
-                : normalizados;
+                : componentesNormalizados;
         });
-    }, [componentesIniciales, articulos]);
+    }, [componentesNormalizados]);
 
     const agregarComponente = () => {
         if (!articuloSeleccionado || cantidad <= 0) return;
@@ -82,11 +119,13 @@ function InventarioCompuesto({
         const articulo = articulos.find((a) => a._id === articuloSeleccionado);
         if (!articulo) return;
 
+        usuarioModificoRef.current = true;
         setComponentes((prev) => [
             ...prev,
             {
                 _id: articulo._id,
                 nombre: articulo.nombre,
+                talle: getDefaultTalleComponente(articulo),
                 costeUnitario: getArticuloCosteBase(articulo),
                 cantidad,
                 costeTotal: getArticuloCosteBase(articulo) * cantidad,
@@ -104,11 +143,13 @@ function InventarioCompuesto({
         const articulo = articulos.find((a) => a._id === articuloId);
         if (!articulo) return;
 
+        usuarioModificoRef.current = true;
         setComponentes((prev) => [
             ...prev,
             {
                 _id: articulo._id,
                 nombre: articulo.nombre,
+                talle: getDefaultTalleComponente(articulo),
                 costeUnitario: getArticuloCosteBase(articulo),
                 cantidad,
                 costeTotal: getArticuloCosteBase(articulo) * cantidad,
@@ -121,6 +162,7 @@ function InventarioCompuesto({
     };
 
     const eliminarTodos = () => {
+        usuarioModificoRef.current = true;
         setComponentes([]);
         setArticuloSeleccionado("");
         setCantidad(1);
@@ -129,6 +171,7 @@ function InventarioCompuesto({
     const actualizarCantidad = (id, nuevaCantidad) => {
         const qty = Math.max(0, nuevaCantidad);
 
+        usuarioModificoRef.current = true;
         setComponentes((prev) =>
             prev.map((c) =>
                 c._id === id
@@ -144,6 +187,7 @@ function InventarioCompuesto({
     };
 
     const actualizarCoste = (id, nuevoCoste) => {
+        usuarioModificoRef.current = true;
         setComponentes((prev) =>
             prev.map((c) =>
                 c._id === id
@@ -163,7 +207,19 @@ function InventarioCompuesto({
         );
     };
 
+    const actualizarTalle = (id, nuevoTalle) => {
+        usuarioModificoRef.current = true;
+        setComponentes((prev) =>
+            prev.map((c) =>
+                c._id === id
+                    ? { ...c, talle: nuevoTalle }
+                    : c
+            )
+        );
+    };
+
     const normalizarCosteAlSalir = (id) => {
+        usuarioModificoRef.current = true;
         setComponentes((prev) =>
             prev.map((c) =>
                 c._id === id
@@ -181,6 +237,7 @@ function InventarioCompuesto({
     };
 
     const eliminarComponente = (id) => {
+        usuarioModificoRef.current = true;
         setComponentes((prev) => prev.filter((c) => c._id !== id));
     };
 
@@ -207,17 +264,12 @@ function InventarioCompuesto({
         });
 
     useEffect(() => {
-        const composicion = componentes.map((c) => ({
-            articulo: c._id,
-            cantidad: c.cantidad,
-            coste: c.costeTotal
-        }));
-
-        const composicionSerializada = JSON.stringify(composicion);
+        const composicionSerializada = serializarComposicion(componentes);
         if (ultimaComposicionEnviadaRef.current === composicionSerializada) return;
 
         ultimaComposicionEnviadaRef.current = composicionSerializada;
-        onComposicionChange(composicion);
+        if (!usuarioModificoRef.current) return;
+        onComposicionChange(JSON.parse(composicionSerializada));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [componentes]);
 
@@ -226,6 +278,7 @@ function InventarioCompuesto({
         if (ultimoCosteEnviadoRef.current === costeNormalizado) return;
 
         ultimoCosteEnviadoRef.current = costeNormalizado;
+        if (!usuarioModificoRef.current) return;
         onCosteChange(costeNormalizado);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [totalGeneral]);
@@ -254,6 +307,7 @@ function InventarioCompuesto({
                 <thead>
                     <tr>
                         <th>Componente</th>
+                        <th>Talle</th>
                         <th>Cantidad</th>
                         <th>Coste</th>
                         <th></th>
@@ -266,6 +320,20 @@ function InventarioCompuesto({
                             <td>
                                 <strong>{c.nombre}</strong>
                                 <span className="componente-ref">REF {String(c._id).slice(-5)}</span>
+                            </td>
+                            <td>
+                                {getTallesArticulo(articulos.find((a) => a._id === c._id)).length > 1 ? (
+                                    <select
+                                        value={c.talle || ""}
+                                        onChange={(e) => actualizarTalle(c._id, e.target.value)}
+                                    >
+                                        {getTallesArticulo(articulos.find((a) => a._id === c._id)).map((talle) => (
+                                            <option key={`${c._id}-${talle}`} value={talle}>{talle}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <span className="componente-ref">{c.talle || "Unico"}</span>
+                                )}
                             </td>
                             <td>
                                 <input
@@ -322,6 +390,7 @@ function InventarioCompuesto({
                                 ))}
                             </select>
                         </td>
+                        <td></td>
                         <td>
                             <input
                                 className="inventario-add-cantidad"

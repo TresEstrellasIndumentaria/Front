@@ -1,7 +1,8 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { userData } from "../LocalStorage";
+import { usuarioTieneAlgunPermiso } from "../Config/permisos";
 
-function PrivateRoute({ allowedRoles }) {
+function PrivateRoute({ allowedRoles, allowedPermissions }) {
     const user = userData();
 
     // No logueado
@@ -16,6 +17,14 @@ function PrivateRoute({ allowedRoles }) {
         const tienePermiso = allowedRoles.some(r =>
             userRoles.includes(r)
         );
+
+        if (!tienePermiso) {
+            return <Navigate to="/" replace />;
+        }
+    }
+
+    if (allowedPermissions && allowedPermissions.length > 0) {
+        const tienePermiso = usuarioTieneAlgunPermiso(user, allowedPermissions);
 
         if (!tienePermiso) {
             return <Navigate to="/" replace />;

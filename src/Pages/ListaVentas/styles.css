@@ -1,8 +1,8 @@
 .ventas-page {
     padding: 24px 18px 40px;
     background:
-        radial-gradient(circle at top left, rgba(91, 143, 249, 0.18), transparent 28%),
-        linear-gradient(180deg, #edf4ff 0%, #f7f9fc 42%, #eef2f6 100%);
+        radial-gradient(circle at top left, rgba(249, 178, 24, 0.16), transparent 28%),
+        linear-gradient(180deg, #f8f8f8 0%, #f4f4f4 42%, #ececec 100%);
     min-height: 100%;
 }
 
@@ -25,13 +25,13 @@
     font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #4f6fad;
+    color: var(--color-primary);
 }
 
 .ventas-hero h1 {
     margin: 0;
     font-size: clamp(1.9rem, 2.5vw, 2.7rem);
-    color: #14325c;
+    color: var(--color-dark);
 }
 
 .ventas-subtitle {
@@ -56,12 +56,12 @@
     border: none;
     border-radius: 14px;
     padding: 13px 18px;
-    background: linear-gradient(135deg, #1f80e0 0%, #1255b8 100%);
-    color: #fff;
+    background: var(--color-primary);
+    color: var(--color-dark);
     font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 16px 34px rgba(18, 85, 184, 0.22);
+    box-shadow: 0 14px 30px rgba(249, 178, 24, 0.22);
 }
 
 .ventas-add-btn:hover {
@@ -79,7 +79,7 @@
     padding: 18px 20px;
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(147, 173, 214, 0.28);
+    border: 1px solid rgba(17, 17, 17, 0.1);
     backdrop-filter: blur(8px);
     box-shadow: 0 10px 30px rgba(24, 56, 102, 0.08);
 }
@@ -92,7 +92,7 @@
 }
 
 .ventas-summary-card strong {
-    color: #17345d;
+    color: var(--color-dark);
     font-size: 1.4rem;
 }
 
@@ -102,10 +102,10 @@
 
 .ventas-card {
     background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(180, 194, 217, 0.5);
+    border: 1px solid rgba(17, 17, 17, 0.1);
     border-radius: 22px;
     overflow: hidden;
-    box-shadow: 0 20px 45px rgba(30, 53, 92, 0.12);
+    box-shadow: 0 20px 45px rgba(17, 17, 17, 0.1);
 }
 
 .ventas-toolbar {
@@ -134,7 +134,7 @@
     border: none;
     outline: none;
     background: transparent;
-    color: #17345d;
+    color: var(--color-dark);
     font-size: 0.95rem;
 }
 
@@ -144,7 +144,7 @@
     border-radius: 12px;
     padding: 12px 14px;
     background: #fff;
-    color: #17345d;
+    color: var(--color-dark);
     outline: none;
 }
 
@@ -172,15 +172,15 @@
 }
 
 .ventas-table th {
-    color: #5a7191;
+    color: var(--color-text-inverse);
     font-size: 0.86rem;
     font-weight: 700;
     letter-spacing: 0.02em;
-    background: #f8fbff;
+    background: var(--color-dark);
 }
 
 .ventas-table tbody tr:hover {
-    background: #f7fbff;
+    background: #fff7df;
 }
 
 .ventas-code {
@@ -190,7 +190,7 @@
 }
 
 .ventas-code strong {
-    color: #14325c;
+    color: var(--color-dark);
 }
 
 .ventas-code span {
@@ -254,16 +254,6 @@
     color: #9a6700;
 }
 
-.ventas-status--deudor {
-    background: #fff1e1;
-    color: #b45309;
-}
-
-.ventas-status--cancelado {
-    background: #f3f4f6;
-    color: #4b5563;
-}
-
 .ventas-actions {
     display: flex;
     flex-wrap: wrap;
@@ -283,18 +273,18 @@
 }
 
 .ventas-btn--edit {
-    background: #fde7b4;
-    color: #8a5400;
+    background: var(--color-dark);
+    color: var(--color-text-inverse);
 }
 
 .ventas-btn--receipt {
-    background: #dbe8ff;
-    color: #1f4d9c;
+    background: var(--color-primary);
+    color: var(--color-dark);
 }
 
 .ventas-btn--ghost {
     background: #edf2f8;
-    color: #506177;
+    color: var(--color-dark);
 }
 
 .ventas-btn--state {
@@ -331,7 +321,7 @@
 }
 
 .ventas-pagination-copy strong {
-    color: #17345d;
+    color: var(--color-dark);
 }
 
 .ventas-pagination-actions {

@@ -56,7 +56,7 @@ function Navbar({ toggleSidebar, menuButtonRef }) {
                     new CustomEvent("userChanged", { detail: null })
                 );
 
-                navigate("/");
+                navigate("/login", { replace: true });
             }
         });
     };
@@ -83,6 +83,7 @@ function Navbar({ toggleSidebar, menuButtonRef }) {
                                 Hola, {user.nombre}
                             </span>
                             <LogoutIcon
+                                className="logout-icon"
                                 onClick={handleLogOut}
                                 sx={{ cursor: "pointer" }}
                             />

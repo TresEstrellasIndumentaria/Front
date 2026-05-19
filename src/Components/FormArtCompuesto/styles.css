@@ -101,8 +101,23 @@
     outline: none;
 }
 
+.tabla-compuesto select {
+    width: 100%;
+    padding: 8px 6px;
+    border: none;
+    border-bottom: 1px solid #cfd8c9;
+    background: transparent;
+    color: #273327;
+    font-size: 0.95rem;
+    outline: none;
+}
+
 .tabla-compuesto input[type="number"]:focus {
-    border-bottom-color: #6aa84f;
+    border-bottom-color: var(--color-primary);
+}
+
+.tabla-compuesto select:focus {
+    border-bottom-color: var(--color-primary);
 }
 
 .btn-trash {
@@ -138,10 +153,10 @@
 
 .inventario-busqueda:focus,
 .inventario-add-cantidad:focus {
-    border-bottom-color: #6aa84f;
+    border-bottom-color: var(--color-primary);
 }
 
-.tabla-compuesto-add-row td:nth-child(2) .inventario-add-cantidad {
+.tabla-compuesto-add-row td:nth-child(3) .inventario-add-cantidad {
     max-width: 100px;
     text-align: right;
 }

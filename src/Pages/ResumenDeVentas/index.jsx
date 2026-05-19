@@ -1,15 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
-import { getRemitos } from '../../Redux/Actions';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import Swal from 'sweetalert2';
+import { actualizarEstadoRemito, getRemitos } from '../../Redux/Actions';
 import './styles.css';
 
 const estadoLabel = {
   PENDIENTE: 'Pendiente',
-  DEUDOR: 'Deudor',
   PAGADO: 'Pagado',
-  CANCELADO: 'Cancelado',
 };
+
+const normalizeEstadoVenta = (estado) => (estado === 'PAGADO' ? 'PAGADO' : 'PENDIENTE');
+
+const normalizeRemitoVenta = (venta) => (
+  venta ? { ...venta, estado: normalizeEstadoVenta(venta.estado) } : venta
+);
 
 const formatDate = (value) => {
   if (!value) return '-';
@@ -28,21 +36,61 @@ const getCantidadPrendas = (pedido) => (
     : 0
 );
 
+const getImporteDebe = (venta) => (
+  normalizeEstadoVenta(venta?.estado) === 'PENDIENTE' ? Number(venta?.importeTotal || 0) : 0
+);
+
 const getNombreCliente = (venta) => (
   venta?.nombreApellido?.trim() || venta?.razonSocial?.trim() || 'Sin cliente'
 );
 
+const getClienteCuentaCorriente = (venta) => ({
+  _id: venta?.cliente || venta?.clienteId || venta?.idCliente || venta?.numeroCliente,
+  nombre: venta?.nombreApellido || '',
+  apellido: '',
+  razonSocial: venta?.razonSocial || '',
+  email: venta?.email || '',
+  telefono: venta?.telefono || '',
+  numeroCliente: venta?.numeroCliente || '',
+});
+
+const toDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getMesActualRange = () => {
+  const now = new Date();
+  const desde = new Date(now.getFullYear(), now.getMonth(), 1);
+  const hasta = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    desde: toDateInputValue(desde),
+    hasta: toDateInputValue(hasta),
+  };
+};
+
+const getProyeccionMesActual = (totalFacturado) => {
+  const now = new Date();
+  const diasTranscurridos = Math.max(1, now.getDate());
+  const diasTotalesMes = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  return (Number(totalFacturado || 0) / diasTranscurridos) * diasTotalesMes;
+};
+
 function ResumenDeVentas() {
   const dispatch = useDispatch();
+  const mesActual = useMemo(() => getMesActualRange(), []);
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
-  const [fechaDesde, setFechaDesde] = useState('');
-  const [fechaHasta, setFechaHasta] = useState('');
+  const [fechaDesde, setFechaDesde] = useState(mesActual.desde);
+  const [fechaHasta, setFechaHasta] = useState(mesActual.hasta);
   const [estadoFiltro, setEstadoFiltro] = useState('TODOS');
   const [orden, setOrden] = useState('FECHA_DESC');
-  const [importeMinimo, setImporteMinimo] = useState('');
+  const [resumenBackend, setResumenBackend] = useState(null);
+  const [actualizandoEstadoId, setActualizandoEstadoId] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -52,7 +100,13 @@ function ResumenDeVentas() {
       setError('');
 
       const limite = 100;
-      const primeraPagina = await dispatch(getRemitos({ page: 1, limit: limite }));
+      const filtrosRemitos = {
+        fechaDesde,
+        fechaHasta,
+        estado: estadoFiltro === 'TODOS' ? undefined : estadoFiltro,
+        query: query.trim() || undefined,
+      };
+      const primeraPagina = await dispatch(getRemitos({ page: 1, limit: limite, ...filtrosRemitos }));
 
       if (!active) return;
 
@@ -63,10 +117,13 @@ function ResumenDeVentas() {
       }
 
       const totalPages = Number(primeraPagina?.totalPages || 1);
-      const coleccion = Array.isArray(primeraPagina?.remitos) ? [...primeraPagina.remitos] : [];
+      const coleccion = Array.isArray(primeraPagina?.remitos)
+        ? primeraPagina.remitos.map(normalizeRemitoVenta)
+        : [];
+      setResumenBackend(primeraPagina?.resumen || null);
 
       for (let page = 2; page <= totalPages; page += 1) {
-        const response = await dispatch(getRemitos({ page, limit: limite }));
+        const response = await dispatch(getRemitos({ page, limit: limite, ...filtrosRemitos }));
         if (!active) return;
 
         if (response?.error) {
@@ -76,7 +133,7 @@ function ResumenDeVentas() {
         }
 
         if (Array.isArray(response?.remitos)) {
-          coleccion.push(...response.remitos);
+          coleccion.push(...response.remitos.map(normalizeRemitoVenta));
         }
       }
 
@@ -93,33 +150,10 @@ function ResumenDeVentas() {
     return () => {
       active = false;
     };
-  }, [dispatch]);
+  }, [dispatch, estadoFiltro, fechaDesde, fechaHasta, query]);
 
   const ventasFiltradas = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const minimo = importeMinimo === '' ? null : Number(importeMinimo);
-
     return [...ventas]
-      .filter((venta) => {
-        const fecha = String(venta?.createdAt || '').slice(0, 10);
-        const importeTotal = Number(venta?.importeTotal || 0);
-        const textoBusqueda = [
-          venta?.numeroRemitoFormateado,
-          venta?.numeroRemito,
-          venta?.nombreApellido,
-          venta?.razonSocial,
-          venta?.numeroCliente,
-          venta?.estado,
-        ].join(' ').toLowerCase();
-
-        const matchQuery = normalizedQuery ? textoBusqueda.includes(normalizedQuery) : true;
-        const matchEstado = estadoFiltro === 'TODOS' ? true : venta?.estado === estadoFiltro;
-        const matchDesde = fechaDesde ? fecha >= fechaDesde : true;
-        const matchHasta = fechaHasta ? fecha <= fechaHasta : true;
-        const matchImporte = minimo !== null && !Number.isNaN(minimo) ? importeTotal >= minimo : true;
-
-        return matchQuery && matchEstado && matchDesde && matchHasta && matchImporte;
-      })
       .sort((a, b) => {
         if (orden === 'FECHA_ASC') {
           return new Date(a?.createdAt || 0).getTime() - new Date(b?.createdAt || 0).getTime();
@@ -139,7 +173,7 @@ function ResumenDeVentas() {
 
         return new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime();
       });
-  }, [estadoFiltro, fechaDesde, fechaHasta, importeMinimo, orden, query, ventas]);
+  }, [orden, ventas]);
 
   const resumen = useMemo(() => {
     const base = ventasFiltradas.reduce((acc, venta) => {
@@ -147,32 +181,100 @@ function ResumenDeVentas() {
       acc.cantidad += 1;
       acc.totalFacturado += total;
       acc.prendas += getCantidadPrendas(venta?.pedido);
-      if (venta?.estado === 'PAGADO') acc.pagadas += 1;
-      if (venta?.estado === 'DEUDOR') acc.deudores += 1;
-      if (venta?.estado === 'PENDIENTE') acc.pendientes += 1;
+      const estado = normalizeEstadoVenta(venta?.estado);
+      if (estado === 'PAGADO') acc.pagadas += 1;
+      if (estado === 'PENDIENTE') acc.pendientes += 1;
       return acc;
     }, {
       cantidad: 0,
       totalFacturado: 0,
       prendas: 0,
       pagadas: 0,
-      deudores: 0,
       pendientes: 0,
     });
 
-    return {
+    const resumenCalculado = {
       ...base,
-      ticketPromedio: base.cantidad ? base.totalFacturado / base.cantidad : 0,
+      proyeccion: getProyeccionMesActual(base.totalFacturado),
     };
-  }, [ventasFiltradas]);
+
+    if (!resumenBackend) return resumenCalculado;
+
+    return {
+      ...resumenCalculado,
+      totalFacturado: Number(resumenBackend.totalFacturado ?? resumenCalculado.totalFacturado),
+      proyeccion: Number(resumenBackend.proyeccion ?? resumenCalculado.proyeccion),
+    };
+  }, [resumenBackend, ventasFiltradas]);
 
   const limpiarFiltros = () => {
     setQuery('');
-    setFechaDesde('');
-    setFechaHasta('');
+    setFechaDesde(mesActual.desde);
+    setFechaHasta(mesActual.hasta);
     setEstadoFiltro('TODOS');
     setOrden('FECHA_DESC');
-    setImporteMinimo('');
+  };
+
+  const verRemito = (venta) => {
+    const items = Array.isArray(venta?.pedido) ? venta.pedido : [];
+    const detalle = items.length
+      ? items.map((item, index) => {
+        const cantidad = Number(item?.cantidad || 0);
+        const cantidadTexto = cantidad ? ` x ${cantidad}` : '';
+        return `${index + 1}. ${item?.prenda || '-'} - ${item?.talle || '-'}${cantidadTexto}`;
+      }).join('<br />')
+      : 'Sin items';
+
+    Swal.fire({
+      title: venta?.numeroRemitoFormateado || `Remito ${venta?.numeroRemito || ''}`,
+      html: `
+        <div style="text-align:left">
+          <p><strong>Cliente:</strong> ${getNombreCliente(venta)}</p>
+          <p><strong>Razon social:</strong> ${venta?.razonSocial || '-'}</p>
+          <p><strong>Numero cliente:</strong> ${venta?.numeroCliente || '-'}</p>
+          <p><strong>Fecha:</strong> ${formatDate(venta?.createdAt)}</p>
+          <p><strong>Estado:</strong> ${estadoLabel[normalizeEstadoVenta(venta?.estado)]}</p>
+          <p><strong>Importe:</strong> ${formatMoney(venta?.importeTotal)}</p>
+          <p><strong>Items:</strong><br />${detalle}</p>
+        </div>
+      `,
+      confirmButtonText: 'Cerrar',
+    });
+  };
+
+  const handleActualizarEstado = async (venta, nextEstado) => {
+    const remitoId = venta?._id;
+    const estadoNormalizado = nextEstado === 'PAGADO' ? 'PAGADO' : 'PENDIENTE';
+    if (!remitoId || estadoNormalizado === normalizeEstadoVenta(venta?.estado)) return;
+
+    setActualizandoEstadoId(remitoId);
+    const response = await dispatch(actualizarEstadoRemito(remitoId, estadoNormalizado));
+    setActualizandoEstadoId(null);
+
+    if (response?.error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo actualizar el estado',
+        text: response.message || 'Intenta nuevamente.',
+      });
+      return;
+    }
+
+    const remitoActualizado = response?.remito || response;
+    setVentas((prev) => prev.map((item) => (
+      (item?._id || item?.numeroRemito) === (remitoId || venta?.numeroRemito)
+        ? { ...item, ...remitoActualizado, estado: estadoNormalizado }
+        : item
+    )));
+    setResumenBackend(null);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Estado actualizado',
+      text: `${venta.numeroRemitoFormateado || 'El remito'} ahora esta en ${estadoLabel[estadoNormalizado]}.`,
+      timer: 1500,
+      showConfirmButton: false,
+    });
   };
 
   return (
@@ -183,7 +285,7 @@ function ResumenDeVentas() {
             <p className="resumen-ventas-kicker">Gestion comercial</p>
             <h1>Resumen de ventas</h1>
             <p className="resumen-ventas-subtitle">
-              Analiza ventas cerradas, identifica clientes deudores y controla la facturacion visible con filtros por cliente, fecha, estado e importe.
+              Analiza ventas cerradas y controla la facturacion visible con filtros por cliente, fecha, estado e importe.
             </p>
           </div>
         </header>
@@ -198,12 +300,12 @@ function ResumenDeVentas() {
             <strong>{formatMoney(resumen.totalFacturado)}</strong>
           </article>
           <article className="resumen-ventas-summary-card">
-            <span>Ticket promedio</span>
-            <strong>{formatMoney(resumen.ticketPromedio)}</strong>
+            <span>Proyeccion</span>
+            <strong>{formatMoney(resumen.proyeccion)}</strong>
           </article>
           <article className="resumen-ventas-summary-card resumen-ventas-summary-card--warn">
-            <span>Clientes deudores</span>
-            <strong>{resumen.deudores}</strong>
+            <span>Pendientes</span>
+            <strong>{resumen.pendientes}</strong>
           </article>
         </div>
 
@@ -225,17 +327,8 @@ function ResumenDeVentas() {
               <select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)}>
                 <option value="TODOS">Todos los estados</option>
                 <option value="PENDIENTE">Pendientes</option>
-                <option value="DEUDOR">Deudores</option>
                 <option value="PAGADO">Pagados</option>
-                <option value="CANCELADO">Cancelados</option>
               </select>
-              <input
-                type="number"
-                min="0"
-                value={importeMinimo}
-                onChange={(e) => setImporteMinimo(e.target.value)}
-                placeholder="Importe minimo"
-              />
               <select value={orden} onChange={(e) => setOrden(e.target.value)}>
                 <option value="FECHA_DESC">Mas recientes</option>
                 <option value="FECHA_ASC">Mas antiguas</option>
@@ -255,11 +348,11 @@ function ResumenDeVentas() {
                 <tr>
                   <th>Remito</th>
                   <th>Fecha</th>
-                  <th>Cliente</th>
+                  <th>Num cliente</th>
+                  <th>Nomb cliente</th>
                   <th>Estado</th>
-                  <th>Cliente Nro.</th>
-                  <th>Prendas</th>
-                  <th>Importe</th>
+                  <th>Importe que debe</th>
+                  <th>Importe total</th>
                 </tr>
               </thead>
               <tbody>
@@ -284,25 +377,71 @@ function ResumenDeVentas() {
                 {!loading && !error && ventasFiltradas.map((venta) => (
                   <tr key={venta._id || venta.numeroRemito}>
                     <td>
-                      <div className="resumen-ventas-code">
+                      <div className="resumen-ventas-code resumen-ventas-remito-cell">
                         <strong>{venta.numeroRemitoFormateado || `R-${String(venta.numeroRemito || '').padStart(6, '0')}`}</strong>
-                        <span>{venta.razonSocial || '-'}</span>
+                        {/* <span>{venta.razonSocial || '-'}</span> */}
+                        <div className="resumen-ventas-remito-actions">
+                          <button
+                            type="button"
+                            className="resumen-ventas-btn resumen-ventas-btn--icon resumen-ventas-btn--receipt"
+                            onClick={() => verRemito(venta)}
+                            title="Ver remito"
+                            aria-label="Ver remito"
+                          >
+                            <VisibilityIcon fontSize="inherit" />
+                          </button>
+                          <NavLink
+                            to={`/ventas/editar/${venta._id}`}
+                            state={{ remito: venta }}
+                            className="resumen-ventas-action-link"
+                          >
+                            <button
+                              type="button"
+                              className="resumen-ventas-btn resumen-ventas-btn--icon resumen-ventas-btn--edit"
+                              title="Editar remito"
+                              aria-label="Editar remito"
+                            >
+                              <EditIcon fontSize="inherit" />
+                            </button>
+                          </NavLink>
+                        </div>
                       </div>
                     </td>
                     <td>{formatDate(venta.createdAt)}</td>
+                    <td>{venta.numeroCliente || '-'}</td>
                     <td>
                       <div className="resumen-ventas-code">
                         <strong>{getNombreCliente(venta)}</strong>
-                        <span>{venta.razonSocial || 'Consumidor final'}</span>
+                        {/* <span>{venta.razonSocial || 'Consumidor final'}</span> */}
+                        {venta.numeroCliente && (
+                          <NavLink
+                            to={`/cliente/${venta.cliente || venta.clienteId || venta.idCliente || venta.numeroCliente}/cuentaCorrient`}
+                            state={{ cliente: getClienteCuentaCorriente(venta) }}
+                            className="resumen-ventas-action-link resumen-ventas-cuenta-link"
+                          >
+                            <button type="button" className="resumen-ventas-btn resumen-ventas-btn--compact resumen-ventas-btn--account">
+                              C.C
+                            </button>
+                          </NavLink>
+                        )}
                       </div>
                     </td>
                     <td>
-                      <span className={`resumen-ventas-status resumen-ventas-status--${String(venta.estado || '').toLowerCase()}`}>
-                        {estadoLabel[venta.estado] || venta.estado || '-'}
-                      </span>
+                      <div className="resumen-ventas-status-editor">
+                        <span className={`resumen-ventas-status resumen-ventas-status--${normalizeEstadoVenta(venta.estado).toLowerCase()}`}>
+                          {estadoLabel[normalizeEstadoVenta(venta.estado)]}
+                        </span>
+                        <select
+                          value={normalizeEstadoVenta(venta.estado)}
+                          onChange={(e) => handleActualizarEstado(venta, e.target.value)}
+                          disabled={actualizandoEstadoId === venta._id}
+                        >
+                          <option value="PENDIENTE">Pendiente</option>
+                          <option value="PAGADO">Pagado</option>
+                        </select>
+                      </div>
                     </td>
-                    <td>{venta.numeroCliente || '-'}</td>
-                    <td>{getCantidadPrendas(venta.pedido)}</td>
+                    <td className="resumen-ventas-money">{formatMoney(getImporteDebe(venta))}</td>
                     <td className="resumen-ventas-money">{formatMoney(venta.importeTotal)}</td>
                   </tr>
                 ))}
@@ -310,7 +449,7 @@ function ResumenDeVentas() {
               <tfoot>
                 <tr>
                   <td colSpan="5" className="resumen-ventas-total-label">Totales visibles</td>
-                  <td>{resumen.prendas}</td>
+                  <td className="resumen-ventas-money">{formatMoney(ventasFiltradas.reduce((acc, venta) => acc + getImporteDebe(venta), 0))}</td>
                   <td className="resumen-ventas-money">{formatMoney(resumen.totalFacturado)}</td>
                 </tr>
               </tfoot>

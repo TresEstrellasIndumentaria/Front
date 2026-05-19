@@ -6,6 +6,7 @@ import "./styles.css";
 export default function PopupPersona({
     rol,
     persona,
+    personas = [],
     onClose,
     onSuccess
 }) {
@@ -17,7 +18,9 @@ export default function PopupPersona({
         apellido: "",
         dni: "",
         email: "",
+        numeroCliente: "",
         password: "",
+        numeroProveedor: "",
         telefono: { area: "", numero: "" },
         direccion: { calle: "", numero: "", localidad: "" },
         nota: ""
@@ -31,13 +34,31 @@ export default function PopupPersona({
                 apellido: persona.apellido || "",
                 dni: persona.dni || "",
                 email: persona.email || "",
+                numeroCliente: persona.numeroCliente || "",
                 password: "",
+                numeroProveedor: persona.numeroProveedor || persona.numeroCliente || "",
                 telefono: persona.telefono || { area: "", numero: "" },
                 direccion: persona.direccion || { calle: "", numero: "", localidad: "" },
                 nota: persona.nota || ""
             });
         }
     }, [persona]);
+
+    useEffect(() => {
+        if (persona) return;
+        if (!["CLIENTE", "PROVEEDOR"].includes(rol)) return;
+
+        const campoNumero = rol === "PROVEEDOR" ? "numeroProveedor" : "numeroCliente";
+        const maxNumero = (personas || []).reduce((max, item) => {
+            const value = Number(item?.[campoNumero] || item?.numeroCliente || 0);
+            return Number.isFinite(value) && value > max ? value : max;
+        }, 0);
+
+        setForm(prev => ({
+            ...prev,
+            [campoNumero]: String(maxNumero + 1)
+        }));
+    }, [persona, personas, rol]);
 
     //Manejo genérico de inputs
     const handleChange = (e) => {
@@ -88,6 +109,14 @@ export default function PopupPersona({
             nota: form.nota,
             rol
         };
+
+        if (rol === "CLIENTE") {
+            payload.numeroCliente = form.numeroCliente;
+        }
+
+        if (rol === "PROVEEDOR") {
+            payload.numeroProveedor = form.numeroProveedor;
+        }
 
         if (form.password) {
             payload.password = form.password;
@@ -166,6 +195,24 @@ export default function PopupPersona({
                     onChange={handleChange}
                 />
 
+                {rol === "CLIENTE" && (
+                    <input
+                        name="numeroCliente"
+                        placeholder="Numero de cliente"
+                        value={form.numeroCliente}
+                        onChange={handleChange}
+                    />
+                )}
+
+                {rol === "PROVEEDOR" && (
+                    <input
+                        name="numeroProveedor"
+                        placeholder="Numero de proveedor"
+                        value={form.numeroProveedor}
+                        onChange={handleChange}
+                    />
+                )}
+
                 {requierePassword && (
                     <input
                         type="password"
@@ -194,6 +241,7 @@ export default function PopupPersona({
                 </div>
 
                 <textarea
+                    className="popup-persona-nota"
                     name="nota"
                     placeholder="Nota"
                     value={form.nota}
@@ -201,8 +249,8 @@ export default function PopupPersona({
                 />
 
                 <div className="acciones">
-                    <button onClick={onClose}>Cancelar</button>
-                    <button className="btn-crear" onClick={handleSubmit}>
+                    <button className="popup-persona-cancel" onClick={onClose}>Cancelar</button>
+                    <button className="btn-crear popup-persona-create" onClick={handleSubmit}>
                         {esEdicion ? "Guardar cambios" : "Crear"}
                     </button>
                 </div>

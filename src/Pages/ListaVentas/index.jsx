@@ -12,10 +12,10 @@ import './styles.css';
 
 const estadoLabel = {
     PENDIENTE: 'Pendiente',
-    DEUDOR: 'Deudor',
     PAGADO: 'Pagado',
-    CANCELADO: 'Cancelado',
 };
+
+const normalizeEstadoVenta = (estado) => (estado === 'PAGADO' ? 'PAGADO' : 'PENDIENTE');
 
 const formatDate = (value) => {
     if (!value) return '-';
@@ -71,14 +71,13 @@ function ListaVentas() {
     const resumen = useMemo(() => {
         return ventasFiltradas.reduce((acc, venta) => {
             acc.cantidad += 1;
-            if (venta.estado === 'PAGADO') acc.pagadas += 1;
-            if (venta.estado === 'DEUDOR') acc.deudores += 1;
-            if (venta.estado === 'PENDIENTE') acc.pendientes += 1;
+            const estado = normalizeEstadoVenta(venta.estado);
+            if (estado === 'PAGADO') acc.pagadas += 1;
+            if (estado === 'PENDIENTE') acc.pendientes += 1;
             return acc;
         }, {
             cantidad: 0,
             pagadas: 0,
-            deudores: 0,
             pendientes: 0,
         });
     }, [ventasFiltradas]);
@@ -96,7 +95,7 @@ function ListaVentas() {
                     <p><strong>Cliente:</strong> ${venta?.nombreApellido || '-'}</p>
                     <p><strong>Razon social:</strong> ${venta?.razonSocial || '-'}</p>
                     <p><strong>Numero cliente:</strong> ${venta?.numeroCliente || '-'}</p>
-                    <p><strong>Estado:</strong> ${estadoLabel[venta?.estado] || venta?.estado || '-'}</p>
+                    <p><strong>Estado:</strong> ${estadoLabel[normalizeEstadoVenta(venta?.estado)]}</p>
                     <p><strong>Items:</strong><br />${detalle}</p>
                 </div>
             `,
@@ -105,7 +104,7 @@ function ListaVentas() {
     };
 
     const getEstadoDraft = (venta) => (
-        estadoDrafts[venta._id] || venta.estado || 'PENDIENTE'
+        estadoDrafts[venta._id] || normalizeEstadoVenta(venta.estado)
     );
 
     const handleEstadoDraftChange = (remitoId, estado) => {
@@ -149,9 +148,9 @@ function ListaVentas() {
                     <div>
                         <p className="ventas-kicker">Gestion comercial</p>
                         <h1>Lista de ventas</h1>
-                        <p className="ventas-subtitle">
-                            Controla operaciones, saldos pendientes y accesos rapidos a remitos desde una sola vista.
-                        </p>
+                <p className="ventas-subtitle">
+                    Controla operaciones, pagos pendientes y accesos rapidos a remitos desde una sola vista.
+                </p>
                     </div>
 
                     <NavLink to="/ventas/nueva" className="ventas-add-link">
@@ -176,8 +175,8 @@ function ListaVentas() {
                         <strong>{resumen.pagadas}</strong>
                     </article>
                     <article className="ventas-summary-card ventas-summary-card--warn">
-                        <span>Deudores</span>
-                        <strong>{resumen.deudores}</strong>
+                        <span>Pendientes</span>
+                        <strong>{resumen.pendientes}</strong>
                     </article>
                 </div>
 
@@ -197,9 +196,7 @@ function ListaVentas() {
                             <select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)}>
                                 <option value="TODOS">Todos los estados</option>
                                 <option value="PENDIENTE">Pendientes</option>
-                                <option value="DEUDOR">Deudores</option>
                                 <option value="PAGADO">Pagados</option>
-                                <option value="CANCELADO">Cancelados</option>
                             </select>
                             <select value={itemsPorPagina} onChange={(e) => setItemsPorPagina(Number(e.target.value))}>
                                 <option value={10}>10 por pagina</option>
@@ -251,8 +248,8 @@ function ListaVentas() {
                                         <td>{formatDate(venta.createdAt)}</td>
                                         <td>
                                             <div className="ventas-status-stack">
-                                                <span className={`ventas-status ventas-status--${String(venta.estado || '').toLowerCase()}`}>
-                                                    {estadoLabel[venta.estado] || venta.estado || '-'}
+                                            <span className={`ventas-status ventas-status--${normalizeEstadoVenta(venta.estado).toLowerCase()}`}>
+                                                {estadoLabel[normalizeEstadoVenta(venta.estado)]}
                                                 </span>
                                                 <div className="ventas-estado-editor">
                                                     <select
@@ -261,15 +258,13 @@ function ListaVentas() {
                                                         disabled={actualizandoId === venta._id}
                                                     >
                                                         <option value="PENDIENTE">Pendiente</option>
-                                                        <option value="DEUDOR">Deudor</option>
                                                         <option value="PAGADO">Pagado</option>
-                                                        <option value="CANCELADO">Cancelado</option>
                                                     </select>
                                                     <button
                                                         type="button"
                                                         className="ventas-btn ventas-btn--state"
                                                         onClick={() => handleActualizarEstado(venta)}
-                                                        disabled={actualizandoId === venta._id || getEstadoDraft(venta) === venta.estado}
+                                                        disabled={actualizandoId === venta._id || getEstadoDraft(venta) === normalizeEstadoVenta(venta.estado)}
                                                     >
                                                         {actualizandoId === venta._id ? 'Guardando...' : 'Actualizar'}
                                                     </button>

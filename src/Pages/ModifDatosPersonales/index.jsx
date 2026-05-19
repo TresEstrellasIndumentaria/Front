@@ -76,10 +76,11 @@ const ModifDatosPersonales = () => {
                     />
                     <button
                         type="button"
-                        className="toggle-password"
+                        className={`toggle-password ${showActual ? 'is-visible' : ''}`}
+                        aria-label={showActual ? 'Ocultar contraseña actual' : 'Ver contraseña actual'}
                         onClick={() => setShowActual(!showActual)}
                     >
-                        {showActual ? 'Ocultar' : 'Ver'}
+                        <span aria-hidden="true">&#128065;</span>
                     </button>
                 </div>
 
@@ -93,10 +94,11 @@ const ModifDatosPersonales = () => {
                     />
                     <button
                         type="button"
-                        className="toggle-password"
+                        className={`toggle-password ${showNueva ? 'is-visible' : ''}`}
+                        aria-label={showNueva ? 'Ocultar nueva contraseña' : 'Ver nueva contraseña'}
                         onClick={() => setShowNueva(!showNueva)}
                     >
-                        {showNueva ? 'Ocultar' : 'Ver'}
+                        <span aria-hidden="true">&#128065;</span>
                     </button>
                 </div>
 
@@ -110,17 +112,18 @@ const ModifDatosPersonales = () => {
                     />
                     <button
                         type="button"
-                        className="toggle-password"
+                        className={`toggle-password ${showConfirm ? 'is-visible' : ''}`}
+                        aria-label={showConfirm ? 'Ocultar confirmación de contraseña' : 'Ver confirmación de contraseña'}
                         onClick={() => setShowConfirm(!showConfirm)}
                     >
-                        {showConfirm ? 'Ocultar' : 'Ver'}
+                        <span aria-hidden="true">&#128065;</span>
                     </button>
                 </div>
 
                 {error && <p className="error">{error}</p>}
                 {mensaje && <p className="success">{mensaje}</p>}
 
-                <button type="submit">Guardar cambios</button>
+                <button type="submit" className="save-changes-button">Guardar cambios</button>
             </form>
         </div>
     );

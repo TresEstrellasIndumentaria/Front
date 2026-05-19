@@ -3,22 +3,19 @@ import PopupProveedor from "../PopupProveedor";
 import { useDispatch, useSelector } from "react-redux";
 import {
     actualizarEstadoOrdenCompra,
-    cancelarOrdenCompra,
     crearOrdenCompra,
     getAllArticulos,
     getOrdenCompraById,
-    getUsuarioByRol,
-    recibirOrdenCompra
+    getUsuarioByRol
 } from "../../Redux/Actions";
 import Swal from "sweetalert2";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import OrdenCompraPrint from "./OrdenCompraPrint";
 import "./styles.css";
 
 const ESTADOS_ORDEN = {
-    BORRADOR: "Borrador",
-    ENVIADA: "Pendiente",
-    RECIBIDA: "Recibida",
-    CANCELADA: "Cancelada"
+    DEUDOR: "Deudor",
+    PAGADA: "Pagada"
 };
 
 const formatFecha = (value) => {
@@ -32,7 +29,20 @@ const formatFecha = (value) => {
     });
 };
 
-const buildNumeroOrden = () => `PO${String(Date.now()).slice(-4)}`;
+const buildNumeroOrden = () => String(Date.now()).slice(-4);
+
+const formatNumeroOrden = (numero) => {
+    if (!numero) return "---";
+    return String(numero).replace(/^PO/i, "");
+};
+
+const getFechaActualInput = () => {
+    const hoy = new Date();
+    const year = hoy.getFullYear();
+    const month = String(hoy.getMonth() + 1).padStart(2, "0");
+    const day = String(hoy.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+};
 
 const getItemId = (item) => {
     if (!item) return "";
@@ -47,11 +57,53 @@ const getItemNombre = (item) => {
     return typeof item.articulo === "string" ? item.articulo : "-";
 };
 
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const getUltimoCostoCompra = (articulo) => {
+    const costoDirecto = articulo?.ultimoCostoCompra ?? articulo?.ultimoCosto ?? articulo?.costoUltimaCompra;
+    if (Number.isFinite(Number(costoDirecto))) return Number(costoDirecto);
+
+    if (Array.isArray(articulo?.talles) && articulo.talles.length) {
+        const talleConCosto = articulo.talles.find((talle) => Number.isFinite(Number(talle?.ultimoCostoCompra ?? talle?.costo ?? talle?.coste)));
+        if (talleConCosto) {
+            return Number(talleConCosto.ultimoCostoCompra ?? talleConCosto.costo ?? talleConCosto.coste);
+        }
+    }
+
+    return 0;
+};
+
+const getTallesArticulo = (articulo) => (
+    Array.isArray(articulo?.talles)
+        ? articulo.talles.map((t) => t?.talle).filter(Boolean)
+        : []
+);
+
+const getDefaultTalleArticulo = (articulo) => getTallesArticulo(articulo)[0] || "";
+
+const getTalleData = (articulo, talle) => {
+    const talleNormalizado = String(talle || "").trim().toUpperCase();
+    return Array.isArray(articulo?.talles)
+        ? articulo.talles.find((item) => String(item?.talle || "").trim().toUpperCase() === talleNormalizado)
+        : null;
+};
+
+const getStockPorTalle = (articulo, talle) => {
+    const talleData = getTalleData(articulo, talle);
+    if (talleData) return Number(talleData.stock || 0);
+    return Number(articulo?.stock || 0);
+};
+
+const getCostoPorTalle = (articulo, talle) => {
+    const talleData = getTalleData(articulo, talle);
+    if (talleData && Number.isFinite(Number(talleData.ultimoCostoCompra ?? talleData.costo ?? talleData.coste))) {
+        return Number(talleData.ultimoCostoCompra ?? talleData.costo ?? talleData.coste);
+    }
+    return getUltimoCostoCompra(articulo);
+};
 
 export default function OrdenCompra() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
     const { id } = useParams();
 
     const proveedoresDB = useSelector(state => state.usuariosRol || []);
@@ -59,7 +111,6 @@ export default function OrdenCompra() {
     const ordenActualRedux = useSelector(state => state.ordenActual);
 
     const [articulosOC, setArticulosOC] = useState([]);
-    const [costosAdicionales, setCostosAdicionales] = useState([]);
     const [guardando, setGuardando] = useState(false);
 
     const [mostrarPopup, setMostrarPopup] = useState(false);
@@ -68,23 +119,29 @@ export default function OrdenCompra() {
 
     const [ordenActual, setOrdenActual] = useState(null);
     const [vistaDetalle, setVistaDetalle] = useState(false);
-    const [vistaRecepcion, setVistaRecepcion] = useState(false);
     const [cargandoDetalle, setCargandoDetalle] = useState(false);
-    const [recepcionItems, setRecepcionItems] = useState([]);
 
     const [form, setForm] = useState({
         proveedor: "",
-        fechaOrden: "",
-        fechaEsperada: "",
+        fechaOrden: getFechaActualInput(),
         anotaciones: ""
     });
 
-    const articulosNoCompuestos = allArticulos.filter(a => a.artCompuesto !== true);
+    const articulosNoCompuestos = allArticulos.filter(a => a.artCompuesto !== true && a.itemProveedor === true);
 
     useEffect(() => {
         dispatch(getUsuarioByRol("PROVEEDOR"));
         dispatch(getAllArticulos());
     }, [dispatch]);
+
+    useEffect(() => {
+        const proveedorState = location.state?.proveedor;
+        const proveedorId = proveedorState?._id || proveedorState?.id;
+        if (!proveedorId || id) return;
+
+        setForm((prev) => ({ ...prev, proveedor: proveedorId }));
+        setProveedorCreado(null);
+    }, [id, location.state]);
 
     useEffect(() => {
         const cargarOrdenById = async () => {
@@ -95,7 +152,7 @@ export default function OrdenCompra() {
             if (resp?.error) {
                 setCargandoDetalle(false);
                 Swal.fire("No encontrada", resp.message || "No se pudo cargar la orden solicitada.", "warning");
-                navigate("/ordenesDeCompras");
+                navigate("/resumenCompras");
             }
         };
 
@@ -129,26 +186,24 @@ export default function OrdenCompra() {
 
     const agregarArticulo = (art) => {
         if (articulosOC.some(a => a._id === art._id)) return;
+        const talle = getDefaultTalleArticulo(art);
 
         setArticulosOC(prev => [
             ...prev,
             {
                 ...art,
+                talle,
+                stock: getStockPorTalle(art, talle),
                 cantidad: 1,
-                costo: art.coste || 0
+                costo: getCostoPorTalle(art, talle)
             }
         ]);
 
         setBusqueda("");
     };
 
-    const agregarCostoAdicional = () => {
-        setCostosAdicionales(prev => [...prev, { nombre: "", valor: 0 }]);
-    };
-
     const totalArticulos = articulosOC.reduce((acc, a) => acc + a.cantidad * a.costo, 0);
-    const totalCostos = costosAdicionales.reduce((acc, c) => acc + Number(c.valor || 0), 0);
-    const total = totalArticulos + totalCostos;
+    const total = totalArticulos;
 
     const proveedorSeleccionado = useMemo(
         () => proveedoresDB.find((p) => p._id === form.proveedor),
@@ -163,35 +218,32 @@ export default function OrdenCompra() {
             ? {
                 nombre: proveedorSeleccionado.nombre,
                 apellido: proveedorSeleccionado.apellido,
+                numeroProveedor: proveedorSeleccionado.numeroProveedor || proveedorSeleccionado.numeroCliente,
+                numeroCliente: proveedorSeleccionado.numeroCliente,
                 email: proveedorSeleccionado.email,
                 telefono: proveedorSeleccionado.telefono,
                 direccion: proveedorSeleccionado.direccion
             }
             : null,
         fechaOrden: form.fechaOrden,
-        fechaEsperada: form.fechaEsperada,
         anotaciones: form.anotaciones,
         articulos: articulosOC.map((a) => ({
             articulo: a._id,
             nombre: a.nombre,
+            talle: a.talle || "",
             cantidad: Number(a.cantidad || 0),
             costo: Number(a.costo || 0),
             subtotal: Number(a.cantidad || 0) * Number(a.costo || 0)
         })),
         items: articulosOC.map((a) => ({
             articulo: a._id,
-            stockActual: Number(a.stock || 0),
-            entrantes: Number(a.entrantes || 0),
+            talle: a.talle || "",
+            stockActual: Number(getStockPorTalle(a, a.talle)),
             cantidad: Number(a.cantidad || 0),
             coste: Number(a.costo || 0),
             costoTotal: Number(a.cantidad || 0) * Number(a.costo || 0)
         })),
-        costosAdicionales: costosAdicionales.map((c) => ({
-            nombre: c.nombre,
-            valor: Number(c.valor || 0)
-        })),
         totalArticulos,
-        totalCostos,
         total,
         totalOrden: total,
         recibido: 0
@@ -209,35 +261,6 @@ export default function OrdenCompra() {
             items: data?.items?.length ? data.items : payloadBase.items,
             recibido: Number(data?.recibido ?? payloadBase.recibido ?? 0)
         };
-    };
-
-    const handleGuardarBorrador = async () => {
-        setGuardando(true);
-        try {
-            const payload = buildOrdenPayload("BORRADOR");
-            const resp = await dispatch(crearOrdenCompra(payload));
-            const msg = String(resp?.message || resp?.msg || "");
-
-            if (resp?.error || msg.toLowerCase().includes("error")) {
-                Swal.fire("Error", msg || "No se pudo guardar el borrador", "error");
-                return;
-            }
-
-            const hydratedOrden = hydrateOrdenActual(resp, payload);
-            setOrdenActual(hydratedOrden);
-            sincronizarOrdenLocal(hydratedOrden);
-            setVistaDetalle(true);
-
-            await Swal.fire({
-                icon: "success",
-                title: "Borrador guardado",
-                text: "La orden se guardo con estado BORRADOR.",
-                timer: 1500,
-                showConfirmButton: false
-            });
-        } finally {
-            setGuardando(false);
-        }
     };
 
     const handleCrearOrden = async () => {
@@ -258,7 +281,7 @@ export default function OrdenCompra() {
 
         setGuardando(true);
         try {
-            const payload = buildOrdenPayload("ENVIADA");
+            const payload = buildOrdenPayload("DEUDOR");
             const resp = await dispatch(crearOrdenCompra(payload));
             const msg = String(resp?.message || resp?.msg || "");
 
@@ -275,7 +298,7 @@ export default function OrdenCompra() {
             await Swal.fire({
                 icon: "success",
                 title: "Orden creada",
-                text: "La orden se envio con estado ENVIADA.",
+                text: "La orden se creo con estado Deudor.",
                 timer: 1500,
                 showConfirmButton: false
             });
@@ -300,162 +323,7 @@ export default function OrdenCompra() {
                 return;
             }
 
-            const recibido = estado === "RECIBIDA"
-                ? (ordenActual.items || ordenActual.articulos || []).reduce((acc, a) => acc + Number(a.cantidad || 0), 0)
-                : Number(ordenActual.recibido || 0);
-
-            const updatedOrden = { ...ordenActual, estado, recibido };
-            setOrdenActual(updatedOrden);
-            sincronizarOrdenLocal(updatedOrden);
-        } finally {
-            setGuardando(false);
-        }
-    };
-
-    const iniciarRecepcion = () => {
-        if (!ordenActual) return;
-        if (["RECIBIDA", "CANCELADA"].includes(ordenActual.estado)) return;
-
-        const itemsBase = (ordenActual.items || ordenActual.articulos || []).map((item, idx) => {
-            const ordenado = Number(item.cantidad || 0);
-            const recibidoPrevio = clamp(Number(item.recibido ?? item.cantidadRecibida ?? 0), 0, ordenado);
-            return {
-                key: `${getItemId(item) || "item"}-${idx}`,
-                original: item,
-                ordenado,
-                recibidoPrevio,
-                aRecibir: 0
-            };
-        });
-
-        setRecepcionItems(itemsBase);
-        setVistaRecepcion(true);
-    };
-
-    const handleRecepcionCantidad = (index, value) => {
-        setRecepcionItems((prev) =>
-            prev.map((item, idx) => {
-                if (idx !== index) return item;
-                const pendiente = Math.max(item.ordenado - item.recibidoPrevio, 0);
-                const parsed = Number(value);
-                const safe = Number.isNaN(parsed) ? 0 : clamp(parsed, 0, pendiente);
-                return { ...item, aRecibir: safe };
-            })
-        );
-    };
-
-    const marcarTodosComoRecibidos = () => {
-        setRecepcionItems((prev) =>
-            prev.map((item) => {
-                const pendiente = Math.max(item.ordenado - item.recibidoPrevio, 0);
-                return { ...item, aRecibir: pendiente };
-            })
-        );
-    };
-
-    const confirmarRecepcion = async () => {
-        if (!ordenActual?._id) {
-            Swal.fire("Atencion", "No se encontro ID de la orden para actualizar estado.", "warning");
-            return;
-        }
-
-        const recepciones = recepcionItems
-            .map((row) => ({
-                articulo: getItemId(row.original),
-                cantidad: Number(row.aRecibir || 0)
-            }))
-            .filter((row) => row.articulo && row.cantidad > 0);
-
-        const totalIngreso = recepciones.reduce((acc, item) => acc + Number(item.cantidad || 0), 0);
-        if (!recepciones.length || !totalIngreso) {
-            Swal.fire("Sin cambios", "Ingresa una cantidad para recibir.", "info");
-            return;
-        }
-
-        const updatedItems = recepcionItems.map((row) => {
-            const recibidoLinea = recepciones.find((r) => r.articulo === getItemId(row.original));
-            const recibidoTotal = Number(row.recibidoPrevio || 0) + Number(recibidoLinea?.cantidad || 0);
-            return {
-                ...row.original,
-                cantidadRecibida: recibidoTotal
-            };
-        });
-
-        const totalRecibido = updatedItems.reduce((acc, item) => acc + Number(item.cantidadRecibida || 0), 0);
-        const totalOrdenado = updatedItems.reduce((acc, item) => acc + Number(item.cantidad || 0), 0);
-        const estadoDestino = totalRecibido >= totalOrdenado && totalOrdenado > 0 ? "RECIBIDA" : "ENVIADA";
-
-        setGuardando(true);
-        try {
-            const payloadRecepcion = { items: recepciones };
-            const resp = await dispatch(recibirOrdenCompra(ordenActual._id, payloadRecepcion));
-            const msg = String(resp?.msg || resp?.message || "");
-
-            if (resp?.error || msg.toLowerCase().includes("error")) {
-                Swal.fire("Error", msg || "No se pudo actualizar la recepcion", "error");
-                return;
-            }
-
-            const ordenBackend = resp?.orden || resp?.data?.orden || null;
-            const updatedOrden = ordenBackend
-                ? {
-                    ...ordenActual,
-                    ...ordenBackend,
-                    estado: ordenBackend.estado || estadoDestino,
-                    items: ordenBackend.items || updatedItems
-                }
-                : {
-                    ...ordenActual,
-                    estado: estadoDestino,
-                    recibido: totalRecibido,
-                    items: updatedItems
-                };
-            setOrdenActual(updatedOrden);
-            sincronizarOrdenLocal(updatedOrden);
-            setVistaRecepcion(false);
-
-            Swal.fire(
-                "Recepcion registrada",
-                estadoDestino === "RECIBIDA"
-                    ? "La orden quedo completamente recibida."
-                    : "La orden quedo parcialmente recibida.",
-                "success"
-            );
-        } finally {
-            setGuardando(false);
-        }
-    };
-
-    const handleCancelarOrden = async () => {
-        if (!ordenActual?._id) {
-            Swal.fire("Atencion", "No se encontro ID de la orden para actualizar estado.", "warning");
-            return;
-        }
-
-        if (["CANCELADA", "RECIBIDA"].includes(ordenActual.estado)) return;
-
-        const result = await Swal.fire({
-            title: "Cancelar orden",
-            text: "Esta accion cambiara el estado a CANCELADA. Deseas continuar?",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Si, cancelar",
-            cancelButtonText: "Volver"
-        });
-
-        if (!result.isConfirmed) return;
-
-        setGuardando(true);
-        try {
-            const resp = await dispatch(cancelarOrdenCompra(ordenActual._id));
-            const msg = String(resp?.message || resp?.msg || "");
-
-            if (resp?.error || msg.toLowerCase().includes("error")) {
-                Swal.fire("Error", msg || "No se pudo cancelar la orden", "error");
-                return;
-            }
-
-            const updatedOrden = { ...ordenActual, estado: "CANCELADA" };
+            const updatedOrden = { ...ordenActual, estado };
             setOrdenActual(updatedOrden);
             sincronizarOrdenLocal(updatedOrden);
         } finally {
@@ -465,15 +333,14 @@ export default function OrdenCompra() {
 
     const handleEditarDesdeDetalle = () => {
         if (!ordenActual) return;
-        if (["RECIBIDA", "CANCELADA"].includes(ordenActual.estado)) {
-            Swal.fire("No disponible", "No se puede editar una orden recibida o cancelada.", "info");
+        if (ordenActual.estado === "PAGADA") {
+            Swal.fire("No disponible", "No se puede editar una orden pagada.", "info");
             return;
         }
 
         setForm({
             proveedor: ordenActual?.proveedor?._id || ordenActual?.proveedor || "",
             fechaOrden: ordenActual?.fechaOrden ? String(ordenActual.fechaOrden).slice(0, 10) : "",
-            fechaEsperada: ordenActual?.fechaEsperada ? String(ordenActual.fechaEsperada).slice(0, 10) : "",
             anotaciones: ordenActual?.anotaciones || ""
         });
 
@@ -484,14 +351,7 @@ export default function OrdenCompra() {
                 cantidad: Number(a.cantidad || 0),
                 costo: Number(a.coste ?? a.costo ?? 0),
                 stock: Number(a.stockActual ?? a.stock ?? 0),
-                entrantes: Number(a.entrantes || 0)
-            }))
-        );
-
-        setCostosAdicionales(
-            (ordenActual.costosAdicionales || []).map((c) => ({
-                nombre: c.nombre || "",
-                valor: Number(c.valor || 0)
+                talle: a.talle || ""
             }))
         );
 
@@ -499,7 +359,6 @@ export default function OrdenCompra() {
             setProveedorCreado(`${ordenActual.proveedorInfo?.nombre || ""} ${ordenActual.proveedorInfo?.apellido || ""}`.trim());
         }
 
-        setVistaRecepcion(false);
         setVistaDetalle(false);
     };
 
@@ -507,77 +366,10 @@ export default function OrdenCompra() {
         return <div className="orden-compra"><div className="card"><p>Cargando orden...</p></div></div>;
     }
 
-    if (vistaDetalle && vistaRecepcion && ordenActual) {
-        return (
-            <div className="oc-recepcion-wrap">
-                <div className="oc-recepcion-header">
-                    <h2>Recibir articulos</h2>
-                </div>
-
-                <div className="oc-recepcion-card">
-                    <div className="oc-recepcion-top">
-                        <h3>Articulos</h3>
-                        <button type="button" onClick={marcarTodosComoRecibidos} disabled={guardando}>
-                            Marcar todos como recibidos
-                        </button>
-                    </div>
-
-                    <table className="oc-recepcion-table">
-                        <thead>
-                            <tr>
-                                <th>Articulo</th>
-                                <th className="ta-right">Ordenado</th>
-                                <th className="ta-right">Recibido</th>
-                                <th className="ta-right">A recibir</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {recepcionItems.map((row, idx) => {
-                                const pendiente = Math.max(row.ordenado - row.recibidoPrevio, 0);
-                                return (
-                                    <tr key={row.key}>
-                                        <td>
-                                            <strong>{getItemNombre(row.original)}</strong>
-                                            <div className="oc-recepcion-ref">REF {getItemId(row.original) || "-"}</div>
-                                        </td>
-                                        <td className="ta-right">{row.ordenado}</td>
-                                        <td className="ta-right">{row.recibidoPrevio}</td>
-                                        <td className="ta-right">
-                                            <input
-                                                type="number"
-                                                min={0}
-                                                max={pendiente}
-                                                value={row.aRecibir}
-                                                onChange={(e) => handleRecepcionCantidad(idx, e.target.value)}
-                                                disabled={guardando}
-                                                className="oc-recepcion-input"
-                                            />
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-
-                    <div className="oc-recepcion-actions">
-                        <button type="button" className="btn-ghost" onClick={() => setVistaRecepcion(false)} disabled={guardando}>
-                            Cancelar
-                        </button>
-                        <button type="button" className="btn-primario" onClick={confirmarRecepcion} disabled={guardando}>
-                            Recibir
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     if (vistaDetalle && ordenActual) {
         const items = ordenActual.items || ordenActual.articulos || [];
-        const totalUnidades = items.reduce((acc, a) => acc + Number(a.cantidad || 0), 0);
-        const recibido = Number(ordenActual.recibido || 0);
         const estadoLabel = ESTADOS_ORDEN[ordenActual.estado] || ordenActual.estado;
-        const estadoBloqueado = ["RECIBIDA", "CANCELADA"].includes(ordenActual.estado);
+        const estadoBloqueado = ordenActual.estado === "PAGADA";
         const prov = ordenActual.proveedorInfo || ordenActual.proveedor || {};
         const telefono = prov?.telefono
             ? `${prov.telefono.area || ""} ${prov.telefono.numero || ""}`.trim()
@@ -588,45 +380,42 @@ export default function OrdenCompra() {
 
         return (
             <div className="oc-detalle">
-                <div className="oc-detalle-header">
-                    <button className="oc-link-back" onClick={() => navigate("/ordenesDeCompras")}>Ordenes de compra</button>
+                <OrdenCompraPrint
+                    orden={ordenActual}
+                    proveedor={prov}
+                    direccion={direccion}
+                    telefono={telefono}
+                    formatFecha={formatFecha}
+                />
+
+                <div className="oc-detalle-header oc-screen-only">
+                    <button className="oc-link-back" onClick={() => navigate("/resumenCompras")}>Resumen de compras</button>
                     <div className="oc-detalle-acciones">
-                        <button onClick={iniciarRecepcion} disabled={guardando || estadoBloqueado}>Recibir</button>
                         <button onClick={handleEditarDesdeDetalle} disabled={guardando || estadoBloqueado}>Editar</button>
-                        <button onClick={() => handleCambiarEstado("ENVIADA")} disabled={guardando || estadoBloqueado || ordenActual.estado === "ENVIADA"}>Enviar</button>
-                        <button className="btn-danger" onClick={handleCancelarOrden} disabled={guardando || estadoBloqueado}>Cancelar</button>
-                        <button onClick={() => window.print()} disabled={guardando}>Guardar como PDF</button>
+                        <button onClick={() => handleCambiarEstado("PAGADA")} disabled={guardando || estadoBloqueado}>Marcar pagada</button>
+                        <button onClick={() => window.print()} disabled={guardando}>Imprimir</button>
                     </div>
                 </div>
 
-                <div className="oc-resumen-card">
+                <div className="oc-resumen-card oc-screen-only">
                     <div className="oc-resumen-top">
                         <div>
-                            <h2>{ordenActual.numero || "PO---"}</h2>
+                            <h2>{formatNumeroOrden(ordenActual.numero)}</h2>
                             <p className="oc-estado">{estadoLabel}</p>
                         </div>
-                        <div className="oc-progreso">
-                            <progress max={Math.max(totalUnidades, 1)} value={Math.min(recibido, Math.max(totalUnidades, 1))} />
-                            <span>Recibido {recibido} de {totalUnidades}</span>
-                        </div>
                     </div>
 
-                    <div className="oc-datos-row">
-                        <p><strong>Fecha:</strong> {formatFecha(ordenActual.fechaOrden)}</p>
-                        <p><strong>Esperado para:</strong> {formatFecha(ordenActual.fechaEsperada)}</p>
-                    </div>
+	                    <div className="oc-datos-row">
+	                        <p><strong>Fecha:</strong> {formatFecha(ordenActual.fechaOrden)}</p>
+	                    </div>
 
-                    <div className="oc-grid">
+                    <div className="oc-grid oc-grid-proveedor">
                         <div>
                             <strong>Proveedor:</strong>
                             <p>{prov?.nombre || ""} {prov?.apellido || ""}</p>
                             <p>{direccion}</p>
                             <p>{telefono}</p>
                             <p>{prov?.email || "-"}</p>
-                        </div>
-                        <div>
-                            <strong>Tienda de destino:</strong>
-                            <p>Liz</p>
                         </div>
                     </div>
 
@@ -636,28 +425,30 @@ export default function OrdenCompra() {
                     </div>
                 </div>
 
-                <div className="oc-resumen-card">
+                <div className="oc-resumen-card oc-screen-only">
                     <h3>Articulos</h3>
                     <table className="tabla">
                         <thead>
-                            <tr>
-                                <th className="col-art">Articulo</th>
-                                <th>Cantidad</th>
-                                <th>Costo de compra</th>
-                                <th>Importe</th>
+	                            <tr>
+	                                <th className="col-art">Articulo</th>
+	                                <th>Talle</th>
+	                                <th>Cantidad</th>
+	                                <th>Costo de compra</th>
+	                                <th>Importe</th>
                             </tr>
                         </thead>
                         <tbody>
                             {items.map((art, idx) => (
-                                <tr key={`${getItemId(art)}-${idx}`}>
-                                    <td>{getItemNombre(art)}</td>
-                                    <td>{Number(art.cantidad || 0)}</td>
-                                    <td>${Number(art.coste ?? art.costo ?? 0).toLocaleString("es-AR")}</td>
-                                    <td>${Number((art.costoTotal ?? art.subtotal ?? (Number(art.cantidad || 0) * Number(art.coste ?? art.costo ?? 0))) || 0).toLocaleString("es-AR")}</td>
+	                                <tr key={`${getItemId(art)}-${idx}`}>
+	                                    <td>{getItemNombre(art)}</td>
+	                                    <td>{art.talle || "-"}</td>
+	                                    <td>{Number(art.cantidad || 0)}</td>
+	                                    <td>${Number(art.coste ?? art.costo ?? 0).toLocaleString("es-AR")}</td>
+	                                    <td>${Number((art.costoTotal ?? art.subtotal ?? (Number(art.cantidad || 0) * Number(art.coste ?? art.costo ?? 0))) || 0).toLocaleString("es-AR")}</td>
                                 </tr>
                             ))}
                             <tr>
-                                <td colSpan="3" style={{ textAlign: "right", fontWeight: 700 }}>Total</td>
+	                                <td colSpan="4" style={{ textAlign: "right", fontWeight: 700 }}>Total</td>
                                 <td style={{ fontWeight: 700 }}>${Number(ordenActual.totalOrden ?? ordenActual.total ?? 0).toLocaleString("es-AR")}</td>
                             </tr>
                         </tbody>
@@ -716,31 +507,20 @@ export default function OrdenCompra() {
                     )}
                 </div>
 
-                <div className="fila">
-                    <div className="campo">
-                        <label>Fecha de la orden de compra</label>
-                        <input
-                            type="date"
-                            name="fechaOrden"
-                            value={form.fechaOrden}
-                            onChange={handleChange}
-                        />
-                    </div>
+                <div className="campo oc-campo-separado">
+                    <label>Fecha de la orden de compra</label>
+                    <input
+                        type="date"
+	                        name="fechaOrden"
+	                        value={form.fechaOrden}
+	                        onChange={handleChange}
+	                    />
+	                </div>
 
-                    <div className="campo">
-                        <label>Esperado para</label>
-                        <input
-                            type="date"
-                            name="fechaEsperada"
-                            value={form.fechaEsperada}
-                            onChange={handleChange}
-                        />
-                    </div>
-                </div>
-
-                <div className="campo">
+                <div className="campo oc-campo-separado">
                     <label>Anotaciones</label>
                     <textarea
+                        className="oc-anotaciones-input"
                         maxLength={500}
                         name="anotaciones"
                         value={form.anotaciones}
@@ -760,13 +540,13 @@ export default function OrdenCompra() {
 
                 <table className="tabla">
                     <thead>
-                        <tr>
-                            <th className="col-art">Articulo</th>
-                            <th>Stock</th>
-                            <th>Entrantes</th>
-                            <th>Cantidad</th>
-                            <th>Costo de compra</th>
-                            <th>Importe</th>
+	                        <tr>
+	                            <th className="col-art">Articulo</th>
+	                            <th>Talle</th>
+	                            <th>Stock</th>
+	                            <th>Cantidad</th>
+	                            <th>Costo de compra</th>
+	                            <th>Importe</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -778,10 +558,39 @@ export default function OrdenCompra() {
                                     <div className="art-nombre">{art.nombre}</div>
                                 </td>
 
-                                <td className="col-num">{art.stock ?? 0}</td>
-                                <td className="col-num">{art.entrantes ?? 0}</td>
-
                                 <td>
+                                    {getTallesArticulo(art).length ? (
+                                        <select
+                                            className="select-talle"
+                                            value={art.talle || ""}
+                                            onChange={(e) => {
+                                                const talle = e.target.value;
+                                                setArticulosOC(prev =>
+                                                    prev.map((a, idx) =>
+                                                        idx === i
+                                                            ? {
+                                                                ...a,
+                                                                talle,
+                                                                stock: getStockPorTalle(a, talle),
+                                                                costo: getCostoPorTalle(a, talle)
+                                                            }
+                                                            : a
+                                                    )
+                                                );
+                                            }}
+                                        >
+                                            {getTallesArticulo(art).map((talle) => (
+                                                <option key={`${art._id}-${talle}`} value={talle}>{talle}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <span>-</span>
+                                    )}
+                                </td>
+		
+		                                <td className="col-num">{art.stock ?? 0}</td>
+	
+	                                <td>
                                     <input
                                         type="number"
                                         min={1}
@@ -839,6 +648,7 @@ export default function OrdenCompra() {
 
                 <div className="buscador-linea">
                     <select
+                        className="oc-articulo-select"
                         defaultValue=""
                         onChange={(e) => {
                             const artId = e.target.value;
@@ -858,64 +668,10 @@ export default function OrdenCompra() {
                                 {a.nombre}
                             </option>
                         ))}
-                    </select>
-                </div>
+	                    </select>
+	                </div>
 
-                <div className="costos">
-                    <div className="costos-header">
-                        <span>Coste adicional</span>
-                        <span>Cantidad</span>
-                    </div>
-
-                    {costosAdicionales.map((c, i) => (
-                        <div className="costo-row" key={i}>
-                            <input
-                                placeholder="Nombre del costo"
-                                value={c.nombre}
-                                onChange={(e) => {
-                                    const v = e.target.value;
-                                    setCostosAdicionales(prev =>
-                                        prev.map((x, idx) =>
-                                            idx === i ? { ...x, nombre: v } : x
-                                        )
-                                    );
-                                }}
-                            />
-
-                            <input
-                                type="number"
-                                placeholder="$0"
-                                value={c.valor}
-                                onChange={(e) => {
-                                    const v = Number(e.target.value);
-                                    setCostosAdicionales(prev =>
-                                        prev.map((x, idx) =>
-                                            idx === i ? { ...x, valor: v } : x
-                                        )
-                                    );
-                                }}
-                            />
-
-                            <button
-                                className="btn-delete"
-                                onClick={() =>
-                                    setCostosAdicionales(prev => prev.filter((_, idx) => idx !== i))
-                                }
-                            >
-                                X
-                            </button>
-                        </div>
-                    ))}
-
-                    <button
-                        className="btn-add-costo"
-                        onClick={agregarCostoAdicional}
-                    >
-                        + ANADIR COSTES ADICIONALES
-                    </button>
-                </div>
-
-                <div className="total">
+	                <div className="total">
                     <span>Total</span>
                     <strong>${total.toLocaleString("es-AR")}</strong>
                 </div>
@@ -924,18 +680,10 @@ export default function OrdenCompra() {
                     <button
                         type="button"
                         className="btn-ghost"
-                        onClick={() => navigate("/ordenesDeCompras")}
+                        onClick={() => navigate("/resumenCompras")}
                         disabled={guardando}
                     >
                         Cancelar
-                    </button>
-                    <button
-                        type="button"
-                        className="btn-borrador"
-                        onClick={handleGuardarBorrador}
-                        disabled={guardando}
-                    >
-                        Guardar como borrador
                     </button>
                     <button
                         type="button"

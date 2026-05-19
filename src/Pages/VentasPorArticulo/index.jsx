@@ -4,13 +4,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import { getRemitos } from '../../Redux/Actions';
 import './styles.css';
 
-const estadoLabel = {
-  PENDIENTE: 'Pendiente',
-  DEUDOR: 'Deudor',
-  PAGADO: 'Pagado',
-  CANCELADO: 'Cancelado',
-};
-
 const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',
@@ -27,19 +20,52 @@ const getNombreCliente = (venta) => (
 
 const getItemsPedido = (venta) => (
   Array.isArray(venta?.pedido)
-    ? venta.pedido.filter((item) => normalizeText(item?.prenda))
+    ? venta.pedido.filter((item) => normalizeText(item?.prenda || item?.nombreArticulo || item?.articulo))
     : []
 );
 
+const getItemNombre = (item) => (
+  normalizeText(item?.nombreArticulo || item?.prenda || item?.articulo?.nombre || item?.articulo) || 'Sin articulo'
+);
+
+const getItemCantidad = (item) => {
+  const cantidad = Number(item?.cantidad || 0);
+  return Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1;
+};
+
+const getItemImporte = (item) => {
+  const subtotal = Number(item?.subtotal ?? item?.importeTotal);
+  if (Number.isFinite(subtotal) && subtotal >= 0) return subtotal;
+
+  const cantidad = getItemCantidad(item);
+  const precio = Number(item?.precioUnitario ?? item?.importeUnitario ?? 0);
+  return Number.isFinite(precio) && precio >= 0 ? cantidad * precio : 0;
+};
+
+const toDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getMesActualRange = () => {
+  const now = new Date();
+  return {
+    desde: toDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1)),
+    hasta: toDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+  };
+};
+
 function VentasPorArticulo() {
   const dispatch = useDispatch();
+  const mesActual = useMemo(() => getMesActualRange(), []);
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
-  const [fechaDesde, setFechaDesde] = useState('');
-  const [fechaHasta, setFechaHasta] = useState('');
-  const [estadoFiltro, setEstadoFiltro] = useState('TODOS');
+  const [fechaDesde, setFechaDesde] = useState(mesActual.desde);
+  const [fechaHasta, setFechaHasta] = useState(mesActual.hasta);
   const [talleFiltro, setTalleFiltro] = useState('TODOS');
   const [orden, setOrden] = useState('UNIDADES_DESC');
 
@@ -97,13 +123,12 @@ function VentasPorArticulo() {
   const ventasFiltradas = useMemo(() => {
     return ventas.filter((venta) => {
       const fecha = String(venta?.createdAt || '').slice(0, 10);
-      const matchEstado = estadoFiltro === 'TODOS' ? true : venta?.estado === estadoFiltro;
       const matchDesde = fechaDesde ? fecha >= fechaDesde : true;
       const matchHasta = fechaHasta ? fecha <= fechaHasta : true;
 
-      return matchEstado && matchDesde && matchHasta;
+      return matchDesde && matchHasta;
     });
-  }, [estadoFiltro, fechaDesde, fechaHasta, ventas]);
+  }, [fechaDesde, fechaHasta, ventas]);
 
   const tallesDisponibles = useMemo(() => {
     const talles = new Set();
@@ -123,13 +148,14 @@ function VentasPorArticulo() {
 
     ventasFiltradas.forEach((venta) => {
       const items = getItemsPedido(venta);
-      const importePorItem = items.length ? Number(venta?.importeTotal || 0) / items.length : 0;
       const cliente = getNombreCliente(venta);
 
       items.forEach((item) => {
-        const articulo = normalizeText(item?.prenda) || 'Sin articulo';
+        const articulo = getItemNombre(item);
         const talle = normalizeText(item?.talle) || 'Sin talle';
         const key = normalizeKey(articulo);
+        const cantidad = getItemCantidad(item);
+        const importe = getItemImporte(item);
 
         if (talleFiltro !== 'TODOS' && talle !== talleFiltro) return;
 
@@ -146,11 +172,11 @@ function VentasPorArticulo() {
         }
 
         const row = acumulado.get(key);
-        row.unidades += 1;
-        row.importeEstimado += importePorItem;
+        row.unidades += cantidad;
+        row.importeEstimado += importe;
         row.remitos.add(venta?._id || venta?.numeroRemito);
         row.clientes.add(cliente);
-        row.talles.set(talle, (row.talles.get(talle) || 0) + 1);
+        row.talles.set(talle, (row.talles.get(talle) || 0) + cantidad);
       });
     });
 
@@ -191,9 +217,8 @@ function VentasPorArticulo() {
 
   const limpiarFiltros = () => {
     setQuery('');
-    setFechaDesde('');
-    setFechaHasta('');
-    setEstadoFiltro('TODOS');
+    setFechaDesde(mesActual.desde);
+    setFechaHasta(mesActual.hasta);
     setTalleFiltro('TODOS');
     setOrden('UNIDADES_DESC');
   };
@@ -221,7 +246,7 @@ function VentasPorArticulo() {
             <strong>{resumen.unidades}</strong>
           </article>
           <article className="ventas-articulo-summary-card">
-            <span>Importe estimado</span>
+            <span>Importe vendido</span>
             <strong>{formatMoney(resumen.importeEstimado)}</strong>
           </article>
           <article className="ventas-articulo-summary-card ventas-articulo-summary-card--top">
@@ -245,13 +270,6 @@ function VentasPorArticulo() {
             <div className="ventas-articulo-filters">
               <input type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
               <input type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
-              <select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)}>
-                <option value="TODOS">Todos los estados</option>
-                <option value="PENDIENTE">Pendientes</option>
-                <option value="DEUDOR">Deudores</option>
-                <option value="PAGADO">Pagados</option>
-                <option value="CANCELADO">Cancelados</option>
-              </select>
               <select value={talleFiltro} onChange={(e) => setTalleFiltro(e.target.value)}>
                 <option value="TODOS">Todos los talles</option>
                 {tallesDisponibles.map((talle) => (
@@ -271,10 +289,6 @@ function VentasPorArticulo() {
             </div>
           </div>
 
-          <div className="ventas-articulo-note">
-            El importe por articulo se calcula prorrateando el total del remito entre sus prendas porque el pedido actual no guarda precio por linea.
-          </div>
-
           <div className="ventas-articulo-table-wrap">
             <table className="ventas-articulo-table">
               <thead>
@@ -284,7 +298,7 @@ function VentasPorArticulo() {
                   <th>Remitos</th>
                   <th>Clientes</th>
                   <th>Talles vendidos</th>
-                  <th>Importe estimado</th>
+                  <th>Importe vendido</th>
                 </tr>
               </thead>
               <tbody>
@@ -341,7 +355,7 @@ function VentasPorArticulo() {
 
           <div className="ventas-articulo-footer">
             <span>{ventas.length} ventas cargadas en total</span>
-            <strong>{estadoLabel[estadoFiltro] || 'Todos los estados'}</strong>
+            <strong>{ventasFiltradas.length} ventas filtradas</strong>
           </div>
         </div>
       </div>

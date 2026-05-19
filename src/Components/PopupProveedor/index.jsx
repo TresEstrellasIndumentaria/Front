@@ -1,18 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { URL } from "../../Urls";
 import Swal from "sweetalert2";
 import "./styles.css";
 
-export default function PopupProveedor({ onClose, onCreate }) {
+export default function PopupProveedor({ proveedoresDB = [], onClose, onCreate }) {
     const [form, setForm] = useState({
         nombre: "",
         apellido: "",
         dni: "",
         email: "",
+        numeroProveedor: "",
         telefono: { area: "", numero: "" },
         direccion: { calle: "", numero: "" },
         nota: ""
     });
+
+    useEffect(() => {
+        const maxNumero = (proveedoresDB || []).reduce((max, proveedor) => {
+            const value = Number(proveedor?.numeroProveedor || proveedor?.numeroCliente || 0);
+            return Number.isFinite(value) && value > max ? value : max;
+        }, 0);
+
+        setForm(prev => ({
+            ...prev,
+            numeroProveedor: String(maxNumero + 1)
+        }));
+    }, [proveedoresDB]);
 
     //obtengo token para poder agregar prov
     const userData = JSON.parse(localStorage.getItem("userData"));
@@ -74,6 +87,7 @@ export default function PopupProveedor({ onClose, onCreate }) {
                 <input name="apellido" placeholder="Apellido" onChange={handleChange} />
                 <input name="dni" placeholder="DNI" onChange={handleChange} />
                 <input name="email" placeholder="Email" onChange={handleChange} />
+                <input name="numeroProveedor" placeholder="Numero de proveedor" value={form.numeroProveedor} onChange={handleChange} />
 
                 <div className="fila">
                     <input name="telefono.area" placeholder="Área" onChange={handleChange} />

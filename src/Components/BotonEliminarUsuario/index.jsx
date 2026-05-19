@@ -21,15 +21,16 @@ function BotonEliminarUsuario({ _id, nombre, apellido, onDelete }) {
 
         if (confirm.isConfirmed) {
             const resp = await dispatch(eliminaUsuario(_id));
-            onDelete(); //refresca la lista
 
             if (resp?.message === 'Usuario eliminado correctamente') {
+                await onDelete?.(); //refresca la lista
+
                 await Swal.fire({
                     icon: 'success',
                     title: 'Eliminado correctamente',
                     timer: 1500
                 });
-                dispatch(getAllUsuarios());
+                await dispatch(getAllUsuarios());
             } else {
                 Swal.fire({
                     icon: 'error',

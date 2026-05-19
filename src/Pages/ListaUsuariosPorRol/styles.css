@@ -1,56 +1,99 @@
 .cont-principal-listaEmp {
-    width: 80%;
-    justify-content: start;
-    align-items: center;
-    padding: 20px;
+    width: min(1180px, calc(100% - 24px));
+    margin: 14px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
     font-family: 'Roboto', sans-serif;
-    background-color: rgb(185, 186, 185);
+}
+
+.usuarios-card {
+    background: #fff;
+    border: 1px solid #d8dde3;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.usuarios-title {
+    margin: 0;
+    padding: 24px 28px 0;
+    color: var(--color-dark);
+    font-size: 1.5rem;
 }
 
 .header-lista {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
-}
-
-.header-lista > h2 {
-    margin: 0;
+    gap: 16px;
+    padding: 18px 28px 24px;
+    flex-wrap: wrap;
 }
 
 .btn-add {
-    background-color: #4cafef;
     border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
+    background: var(--color-primary);
+    color: var(--color-dark);
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 10px 18px;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
     cursor: pointer;
-    font-weight: bold;
-    color: white;
-    transition: background 0.3s ease;
 }
 
 .btn-add:hover {
-    background-color: #2196f3;
+    background: var(--color-primary-hover);
+}
+
+.usuarios-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #6b7280;
+}
+
+.usuarios-search input {
+    border: none;
+    border-bottom: 1px solid #d1d5db;
+    outline: none;
+    padding: 6px 0;
+    min-width: 230px;
+}
+
+.usuarios-filters {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.usuarios-table-card {
+    overflow-x: auto;
 }
 
 .tabla-empleados {
     width: 100%;
     border-collapse: collapse;
     background: white;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    overflow: hidden;
 }
 
 .tabla-empleados th,
 .tabla-empleados td {
-    padding: 12px 15px;
     text-align: left;
+    padding: 16px 10px;
+    border-bottom: 1px solid #eef2f7;
 }
 
-.tabla-empleados thead {
-    background-color: #4cafef;
-    color: white;
+.cont-principal-listaEmp .tabla-empleados thead {
+    background: #0b0b0b;
+}
+
+.cont-principal-listaEmp .tabla-empleados th {
+    color: var(--color-primary) !important;
+    font-weight: 700;
 }
 
 .tabla-empleados tbody tr:nth-child(even) {
@@ -58,40 +101,96 @@
 }
 
 .tabla-empleados tbody tr:hover {
-    background-color: #e3f2fd;
+    background-color: #fff7df;
+}
+
+.usuarios-empty {
+    text-align: center !important;
+    color: #6b7280;
+    padding: 28px 0 !important;
 }
 
 .acciones {
-    display: flex;
+    display: inline-flex;
+    align-items: center;
     gap: 8px;
 }
 
-.btn-edit {
-    background-color: #ffb300;
+.cont-principal-listaEmp .btn-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    color: white;
+    background: var(--color-primary) !important;
+    color: var(--color-dark) !important;
+    border-radius: 2px;
+    padding: 8px 12px;
+    font-weight: 700;
     font-size: 0.9rem;
-    transition: background 0.3s ease;
+    line-height: 1.2;
+    text-decoration: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
 }
 
-.btn-edit:hover {
-    background-color: #ffa000;
+.cont-principal-listaEmp .btn-edit:hover,
+.cont-principal-listaEmp .btn-sale:hover {
+    background: var(--color-primary-hover) !important;
+    color: var(--color-dark) !important;
+    transform: translateY(-1px);
 }
 
-.btn-delete {
-    background-color: #f44336;
+.cont-principal-listaEmp .btn-sale {
+    background: var(--color-primary) !important;
+    color: var(--color-dark) !important;
+}
+
+.cont-principal-listaEmp .acciones .btn-elim-cliente {
+    width: 38px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0;
     border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: 2px;
+    background: var(--color-primary) !important;
+    color: #dc2626;
     cursor: pointer;
-    color: white;
-    font-size: 0.9rem;
-    transition: background 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
 }
 
-.btn-delete:hover {
-    background-color: #d32f2f;
+.cont-principal-listaEmp .acciones .btn-elim-cliente:hover {
+    background: var(--color-primary-hover) !important;
+    color: #b91c1c;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 980px) {
+    .header-lista {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .usuarios-search input {
+        min-width: 100%;
+    }
+
+    .usuarios-filters {
+        width: 100%;
+    }
+
+    .tabla-empleados {
+        white-space: nowrap;
+    }
 }

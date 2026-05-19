@@ -1,0 +1,222 @@
+.popup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(0, 0, 0, 0.52);
+    backdrop-filter: blur(3px);
+}
+
+.popup-persona {
+    width: min(620px, 100%);
+    max-height: calc(100vh - 36px);
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 28px;
+    overflow-y: auto;
+    border: 1px solid rgba(250, 204, 21, 0.32);
+    border-radius: 10px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 250, 251, 0.98)),
+        #fff;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+    animation: personaPopupIn 0.22s ease-out;
+}
+
+.popup-persona h3 {
+    grid-column: 1 / -1;
+    margin: 0 0 8px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #050505;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.popup.popup-persona input,
+.popup.popup-persona textarea {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    outline: none;
+    background: #fff;
+    color: #111827;
+    font-size: 14px;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.popup.popup-persona input {
+    height: 42px;
+    padding: 0 12px;
+}
+
+.popup-persona textarea {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    min-height: 92px;
+    padding: 12px;
+    resize: vertical;
+}
+
+.popup.popup-persona textarea.popup-persona-nota {
+    width: 100%;
+    max-width: 100%;
+}
+
+.popup-persona input::placeholder,
+.popup-persona textarea::placeholder {
+    color: #6b7280;
+}
+
+.popup-persona input:focus,
+.popup-persona textarea:focus {
+    border-color: #facc15;
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.18);
+    transform: translateY(-1px);
+}
+
+.popup-persona .fila {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.popup.popup-persona .fila input {
+    width: 100%;
+    max-width: 100%;
+}
+
+.popup-persona .acciones {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.popup-persona .acciones button {
+    min-width: 116px;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.popup-persona .acciones button:first-child {
+    background: #050505;
+    color: #facc15;
+}
+
+.popup-persona .acciones button:first-child:hover {
+    background: #111827;
+    color: #fde047;
+    transform: translateY(-1px);
+}
+
+.popup.popup-persona .acciones .popup-persona-cancel {
+    background: #050505;
+    color: #facc15;
+    border: none;
+    border-radius: 2px;
+    padding: 10px 18px;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+}
+
+.popup.popup-persona .acciones .popup-persona-cancel:hover {
+    background: #111827;
+    color: #fde047;
+    transform: translateY(-1px);
+}
+
+.popup-persona .btn-crear {
+    border: none;
+    background: var(--color-primary);
+    color: var(--color-dark);
+    border-radius: 2px;
+    padding: 10px 18px;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+}
+
+.popup.popup-persona .acciones .popup-persona-create {
+    background: var(--color-primary);
+    color: var(--color-dark);
+    border: none;
+    border-radius: 2px;
+    padding: 10px 18px;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+}
+
+.popup.popup-persona .acciones .popup-persona-create:hover {
+    background: var(--color-primary-hover);
+    color: var(--color-dark);
+}
+
+.popup-persona .btn-crear:hover {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+}
+
+.popup-persona .acciones button:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+@keyframes personaPopupIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 640px) {
+    .popup-persona {
+        grid-template-columns: 1fr;
+        padding: 22px;
+    }
+
+    .popup-persona .fila {
+        grid-template-columns: 1fr;
+    }
+
+    .popup-persona .acciones {
+        flex-direction: column-reverse;
+    }
+
+    .popup-persona .acciones button {
+        width: 100%;
+    }
+}

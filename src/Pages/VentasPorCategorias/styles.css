@@ -1,8 +1,8 @@
 .ventas-categoria-page {
     padding: 24px 18px 40px;
     background:
-        radial-gradient(circle at top left, rgba(14, 116, 144, 0.12), transparent 30%),
-        linear-gradient(180deg, #eef8f7 0%, #f8fbfd 48%, #edf3f8 100%);
+        radial-gradient(circle at top left, rgba(249, 178, 24, 0.16), transparent 30%),
+        linear-gradient(180deg, #fffaf0 0%, #f7f7f7 48%, #eeeeee 100%);
     min-height: 100%;
 }
 
@@ -17,7 +17,7 @@
 
 .ventas-categoria-kicker {
     margin: 0 0 6px;
-    color: #0f766e;
+    color: var(--color-primary);
     text-transform: uppercase;
     letter-spacing: 0.12em;
     font-size: 0.78rem;
@@ -26,7 +26,7 @@
 
 .ventas-categoria-hero h1 {
     margin: 0;
-    color: #123b52;
+    color: var(--color-dark);
     font-size: clamp(1.95rem, 2.7vw, 2.8rem);
 }
 
@@ -49,12 +49,12 @@
     padding: 18px 20px;
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.84);
-    border: 1px solid rgba(164, 190, 207, 0.36);
-    box-shadow: 0 10px 26px rgba(24, 52, 82, 0.08);
+    border: 1px solid rgba(31, 31, 31, 0.12);
+    box-shadow: 0 10px 26px rgba(31, 31, 31, 0.08);
 }
 
 .ventas-categoria-summary-card--top {
-    background: linear-gradient(180deg, rgba(232, 247, 255, 0.96), rgba(255, 255, 255, 0.88));
+    background: linear-gradient(180deg, rgba(249, 178, 24, 0.22), rgba(255, 255, 255, 0.9));
 }
 
 .ventas-categoria-summary-card span {
@@ -67,7 +67,7 @@
 .ventas-categoria-summary-card strong {
     display: block;
     overflow: hidden;
-    color: #123b52;
+    color: var(--color-dark);
     font-size: 1.28rem;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -75,10 +75,10 @@
 
 .ventas-categoria-card {
     background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(180, 194, 217, 0.5);
+    border: 1px solid rgba(31, 31, 31, 0.14);
     border-radius: 22px;
     overflow: hidden;
-    box-shadow: 0 20px 45px rgba(30, 53, 92, 0.12);
+    box-shadow: 0 20px 45px rgba(31, 31, 31, 0.12);
 }
 
 .ventas-categoria-toolbar {
@@ -87,7 +87,7 @@
     justify-content: space-between;
     align-items: flex-start;
     padding: 22px;
-    border-bottom: 1px solid #e7edf5;
+    border-bottom: 1px solid #ece2c8;
 }
 
 .ventas-categoria-search {
@@ -98,9 +98,9 @@
     height: 46px;
     padding: 0 14px;
     border-radius: 14px;
-    border: 1px solid #d5dfed;
+    border: 1px solid #d8d0bb;
     background: #fff;
-    color: #17345d;
+    color: var(--color-dark);
 }
 
 .ventas-categoria-search input {
@@ -124,9 +124,9 @@
     height: 44px;
     padding: 0 14px;
     border-radius: 12px;
-    border: 1px solid #d5dfed;
+    border: 1px solid #d8d0bb;
     background: #fff;
-    color: #17345d;
+    color: var(--color-dark);
     outline: none;
 }
 
@@ -140,15 +140,15 @@
 }
 
 .ventas-categoria-btn--ghost {
-    background: #edf2f8;
-    color: #506177;
+    background: var(--color-dark);
+    color: var(--color-primary);
 }
 
 .ventas-categoria-note {
     padding: 14px 22px;
-    border-bottom: 1px solid #e7edf5;
-    background: #f8fbff;
-    color: #60758f;
+    border-bottom: 1px solid #ece2c8;
+    background: #fff8e8;
+    color: #6f5a20;
     font-size: 0.9rem;
 }
 
@@ -170,20 +170,20 @@
 }
 
 .ventas-categoria-table th {
-    color: #5a7191;
+    color: #f9b218;
     font-size: 0.86rem;
     font-weight: 700;
     letter-spacing: 0.02em;
-    background: #f8fbff;
+    background: var(--color-dark);
 }
 
 .ventas-categoria-table tbody tr:hover {
-    background: #f7fbff;
+    background: #fff8e8;
 }
 
 .ventas-categoria-table tfoot td {
-    background: #f8fbff;
-    border-top: 1px solid #dce7f3;
+    background: #fff8e8;
+    border-top: 1px solid #efd79b;
     border-bottom: none;
     font-weight: 800;
 }
@@ -196,7 +196,7 @@
 }
 
 .ventas-categoria-name strong {
-    color: #14325c;
+    color: var(--color-dark);
 }
 
 .ventas-categoria-name span {
@@ -217,14 +217,14 @@
     min-height: 28px;
     padding: 5px 9px;
     border-radius: 999px;
-    background: #edf7f5;
-    color: #0f766e;
+    background: #fff1c6;
+    color: var(--color-dark);
     font-size: 0.78rem;
     font-weight: 800;
 }
 
 .ventas-categoria-money {
-    color: #14532d;
+    color: var(--color-dark);
     font-weight: 800;
     white-space: nowrap;
 }
@@ -236,7 +236,7 @@
 }
 
 .ventas-categoria-total-label {
-    color: #17345d;
+    color: var(--color-dark);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.78rem;
@@ -248,12 +248,12 @@
     align-items: center;
     gap: 16px;
     padding: 18px 22px 22px;
-    border-top: 1px solid #e7edf5;
+    border-top: 1px solid #ece2c8;
     color: #60758f;
 }
 
 .ventas-categoria-footer strong {
-    color: #17345d;
+    color: var(--color-dark);
 }
 
 @media (max-width: 1100px) {

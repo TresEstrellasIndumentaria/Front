@@ -1,12 +1,55 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { getOrdenesCompra, getRecibosPorCliente, getRemitosPorCliente } from '../../Redux/Actions';
+import Swal from 'sweetalert2';
+import { crearRecibo, getOrdenesCompra, getPagosProveedorPorProveedor, getRecibosPorCliente, getRemitosPorCliente, registrarPagoProveedor } from '../../Redux/Actions';
 import './styles.css';
 
 const formatDate = (value) => {
   if (!value) return '-';
   return new Intl.DateTimeFormat('es-AR').format(new Date(value));
 };
+
+const getTimeValue = (value) => {
+  const time = new Date(value || 0).getTime();
+  return Number.isNaN(time) ? 0 : time;
+};
+
+const getMovimientoSortValue = (movimiento) => {
+  const fechaDia = movimiento?.fecha ? String(movimiento.fecha).slice(0, 10) : '';
+  const fechaBase = fechaDia ? getTimeValue(`${fechaDia}T00:00:00`) : getTimeValue(movimiento?.fecha);
+  const horaOrigen = new Date(
+    movimiento?.fechaHora ||
+    movimiento?.createdAt ||
+    movimiento?.updatedAt ||
+    movimiento?.fecha
+  );
+  const horaDelDia = Number.isNaN(horaOrigen.getTime())
+    ? 0
+    : (
+      (horaOrigen.getHours() * 60 * 60 * 1000) +
+      (horaOrigen.getMinutes() * 60 * 1000) +
+      (horaOrigen.getSeconds() * 1000) +
+      horaOrigen.getMilliseconds()
+    );
+
+  return {
+    fechaBase,
+    fechaHora: fechaBase + horaDelDia,
+  };
+};
+
+const ordenarMovimientosPorFecha = (movimientos) => (
+  [...movimientos].sort((a, b) => {
+    const sortA = getMovimientoSortValue(a);
+    const sortB = getMovimientoSortValue(b);
+
+    if (sortA.fechaBase !== sortB.fechaBase) {
+      return sortA.fechaBase - sortB.fechaBase;
+    }
+
+    return sortA.fechaHora - sortB.fechaHora;
+  })
+);
 
 const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -16,8 +59,8 @@ const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
 }).format(Number(value || 0));
 
 const getSaldoLabel = (value) => {
-  if (value > 0) return 'Saldo deudor';
-  if (value < 0) return 'Saldo a favor';
+  if (value > 0) return 'Saldo a favor';
+  if (value < 0) return 'Saldo deudor';
   return 'Saldo actual';
 };
 
@@ -31,6 +74,8 @@ const getNombreProveedor = (proveedor) => (
   proveedor?.nombreFantasia ||
   'Sin nombre'
 );
+
+const normalizeEstadoVenta = (estado) => (estado === 'PAGADO' ? 'PAGADO' : 'PENDIENTE');
 
 const getOrdenProveedorId = (orden) => {
   if (!orden) return '';
@@ -51,40 +96,89 @@ const getOrdenDetalle = (orden) => {
     .join(', ');
 };
 
-const getPagosOrden = (orden) => {
-  if (Array.isArray(orden?.pagos)) return orden.pagos;
-  if (Array.isArray(orden?.pagosProveedor)) return orden.pagosProveedor;
-  if (Array.isArray(orden?.abonos)) return orden.abonos;
-  return [];
+const getOrdenTotal = (orden) => Number(orden?.estado === 'CANCELADA' ? 0 : orden?.totalOrden ?? orden?.total ?? 0);
+
+const toDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getMesActualRange = () => {
+  const now = new Date();
+  return {
+    desde: toDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1)),
+    hasta: toDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+  };
 };
 
 function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
   const dispatch = useDispatch();
   const esProveedor = tipoCuenta === 'PROVEEDOR';
-  const [fechaDesde, setFechaDesde] = useState('');
-  const [fechaHasta, setFechaHasta] = useState('');
+  const mesActual = useMemo(() => getMesActualRange(), []);
+  const [fechaDesde, setFechaDesde] = useState(mesActual.desde);
+  const [fechaHasta, setFechaHasta] = useState(mesActual.hasta);
   const [tipoFiltro, setTipoFiltro] = useState('TODOS');
   const [estadoFiltro, setEstadoFiltro] = useState('TODOS');
   const [data, setData] = useState({ remitos: null, recibos: null });
   const [loading, setLoading] = useState(false);
+  const [guardandoPago, setGuardandoPago] = useState(false);
   const [error, setError] = useState('');
+  const [pagoProveedor, setPagoProveedor] = useState({
+    importe: '',
+    fechaPago: new Date().toISOString().slice(0, 10),
+    medioPago: 'EFECTIVO',
+    observaciones: '',
+  });
+  const [pagoCliente, setPagoCliente] = useState({
+    importe: '',
+    fechaCobro: new Date().toISOString().slice(0, 10),
+    medioPago: 'Transferencia',
+    observaciones: '',
+  });
 
-  useEffect(() => {
-    if (esProveedor) return;
-
-    const numeroCliente = String(cliente?.numeroCliente || '').trim();
-    if (!numeroCliente) return;
-
-    let active = true;
+  const cargarOrdenesProveedor = () => {
     setLoading(true);
     setError('');
 
-    Promise.all([
+    const proveedorId = proveedor?._id || proveedor?.id;
+
+    return Promise.all([
+      dispatch(getOrdenesCompra()),
+      proveedorId ? dispatch(getPagosProveedorPorProveedor(proveedorId)) : Promise.resolve({ pagos: [] }),
+    ]).then(([ordenesResponse, pagosResponse]) => {
+      setLoading(false);
+
+      if (ordenesResponse?.error || pagosResponse?.error) {
+        setError(
+          ordenesResponse?.message ||
+          pagosResponse?.message ||
+          'No se pudo cargar la cuenta corriente del proveedor.'
+        );
+        return ordenesResponse?.error ? ordenesResponse : pagosResponse;
+      }
+
+      setData({
+        ordenes: ordenesResponse,
+        pagos: pagosResponse,
+      });
+
+      return ordenesResponse;
+    });
+  };
+
+  const cargarCuentaCliente = () => {
+    const numeroCliente = String(cliente?.numeroCliente || '').trim();
+    if (!numeroCliente) return Promise.resolve(null);
+
+    setLoading(true);
+    setError('');
+
+    return Promise.all([
       dispatch(getRemitosPorCliente(numeroCliente)),
       dispatch(getRecibosPorCliente(numeroCliente)),
     ]).then(([remitosResponse, recibosResponse]) => {
-      if (!active) return;
-
       const responseError = remitosResponse?.error || recibosResponse?.error;
       setLoading(false);
 
@@ -94,18 +188,30 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
           recibosResponse?.message ||
           'No se pudo cargar la cuenta corriente.'
         );
-        return;
+        return remitosResponse?.error ? remitosResponse : recibosResponse;
       }
 
       setData({
         remitos: remitosResponse,
         recibos: recibosResponse,
       });
+
+      return { remitos: remitosResponse, recibos: recibosResponse };
+    });
+  };
+
+  useEffect(() => {
+    if (esProveedor) return;
+
+    let active = true;
+    cargarCuentaCliente().then(() => {
+      if (!active) return;
     });
 
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cliente?.numeroCliente, dispatch, esProveedor]);
 
   useEffect(() => {
@@ -115,28 +221,14 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
     if (!proveedorId) return;
 
     let active = true;
-    setLoading(true);
-    setError('');
-
-    dispatch(getOrdenesCompra()).then((ordenesResponse) => {
+    cargarOrdenesProveedor().then((ordenesResponse) => {
       if (!active) return;
-
-      setLoading(false);
-
-      if (ordenesResponse?.error) {
-        setError(ordenesResponse?.message || 'No se pudo cargar la cuenta corriente del proveedor.');
-        return;
-      }
-
-      setData({
-        ordenes: ordenesResponse,
-        pagos: null,
-      });
     });
 
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, esProveedor, proveedor?._id, proveedor?.id]);
 
   const movimientos = useMemo(() => {
@@ -158,25 +250,30 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
         descripcion: getOrdenDetalle(orden),
         estado: orden?.estado || 'PENDIENTE',
         referencia: orden?.tiendaDestino || '-',
-        debe: Number(orden?.estado === 'CANCELADA' ? 0 : orden?.totalOrden ?? orden?.total ?? 0),
+        fechaHora: orden?.createdAt || orden?.fechaOrden,
+        createdAt: orden?.createdAt,
+        updatedAt: orden?.updatedAt,
+        debe: getOrdenTotal(orden),
         haber: 0,
       }));
 
-      const movimientosPagos = ordenesProveedor.flatMap((orden) => (
-        getPagosOrden(orden).map((pago, index) => ({
-          id: pago?._id || pago?.id || `pago-${orden?._id || orden?.id || orden?.numero}-${index}`,
-          fecha: pago?.fechaPago || pago?.fecha || pago?.createdAt || orden?.updatedAt || orden?.createdAt,
-          tipo: 'HABER',
-          comprobante: pago?.numeroPagoFormateado || pago?.comprobante || `Pago OC-${orden?.numero || '-'}`,
-          descripcion: pago?.observaciones?.trim() || `Pago registrado a ${getNombreProveedor(proveedor)}`,
-          estado: 'PAGADO',
-          referencia: pago?.medioPago || pago?.referencia || '-',
-          debe: 0,
-          haber: Number(pago?.importe ?? pago?.monto ?? pago?.total ?? 0),
-        }))
-      ));
+      const pagosProveedor = Array.isArray(data?.pagos?.pagos) ? data.pagos.pagos : [];
+      const movimientosPagos = pagosProveedor.map((pago, index) => ({
+        id: pago?._id || pago?.id || `pago-proveedor-${index}`,
+        fecha: pago?.fechaPago || pago?.fecha || pago?.createdAt,
+        tipo: 'HABER',
+        comprobante: pago?.numeroPagoFormateado || pago?.comprobante || `PP-${String(pago?.numeroPago || index + 1).padStart(6, '0')}`,
+        descripcion: pago?.observaciones?.trim() || `Pago registrado a ${getNombreProveedor(proveedor)}`,
+        estado: 'PAGADO',
+        referencia: pago?.medioPago || pago?.referencia || '-',
+        fechaHora: pago?.createdAt || pago?.fechaPago || pago?.fecha,
+        createdAt: pago?.createdAt,
+        updatedAt: pago?.updatedAt,
+        debe: 0,
+        haber: Number(pago?.importe ?? pago?.monto ?? pago?.total ?? 0),
+      }));
 
-      return [...movimientosOrdenes, ...movimientosPagos]
+      return ordenarMovimientosPorFecha([...movimientosOrdenes, ...movimientosPagos]
         .filter((movimiento) => {
           const fecha = movimiento?.fecha ? movimiento.fecha.slice(0, 10) : '';
           const matchTipo = tipoFiltro === 'TODOS' ? true : movimiento.tipo === tipoFiltro;
@@ -188,12 +285,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
           const matchDesde = fechaDesde ? fecha >= fechaDesde : true;
           const matchHasta = fechaHasta ? fecha <= fechaHasta : true;
           return matchTipo && matchEstado && matchDesde && matchHasta;
-        })
-        .sort((a, b) => {
-          const fechaA = new Date(a?.fecha || 0).getTime();
-          const fechaB = new Date(b?.fecha || 0).getTime();
-          return fechaA - fechaB;
-        });
+        }));
     }
 
     const remitos = Array.isArray(data?.remitos?.remitos) ? data.remitos.remitos : [];
@@ -218,11 +310,14 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
         tipo: 'DEBE',
         comprobante: remito?.numeroRemitoFormateado || `R-${String(remito?.numeroRemito || '').padStart(6, '0')}`,
         descripcion: detalle,
-        estado: remito?.estado || 'PENDIENTE',
-        referencia: remito?.estado || '-',
-        debe: Number(remito?.estado === 'CANCELADO' ? 0 : remito?.importeTotal || 0),
-        haber: 0,
-      };
+      estado: normalizeEstadoVenta(remito?.estado),
+      referencia: normalizeEstadoVenta(remito?.estado),
+      fechaHora: remito?.createdAt,
+      createdAt: remito?.createdAt,
+      updatedAt: remito?.updatedAt,
+      debe: Number(remito?.importeTotal || 0),
+      haber: 0,
+    };
     });
 
     const movimientosRecibos = recibos.map((recibo) => ({
@@ -233,11 +328,14 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
       descripcion: recibo?.observaciones?.trim() || `Cobro registrado a ${getNombreCliente(cliente)}`,
       estado: 'COBRADO',
       referencia: recibo?.medioPago || '-',
+      fechaHora: recibo?.createdAt || recibo?.fechaCobro,
+      createdAt: recibo?.createdAt,
+      updatedAt: recibo?.updatedAt,
       debe: 0,
       haber: Number(recibo?.importe || 0),
     }));
 
-    return [...movimientosRemitos, ...movimientosRecibos]
+    return ordenarMovimientosPorFecha([...movimientosRemitos, ...movimientosRecibos]
       .filter((movimiento) => {
         const fecha = movimiento?.fecha ? movimiento.fecha.slice(0, 10) : '';
         const matchTipo = tipoFiltro === 'TODOS' ? true : movimiento.tipo === tipoFiltro;
@@ -249,18 +347,13 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
         const matchDesde = fechaDesde ? fecha >= fechaDesde : true;
         const matchHasta = fechaHasta ? fecha <= fechaHasta : true;
         return matchTipo && matchEstado && matchDesde && matchHasta;
-      })
-      .sort((a, b) => {
-        const fechaA = new Date(a?.fecha || 0).getTime();
-        const fechaB = new Date(b?.fecha || 0).getTime();
-        return fechaA - fechaB;
-      });
+      }));
   }, [cliente, data, esProveedor, estadoFiltro, fechaDesde, fechaHasta, proveedor, tipoFiltro]);
 
   const movimientosConSaldo = useMemo(() => {
     let saldo = 0;
     return movimientos.map((movimiento) => {
-      saldo += Number(movimiento.debe || 0) - Number(movimiento.haber || 0);
+      saldo += Number(movimiento.haber || 0) - Number(movimiento.debe || 0);
       return {
         ...movimiento,
         saldo,
@@ -274,7 +367,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
     return {
       totalDebe,
       totalHaber,
-      saldoFinal: totalDebe - totalHaber,
+      saldoFinal: totalHaber - totalDebe,
     };
   }, [movimientosConSaldo]);
 
@@ -287,9 +380,9 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
           ? data.ordenes.ordenes
           : [];
       const ordenesProveedor = ordenes.filter((orden) => getOrdenProveedorId(orden) === proveedorId);
-      const pagos = ordenesProveedor.flatMap((orden) => getPagosOrden(orden));
+      const pagos = Array.isArray(data?.pagos?.pagos) ? data.pagos.pagos : [];
       const totalDebe = ordenesProveedor.reduce(
-        (acc, orden) => acc + Number(orden?.estado === 'CANCELADA' ? 0 : orden?.totalOrden ?? orden?.total ?? 0),
+        (acc, orden) => acc + getOrdenTotal(orden),
         0
       );
       const totalPagado = pagos.reduce((acc, pago) => acc + Number(pago?.importe ?? pago?.monto ?? pago?.total ?? 0), 0);
@@ -299,7 +392,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
         identificador: proveedor?.numeroProveedor || proveedor?.codigoProveedor || proveedor?._id || 'Sin numero',
         totalDebe,
         totalHaber: totalPagado,
-        saldoActual: totalDebe - totalPagado,
+        saldoActual: totalPagado - totalDebe,
         totalPrincipal: ordenesProveedor.length,
         totalSecundario: pagos.length,
         totalPendientes: ordenesProveedor.filter((orden) => ['BORRADOR', 'ENVIADA', 'PARCIALMENTE_RECIBIDA'].includes(orden?.estado)).length,
@@ -309,48 +402,163 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
 
     const totalDebe = Number(data?.remitos?.totalDebe || 0);
     const totalCobrado = Number(data?.recibos?.totalCobrado || 0);
+    const remitosCliente = Array.isArray(data?.remitos?.remitos) ? data.remitos.remitos : [];
+    const totalPendientes = remitosCliente.length
+      ? remitosCliente.filter((remito) => normalizeEstadoVenta(remito?.estado) === 'PENDIENTE').length
+      : Number(data?.remitos?.totalPendientes || 0);
+    const totalPagados = remitosCliente.length
+      ? remitosCliente.filter((remito) => normalizeEstadoVenta(remito?.estado) === 'PAGADO').length
+      : Number(data?.remitos?.totalPagados || data?.remitos?.totalPagadas || 0);
+
     return {
       entidad: getNombreCliente(cliente),
       identificador: cliente?.numeroCliente || 'Sin numero',
       totalDebe,
       totalHaber: totalCobrado,
-      saldoActual: totalDebe - totalCobrado,
+      saldoActual: totalCobrado - totalDebe,
       totalPrincipal: Number(data?.remitos?.totalRemitos || 0),
       totalSecundario: Number(data?.recibos?.totalRecibos || 0),
-      totalPendientes: Number(data?.remitos?.totalPendientes || 0),
-      totalFinalizados: Number(data?.remitos?.totalDeudores || 0),
+      totalPendientes,
+      totalFinalizados: totalPagados,
     };
   }, [cliente, data, esProveedor, proveedor]);
 
-  const entidadLabel = esProveedor ? 'Proveedor' : 'Cliente';
   const principalLabel = esProveedor ? 'Ordenes' : 'Remitos';
   const secundarioLabel = esProveedor ? 'Pagos' : 'Recibos';
-  const finalizadosLabel = esProveedor ? 'Recibidas' : 'Deudores';
+  const finalizadosLabel = esProveedor ? 'Recibidas' : 'Pagados';
   const sinIdentificadorMessage = esProveedor
     ? 'No se encontro el proveedor para consultar la cuenta corriente.'
     : 'No se encontro el numero de cliente para consultar la cuenta corriente.';
   const puedeConsultar = esProveedor ? Boolean(proveedor?._id || proveedor?.id) : Boolean(cliente?.numeroCliente);
+  const deudaProveedor = Math.max(0, Number(resumen.saldoActual || 0) * -1);
+  const deudaCliente = Math.max(0, Number(resumen.saldoActual || 0) * -1);
+
+  const handlePagoProveedorChange = (e) => {
+    const { name, value } = e.target;
+    setPagoProveedor((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePagoClienteChange = (e) => {
+    const { name, value } = e.target;
+    setPagoCliente((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleRegistrarPagoCliente = async (e) => {
+    e.preventDefault();
+
+    if (pagoCliente.importe === '' || Number(pagoCliente.importe) <= 0) {
+      setError('Ingresa un importe de pago valido.');
+      return;
+    }
+
+    if (Number(pagoCliente.importe) > deudaCliente) {
+      setError('El importe no puede superar la deuda actual del cliente.');
+      return;
+    }
+
+    setGuardandoPago(true);
+    setError('');
+
+    const response = await dispatch(crearRecibo({
+      numeroCliente: String(cliente?.numeroCliente || '').trim(),
+      razonSocial: cliente?.razonSocial || cliente?.nombreFantasia || getNombreCliente(cliente),
+      nombreApellido: getNombreCliente(cliente),
+      importe: Number(pagoCliente.importe),
+      fechaCobro: pagoCliente.fechaCobro,
+      medioPago: pagoCliente.medioPago,
+      observaciones: pagoCliente.observaciones.trim(),
+    }));
+
+    setGuardandoPago(false);
+
+    if (response?.error) {
+      setError(response.message || 'No se pudo registrar el pago del cliente.');
+      return;
+    }
+
+    setPagoCliente({
+      importe: '',
+      fechaCobro: new Date().toISOString().slice(0, 10),
+      medioPago: 'Transferencia',
+      observaciones: '',
+    });
+
+    await cargarCuentaCliente();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Pago realizado con exito',
+      text: `Se registro un pago por ${formatMoney(response?.recibo?.importe ?? pagoCliente.importe)}.`,
+      timer: 1800,
+      showConfirmButton: false,
+    });
+  };
+
+  const handleRegistrarPagoProveedor = async (e) => {
+    e.preventDefault();
+
+    if (pagoProveedor.importe === '' || Number(pagoProveedor.importe) <= 0) {
+      setError('Ingresa un importe de pago valido.');
+      return;
+    }
+
+    if (Number(pagoProveedor.importe) > deudaProveedor) {
+      setError('El importe no puede superar la deuda actual del proveedor.');
+      return;
+    }
+
+    setGuardandoPago(true);
+    setError('');
+
+    const response = await dispatch(registrarPagoProveedor(null, {
+      importe: Number(pagoProveedor.importe),
+      monto: Number(pagoProveedor.importe),
+      fechaPago: pagoProveedor.fechaPago,
+      medioPago: pagoProveedor.medioPago,
+      observaciones: pagoProveedor.observaciones.trim(),
+      proveedor: proveedor?._id || proveedor?.id,
+    }));
+
+    setGuardandoPago(false);
+
+    if (response?.error) {
+      setError(response.message || 'No se pudo registrar el pago del proveedor.');
+      return;
+    }
+
+    setPagoProveedor({
+      importe: '',
+      fechaPago: new Date().toISOString().slice(0, 10),
+      medioPago: 'EFECTIVO',
+      observaciones: '',
+    });
+
+    await cargarOrdenesProveedor();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Pago realizado con exito',
+      text: `Se registro un pago por ${formatMoney(response?.pago?.importe ?? pagoProveedor.importe)}.`,
+      timer: 1800,
+      showConfirmButton: false,
+    });
+  };
 
   return (
     <section className="cuenta-corriente">
       <div className="cuenta-corriente-summary">
-        <article className="cuenta-corriente-summary-card cuenta-corriente-summary-card--wide">
-          <span>{entidadLabel}</span>
-          <strong>{resumen.entidad}</strong>
-          <small>{esProveedor ? 'Identificador' : 'Numero cliente'}: {resumen.identificador}</small>
-        </article>
         <article className="cuenta-corriente-summary-card">
           <span>Debe total</span>
-          <strong>{formatMoney(resumen.totalDebe)}</strong>
+          <strong>{formatMoney(totalesFiltrados.totalDebe)}</strong>
         </article>
         <article className="cuenta-corriente-summary-card">
           <span>Haber total</span>
-          <strong>{formatMoney(resumen.totalHaber)}</strong>
+          <strong>{formatMoney(totalesFiltrados.totalHaber)}</strong>
         </article>
         <article className="cuenta-corriente-summary-card cuenta-corriente-summary-card--saldo">
-          <span>{getSaldoLabel(resumen.saldoActual)}</span>
-          <strong className={`cuenta-corriente-saldo-value ${resumen.saldoActual > 0 ? 'is-deudor' : resumen.saldoActual < 0 ? 'is-favor' : ''}`}>
-            {formatMoney(resumen.saldoActual)}
+          <span>{getSaldoLabel(totalesFiltrados.saldoFinal)}</span>
+          <strong className={`cuenta-corriente-saldo-value ${totalesFiltrados.saldoFinal < 0 ? 'is-deudor' : totalesFiltrados.saldoFinal > 0 ? 'is-favor' : ''}`}>
+            {formatMoney(totalesFiltrados.saldoFinal)}
           </strong>
         </article>
       </div>
@@ -360,19 +568,154 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
           <span>{principalLabel}</span>
           <strong>{resumen.totalPrincipal}</strong>
         </article>
-        <article className="cuenta-corriente-summary-card">
-          <span>{secundarioLabel}</span>
-          <strong>{resumen.totalSecundario}</strong>
-        </article>
-        <article className="cuenta-corriente-summary-card">
-          <span>Pendientes</span>
-          <strong>{resumen.totalPendientes}</strong>
-        </article>
-        <article className="cuenta-corriente-summary-card">
-          <span>{finalizadosLabel}</span>
-          <strong>{resumen.totalFinalizados}</strong>
-        </article>
+        {esProveedor && (
+          <article className="cuenta-corriente-summary-card">
+            <span>{secundarioLabel}</span>
+            <strong>{resumen.totalSecundario}</strong>
+          </article>
+        )}
+        {!esProveedor && (
+          <article className="cuenta-corriente-summary-card">
+            <span>Pendientes</span>
+            <strong>{resumen.totalPendientes}</strong>
+          </article>
+        )}
+        {!esProveedor && (
+          <article className="cuenta-corriente-summary-card">
+            <span>{finalizadosLabel}</span>
+            <strong>{resumen.totalFinalizados}</strong>
+          </article>
+        )}
       </div>
+
+      {!esProveedor && puedeConsultar && (
+        <form className="cuenta-corriente-payment-form" onSubmit={handleRegistrarPagoCliente}>
+          <div>
+            <span>Registrar pago de cliente</span>
+            <strong>{getNombreCliente(cliente)}</strong>
+            <small>Deuda actual: {formatMoney(deudaCliente)}</small>
+          </div>
+
+          <label>
+            <span>Importe</span>
+            <div className="cuenta-corriente-payment-amount">
+              <input
+                type="number"
+                name="importe"
+                min="0"
+                max={deudaCliente}
+                step="0.01"
+                value={pagoCliente.importe}
+                onChange={handlePagoClienteChange}
+                placeholder="0"
+              />
+              <button
+                type="button"
+                className="cuenta-corriente-payment-total-btn"
+                onClick={() => setPagoCliente((prev) => ({ ...prev, importe: String(deudaCliente) }))}
+                disabled={!deudaCliente || guardandoPago}
+              >
+                Total
+              </button>
+            </div>
+          </label>
+
+          <label>
+            <span>Fecha</span>
+            <input type="date" name="fechaCobro" value={pagoCliente.fechaCobro} onChange={handlePagoClienteChange} />
+          </label>
+
+          <label>
+            <span>Medio</span>
+            <select name="medioPago" value={pagoCliente.medioPago} onChange={handlePagoClienteChange}>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Debito">Debito</option>
+              <option value="Credito">Credito</option>
+              <option value="Cuenta DNI">Cuenta DNI</option>
+            </select>
+          </label>
+
+          <label className="cuenta-corriente-payment-notes">
+            <span>Observaciones</span>
+            <input
+              type="text"
+              name="observaciones"
+              value={pagoCliente.observaciones}
+              onChange={handlePagoClienteChange}
+              placeholder="Detalle opcional"
+            />
+          </label>
+
+          <button type="submit" disabled={guardandoPago || !deudaCliente}>
+            {guardandoPago ? 'Guardando...' : 'Registrar pago'}
+          </button>
+        </form>
+      )}
+
+      {esProveedor && puedeConsultar && (
+        <form className="cuenta-corriente-payment-form" onSubmit={handleRegistrarPagoProveedor}>
+          <div>
+            <span>Registrar pago a proveedor</span>
+            <strong>{getNombreProveedor(proveedor)}</strong>
+            <small>Deuda actual: {formatMoney(deudaProveedor)}</small>
+          </div>
+
+          <label>
+            <span>Importe</span>
+            <div className="cuenta-corriente-payment-amount">
+              <input
+                type="number"
+                name="importe"
+                min="0"
+                max={deudaProveedor}
+                step="0.01"
+                value={pagoProveedor.importe}
+                onChange={handlePagoProveedorChange}
+                placeholder="0"
+              />
+              <button
+                type="button"
+                className="cuenta-corriente-payment-total-btn"
+                onClick={() => setPagoProveedor((prev) => ({ ...prev, importe: String(deudaProveedor) }))}
+                disabled={!deudaProveedor || guardandoPago}
+              >
+                Total
+              </button>
+            </div>
+          </label>
+
+          <label>
+            <span>Fecha</span>
+            <input type="date" name="fechaPago" value={pagoProveedor.fechaPago} onChange={handlePagoProveedorChange} />
+          </label>
+
+          <label>
+            <span>Medio</span>
+            <select name="medioPago" value={pagoProveedor.medioPago} onChange={handlePagoProveedorChange}>
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="TRANSFERENCIA">Transferencia</option>
+              <option value="CHEQUE">Cheque</option>
+              <option value="OTRO">Otro</option>
+            </select>
+          </label>
+
+          <label className="cuenta-corriente-payment-notes">
+            <span>Observaciones</span>
+            <input
+              type="text"
+              name="observaciones"
+              value={pagoProveedor.observaciones}
+              onChange={handlePagoProveedorChange}
+              placeholder="Detalle opcional"
+            />
+          </label>
+
+          <button type="submit" disabled={guardandoPago || !deudaProveedor}>
+            {guardandoPago ? 'Guardando...' : 'Registrar pago'}
+          </button>
+        </form>
+      )}
 
       <div className="cuenta-corriente-card">
         <div className="cuenta-corriente-filters">
@@ -399,16 +742,16 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
             <span>Estado</span>
             <select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)}>
               <option value="TODOS">Todos</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="DEUDOR">Deudor</option>
-              <option value="PAGADO">Pagado</option>
-              <option value="CANCELADO">Cancelado</option>
-              <option value="BORRADOR">Borrador</option>
-              <option value="ENVIADA">Enviada</option>
-              <option value="PARCIALMENTE_RECIBIDA">Parcialmente recibida</option>
-              <option value="RECIBIDA">Recibida</option>
-              <option value="CANCELADA">Cancelada</option>
-              <option value="COBRADO">Cobrado</option>
+              {!esProveedor && <option value="PENDIENTE">Pendiente</option>}
+              {!esProveedor && <option value="PAGADO">Pagado</option>}
+              {!esProveedor && <option value="COBRADO">Cobrado</option>}
+              {esProveedor && <option value="PENDIENTE">Pendiente</option>}
+              {esProveedor && <option value="PAGADO">Pagado</option>}
+              {esProveedor && <option value="BORRADOR">Borrador</option>}
+              {esProveedor && <option value="ENVIADA">Enviada</option>}
+              {esProveedor && <option value="PARCIALMENTE_RECIBIDA">Parcialmente recibida</option>}
+              {esProveedor && <option value="RECIBIDA">Recibida</option>}
+              {esProveedor && <option value="CANCELADA">Cancelada</option>}
             </select>
           </label>
         </div>
@@ -421,7 +764,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
                 <th>Tipo</th>
                 <th>Comprobante</th>
                 <th>Descripcion</th>
-                <th>Referencia</th>
+                <th>Metodo pago</th>
                 <th>Debe</th>
                 <th>Haber</th>
                 <th>Saldo</th>
@@ -482,7 +825,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
                 <td className="cuenta-corriente-money cuenta-corriente-money--haber">
                   {formatMoney(totalesFiltrados.totalHaber)}
                 </td>
-                <td className={`cuenta-corriente-money cuenta-corriente-total-saldo ${totalesFiltrados.saldoFinal > 0 ? 'is-deudor' : totalesFiltrados.saldoFinal < 0 ? 'is-favor' : ''}`}>
+                <td className={`cuenta-corriente-money cuenta-corriente-total-saldo ${totalesFiltrados.saldoFinal < 0 ? 'is-deudor' : totalesFiltrados.saldoFinal > 0 ? 'is-favor' : ''}`}>
                   {formatMoney(totalesFiltrados.saldoFinal)}
                 </td>
               </tr>

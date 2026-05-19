@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom';
 import { AppContext } from '../../Context';
 import { getAllArticulos, getCategorias } from '../../Redux/Actions';
 import SearchBar from '../../Components/BuscaArticulo';
+import BotonEliminarArt from '../../Components/BotonEliminarArt';
 import './styles.css';
 
 function ListaArticulos() {
@@ -38,14 +39,20 @@ function ListaArticulos() {
             .reduce((acc, talle) => acc + Number(talle?.stock ?? 0), 0)
     );
 
+    const getCodigoArticulo = (articulo) => (
+        articulo?.codigoArticulo || articulo?.codigo || articulo?.codArticulo || '-'
+    );
+
     const articulosFiltrados = useMemo(() => {
         const searchValue = (contexto.search || '').toLowerCase();
 
         return (allArticulos || []).filter((art) => {
             const stock = getTotalStock(art);
-            const fieldValue = searchType === 'categoria'
-                ? (typeof art.categoria === 'string' ? art.categoria : art.categoria?.nombre || '')
-                : art.nombre || '';
+            const fieldValue = (() => {
+                if (searchType === 'categoria') return typeof art.categoria === 'string' ? art.categoria : art.categoria?.nombre || '';
+                if (searchType === 'codigo') return getCodigoArticulo(art);
+                return art.nombre || '';
+            })();
 
             const normalizedField = fieldValue.toLowerCase();
             const matchSearch = !searchValue
@@ -80,6 +87,8 @@ function ListaArticulos() {
         return ((precio - coste) * 100) / precio;
     };
 
+    const getCostoTalle = (talle) => Number(talle?.costo ?? talle?.coste ?? 0);
+
     return (
         <div className="cont-principal-listaEmp articulos-page">
             <div className="header-lista articulos-header">
@@ -110,14 +119,13 @@ function ListaArticulos() {
                 <table className="tabla-empleados articulos-table">
                     <thead>
                         <tr>
+                            <th>Codigo</th>
                             <th>Nombre</th>
                             <th>Categoria</th>
                             <th>Talle</th>
-                            <th>Medidas</th>
                             <th>Precio</th>
                             <th>Coste</th>
                             <th>Stock</th>
-                            <th>Entrantes</th>
                             <th>Margen</th>
                             <th>Acciones</th>
                         </tr>
@@ -126,7 +134,7 @@ function ListaArticulos() {
                     <tbody>
                         {articulosFiltrados.length === 0 && (
                             <tr>
-                                <td colSpan="10" className="articulos-empty">
+                                <td colSpan="9" className="articulos-empty">
                                     No hay articulos para mostrar.
                                 </td>
                             </tr>
@@ -137,12 +145,9 @@ function ListaArticulos() {
                                 ? art.talles
                                 : [{
                                     talle: '-',
-                                    ancho: '-',
-                                    alto: '-',
                                     precio: 0,
-                                    coste: 0,
+                                    costo: 0,
                                     stock: 0,
-                                    entrantes: 0,
                                     artCompuesto: false
                                 }];
 
@@ -151,6 +156,9 @@ function ListaArticulos() {
                                     key={`${art._id}-${talle?.talle || index}`}
                                     className={`articulo-row-${articuloIndex % 2 === 0 ? 'even' : 'odd'} ${index === 0 ? 'articulo-row-start' : 'articulo-row-detail'}`}
                                 >
+                                    <td>
+                                        <span className="codigo-articulo-cell">{getCodigoArticulo(art)}</span>
+                                    </td>
                                     <td>
                                         <div className="articulo-nombre-cell">
                                             <strong>{art.nombre}</strong>
@@ -162,24 +170,21 @@ function ListaArticulos() {
                                         </span>
                                     </td>
 
-                                    <td>
-                                        <span className="talle-chip">{talle?.talle || '-'}</span>
-                                    </td>
-                                    <td>
-                                        <span className="medidas-chip">
-                                            {talle?.ancho || '-'} x {talle?.alto || '-'}
-                                        </span>
-                                    </td>
-                                    <td className="money-cell">${Number(talle?.precio ?? 0).toLocaleString('es-AR')}</td>
-                                    <td className="money-cell money-cell--soft">${Number(talle?.coste ?? 0).toLocaleString('es-AR')}</td>
-                                    <td>{renderStock(talle?.stock)}</td>
-                                    <td><span className="entrantes-pill">{Number(talle?.entrantes ?? 0)}</span></td>
-                                    <td><span className="margen-pill">{calculoMargen(Number(talle?.precio ?? 0), Number(talle?.coste ?? 0)).toFixed(2)}%</span></td>
-                                    <td className="acciones articulos-acciones">
-                                        <NavLink to={`/modificaArt/${art._id}`}>
-                                            <button className="btn-edit">Editar</button>
-                                        </NavLink>
-                                    </td>
+	                                    <td>
+	                                        <span className="talle-chip">{talle?.talle || '-'}</span>
+	                                    </td>
+	                                    <td className="money-cell">${Number(talle?.precio ?? 0).toLocaleString('es-AR')}</td>
+	                                    <td className="money-cell money-cell--soft">${getCostoTalle(talle).toLocaleString('es-AR')}</td>
+	                                    <td>{renderStock(talle?.stock)}</td>
+	                                    <td><span className="margen-pill">{calculoMargen(Number(talle?.precio ?? 0), getCostoTalle(talle)).toFixed(2)}%</span></td>
+                                    {index === 0 && (
+                                        <td className="acciones articulos-acciones" rowSpan={talles.length}>
+                                            <NavLink to={`/modificaArt/${art._id}`}>
+                                                <button className="btn-edit">Editar</button>
+                                            </NavLink>
+                                            <BotonEliminarArt _id={art._id} nombre={art.nombre} />
+                                        </td>
+                                    )}
                                 </tr>
                             ));
                         })}
