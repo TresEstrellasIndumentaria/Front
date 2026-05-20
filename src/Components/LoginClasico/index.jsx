@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import EmailIcon from "@mui/icons-material/Email";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import Swal from "sweetalert2";
+import { URL } from "../../Urls";
 import "./styles.css";
 
 function LoginClasico() {
@@ -46,7 +47,7 @@ function LoginClasico() {
         if (validate()) return;
 
         try {
-            const response = await fetch("http://localhost:3001/auth/login", {
+            const response = await fetch(`${URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
