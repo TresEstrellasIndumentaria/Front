@@ -12,6 +12,7 @@ function ListaArticulos() {
     const contexto = useContext(AppContext);
     const [searchType, setSearchType] = useState('nombre');
     const [inventoryFilter, setInventoryFilter] = useState('todos');
+    const [hoveredArticuloId, setHoveredArticuloId] = useState(null);
 
     const allArticulos = useSelector((state) => state.articulos);
     const allCat = useSelector((state) => state.categorias);
@@ -153,21 +154,27 @@ function ListaArticulos() {
                             return talles.map((talle, index) => (
                                 <tr
                                     key={`${art._id}-${talle?.talle || index}`}
-                                    className={`articulo-row-${articuloIndex % 2 === 0 ? 'even' : 'odd'} ${index === 0 ? 'articulo-row-start' : 'articulo-row-detail'}`}
+                                    className={`articulo-row-${articuloIndex % 2 === 0 ? 'even' : 'odd'} ${index === 0 ? 'articulo-row-start' : 'articulo-row-detail'} ${hoveredArticuloId === art._id ? 'articulo-row-hover' : ''}`}
+                                    onMouseEnter={() => setHoveredArticuloId(art._id)}
+                                    onMouseLeave={() => setHoveredArticuloId(null)}
                                 >
-                                    <td>
-                                        <span className="codigo-articulo-cell">{getCodigoArticulo(art)}</span>
-                                    </td>
-                                    <td>
-                                        <div className="articulo-nombre-cell">
-                                            <strong>{art.nombre}</strong>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className="articulo-categoria-cell">
-                                            {typeof art.categoria === 'string' ? art.categoria : art.categoria?.nombre}
-                                        </span>
-                                    </td>
+                                    {index === 0 && (
+                                        <>
+                                            <td rowSpan={talles.length}>
+                                                <span className="codigo-articulo-cell">{getCodigoArticulo(art)}</span>
+                                            </td>
+                                            <td rowSpan={talles.length}>
+                                                <div className="articulo-nombre-cell">
+                                                    <strong>{art.nombre}</strong>
+                                                </div>
+                                            </td>
+                                            <td rowSpan={talles.length}>
+                                                <span className="articulo-categoria-cell">
+                                                    {typeof art.categoria === 'string' ? art.categoria : art.categoria?.nombre}
+                                                </span>
+                                            </td>
+                                        </>
+                                    )}
 
 	                                    <td>
 	                                        <span className="talle-chip">{talle?.talle || '-'}</span>

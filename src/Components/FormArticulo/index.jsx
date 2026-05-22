@@ -87,6 +87,14 @@ const buildFormFromArticulo = (articulo, categorias = []) => ({
 
 const formsSonIguales = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+const calcularCostoComposicion = (composicion = []) => (
+    composicion.reduce((total, item) => {
+        const cantidad = Number(item?.cantidad || 0);
+        const costoUnitario = Number(item?.costo ?? item?.coste ?? 0);
+        return total + (cantidad * costoUnitario);
+    }, 0)
+);
+
 function FormArticulo({ operacion = "crear", articuloInicial = null }) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -383,19 +391,27 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                 stock: form.talles[0]?.stock === "" ? 0 : Number(form.talles[0]?.stock || 0)
             }]
             : form.talles
-            .map((talle) => ({
-                talle: String(talle.talle || "").trim(),
-                precio: talle.precio === "" ? "" : Number(talle.precio),
-                costo: talle.coste === "" ? "" : Number(talle.coste),
-                artCompuesto: Boolean(talle.artCompuesto),
-                composicion: Array.isArray(talle.composicion) ? talle.composicion : [],
-                stock: talle.stock === "" ? 0 : Number(talle.stock)
-            }))
+            .map((talle) => {
+                const composicion = Array.isArray(talle.composicion) ? talle.composicion : [];
+                const artCompuesto = Boolean(talle.artCompuesto);
+                const costoCalculado = artCompuesto ? calcularCostoComposicion(composicion) : 0;
+
+                return {
+                    talle: String(talle.talle || "").trim(),
+                    precio: talle.precio === "" ? "" : Number(talle.precio),
+                    costo: talle.coste === "" ? (artCompuesto ? Number(costoCalculado.toFixed(3)) : "") : Number(talle.coste),
+                    artCompuesto,
+                    composicion,
+                    stock: talle.stock === "" ? 0 : Number(talle.stock)
+                };
+            })
             .filter((talle) => (
                 talle.talle ||
                 talle.precio !== "" ||
                 talle.costo !== "" ||
-                talle.stock !== 0
+                talle.stock !== 0 ||
+                talle.artCompuesto ||
+                talle.composicion.length
             ));
 
         const talleInvalido = tallesNormalizados.find((talle) => {
@@ -423,7 +439,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                 esItemProveedor ? "Datos invalidos" : "Datos de talle invalidos",
                 esItemProveedor
                     ? "El costo es obligatorio. Precio y stock pueden quedar vacios, pero no pueden ser negativos."
-                    : "Cada fila cargada debe tener precio, coste y stock validos. El talle puede quedar vacio.",
+                    : "Cada fila cargada debe tener precio, coste y stock validos. Si es compuesto, tambien debe tener composicion.",
                 "warning"
             );
             return;
@@ -694,7 +710,6 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                                 className={tallesErrors[index]?.coste ? "input-error" : ""}
                                                 value={talle.coste}
                                                 onChange={(e) => handleTalleChange(index, "coste", e.target.value)}
-                                                readOnly={talle.artCompuesto}
                                             />
                                         </td>
                                         <td className="td-compuesto">

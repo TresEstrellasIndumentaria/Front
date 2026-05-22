@@ -241,10 +241,12 @@ export const creaArticulo = (data) => {
 
             // Capturamos y devolvemos el mensaje del backend (si existe)
             return {
+                error: true,
                 message:
                     error.response?.data?.message ||
-                    error.response?.data ||
-                    "Error al registrar el usuario.",
+                    error.response?.data?.msg ||
+                    error.response?.data?.error ||
+                    "Error al crear el articulo.",
             };
         }
     };
