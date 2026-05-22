@@ -30,6 +30,7 @@ const MENU_ITEMS = [
     links: [
       { to: '/listaProveedores', label: 'Listar Proveedores', permisos: [PERMISOS.PROVEEDORES] },
       { to: '/ordenesDeCompras/nueva', label: 'Orden de compra', permisos: [PERMISOS.COMPRAS] },
+      { to: '/resumenCompras', label: 'Resumen de compras', permisos: [PERMISOS.INFORMES] },
     ],
   },
   {
@@ -73,7 +74,6 @@ const MENU_ITEMS = [
     Icon: BarChartIcon,
     links: [
       { to: '/resumenVentas', label: 'Resumen de ventas', permisos: [PERMISOS.INFORMES] },
-      { to: '/resumenCompras', label: 'Resumen de compras', permisos: [PERMISOS.INFORMES] },
       { to: '/ventasPorArticulo', label: 'Ventas por articulo', permisos: [PERMISOS.INFORMES] },
       { to: '/ventasPorCategorias', label: 'Ventas por categoria', permisos: [PERMISOS.INFORMES] },
     ],

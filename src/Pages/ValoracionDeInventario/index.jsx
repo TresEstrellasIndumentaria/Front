@@ -186,8 +186,8 @@ function ValoracionDeInventario() {
                                     <th>Articulo</th>
                                     <th>Categoria</th>
                                     <th>En stock</th>
-                                    <th>Costo prom.</th>
-                                    <th>Precio prom.</th>
+                                    <th>Costo</th>
+                                    <th>Precio</th>
                                     <th>Valor de inventario</th>
                                     <th>Valor de venta</th>
                                     <th>Beneficio potencial</th>

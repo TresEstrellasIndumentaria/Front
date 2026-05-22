@@ -6,6 +6,7 @@ import {
     crearCategoria,
     getAllArticulos,
     getCategorias,
+    getSiguienteCodigoArticulo,
     modificaArticulo
 } from "../../Redux/Actions";
 import PopupCategoria from "../FormCategoria";
@@ -133,6 +134,20 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
         if (!articulos?.length) dispatch(getAllArticulos());
         if (!categorias?.length) dispatch(getCategorias());
     }, [dispatch, articulos?.length, categorias?.length]);
+
+    useEffect(() => {
+        if (esModificacion || form.codigoArticulo) return;
+
+        let active = true;
+        dispatch(getSiguienteCodigoArticulo()).then((codigo) => {
+            if (!active || !codigo) return;
+            setForm((prev) => prev.codigoArticulo ? prev : { ...prev, codigoArticulo: codigo });
+        });
+
+        return () => {
+            active = false;
+        };
+    }, [dispatch, esModificacion, form.codigoArticulo]);
 
     useEffect(() => {
         if (!esModificacion || !articuloInicial?._id) return;
@@ -483,8 +498,10 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
             return;
         }
 
+        const siguienteCodigo = await dispatch(getSiguienteCodigoArticulo());
+
         setForm({
-            codigoArticulo: "",
+            codigoArticulo: siguienteCodigo || "",
             nombre: "",
             categoria: CATEGORIA_DEFAULT,
             descripcion: "",
@@ -513,13 +530,13 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
             <form className="form-articulo" onSubmit={handleSubmit}>
 
                 <div className="campo">
-                    <label>Codigo articulo</label>
+                    <label>Cod Art</label>
                     <input
                         type="text"
                         name="codigoArticulo"
                         value={form.codigoArticulo}
                         onChange={handleChange}
-                        placeholder="Ej. ART-001"
+                        placeholder="Ej. 0001"
                         required
                     />
                 </div>

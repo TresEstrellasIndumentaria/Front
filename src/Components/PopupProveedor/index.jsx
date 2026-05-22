@@ -3,6 +3,8 @@ import { URL } from "../../Urls";
 import Swal from "sweetalert2";
 import "./styles.css";
 
+const formatearCodigo = (value) => String(Number(value || 0)).padStart(4, "0");
+
 export default function PopupProveedor({ proveedoresDB = [], onClose, onCreate }) {
     const [form, setForm] = useState({
         nombre: "",
@@ -16,15 +18,44 @@ export default function PopupProveedor({ proveedoresDB = [], onClose, onCreate }
     });
 
     useEffect(() => {
-        const maxNumero = (proveedoresDB || []).reduce((max, proveedor) => {
-            const value = Number(proveedor?.numeroProveedor || proveedor?.numeroCliente || 0);
-            return Number.isFinite(value) && value > max ? value : max;
-        }, 0);
+        let active = true;
 
-        setForm(prev => ({
-            ...prev,
-            numeroProveedor: String(maxNumero + 1)
-        }));
+        const cargarCodigo = async () => {
+            const dataUser = JSON.parse(localStorage.getItem("dataUser") || localStorage.getItem("userData") || "null");
+
+            try {
+                const res = await fetch(`${URL}/auth/siguiente-codigo?rol=PROVEEDOR`, {
+                    headers: {
+                        Authorization: `Bearer ${dataUser?.token}`
+                    }
+                });
+                const data = await res.json();
+                const codigo = data?.codigo || data?.siguiente;
+                if (active && codigo) {
+                    setForm(prev => ({ ...prev, numeroProveedor: codigo }));
+                    return;
+                }
+            } catch (error) {
+                // fallback local
+            }
+
+            const maxNumero = (proveedoresDB || []).reduce((max, proveedor) => {
+                const value = Number(proveedor?.numeroProveedor || proveedor?.numeroCliente || 0);
+                return Number.isFinite(value) && value > max ? value : max;
+            }, 0);
+
+            if (active) {
+                setForm(prev => ({
+                    ...prev,
+                    numeroProveedor: formatearCodigo(maxNumero + 1)
+                }));
+            }
+        };
+
+        cargarCodigo();
+        return () => {
+            active = false;
+        };
     }, [proveedoresDB]);
 
     //obtengo token para poder agregar prov
@@ -93,7 +124,7 @@ export default function PopupProveedor({ proveedoresDB = [], onClose, onCreate }
                 <input name="apellido" placeholder="Apellido" onChange={handleChange} />
                 <input name="dni" placeholder="DNI" onChange={handleChange} />
                 <input name="email" placeholder="Email" onChange={handleChange} />
-                <input name="numeroProveedor" placeholder="Numero de proveedor" value={form.numeroProveedor} onChange={handleChange} />
+                <input name="numeroProveedor" placeholder="Cod de proveedor" value={form.numeroProveedor} onChange={handleChange} />
 
                 <div className="fila">
                     <input name="telefono.area" placeholder="Área" onChange={handleChange} />

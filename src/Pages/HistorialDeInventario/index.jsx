@@ -7,7 +7,9 @@ import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import HistoryIcon from '@mui/icons-material/History';
-import { clearHistorialInventarioError, getHistorialInventario } from '../../Redux/Actions';
+import BlockIcon from '@mui/icons-material/Block';
+import Swal from 'sweetalert2';
+import { anularMovimientoInventario, clearHistorialInventarioError, getHistorialInventario } from '../../Redux/Actions';
 import './styles.css';
 
 const MOTIVO_LABEL = {
@@ -21,6 +23,7 @@ const MOTIVO_LABEL = {
     RECUENTO_INVENTARIO: 'Ajuste',
     AJUSTE_STOCK: 'Ajuste',
     AJUSTE: 'Ajuste',
+    ANULACION_MOVIMIENTO: 'Anulacion',
     ELIMINACION_REMITO: 'Eliminacion',
     PERDIDA: 'Perdida',
     DANADO: 'Danado',
@@ -80,6 +83,7 @@ function HistorialDeInventario() {
     const [hasta, setHasta] = useState(mesActual.hasta);
     const [colaborador, setColaborador] = useState('TODOS');
     const [motivo, setMotivo] = useState('TODOS');
+    const [anulandoId, setAnulandoId] = useState(null);
 
     useEffect(() => {
         const params = { desde, hasta };
@@ -112,10 +116,49 @@ function HistorialDeInventario() {
         });
     }, [movimientos, desde, hasta, colaborador, motivo]);
 
+    const recargarHistorial = () => {
+        const params = { desde, hasta };
+        if (colaborador !== 'TODOS') params.colaborador = colaborador;
+        dispatch(getHistorialInventario(params));
+    };
+
+    const handleAnularMovimiento = async (movimiento) => {
+        if (!movimiento?._id || movimiento?.anulado || movimiento?.motivo === 'ANULACION_MOVIMIENTO') return;
+
+        const result = await Swal.fire({
+            icon: 'warning',
+            title: 'Anular movimiento',
+            text: 'Se va a revertir este movimiento en el stock actual y quedara marcado como anulado.',
+            input: 'text',
+            inputLabel: 'Motivo de anulacion',
+            inputPlaceholder: 'Ej. Error de carga',
+            showCancelButton: true,
+            confirmButtonText: 'Anular',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#111827',
+        });
+
+        if (!result.isConfirmed) return;
+
+        setAnulandoId(movimiento._id);
+        const response = await dispatch(anularMovimientoInventario(movimiento._id, {
+            motivoAnulacion: result.value || 'Anulacion manual',
+        }));
+        setAnulandoId(null);
+
+        if (response?.error) {
+            Swal.fire('Error', response.message || 'No se pudo anular el movimiento.', 'error');
+            return;
+        }
+
+        await Swal.fire('Movimiento anulado', response?.msg || 'El movimiento fue anulado correctamente.', 'success');
+        recargarHistorial();
+    };
+
     const exportarCSV = () => {
         if (!rows.length) return;
 
-        const headers = ['Fecha', 'Articulo', 'Empleado', 'Motivo', 'Ajuste', 'Stock final'];
+        const headers = ['Fecha', 'Articulo', 'Empleado', 'Motivo', 'Ajuste', 'Stock final', 'Estado'];
         const data = rows.map((r) => ([
             formatFecha(r.fecha),
             r.articuloNombre || r.articulo || '-',
@@ -123,6 +166,7 @@ function HistorialDeInventario() {
             getMotivoLabel(r),
             Number(r.ajuste || 0),
             Number(r.stockFinal ?? 0),
+            r.anulado ? 'Anulado' : 'Vigente',
         ]));
 
         const escapeCsv = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
@@ -147,6 +191,7 @@ function HistorialDeInventario() {
                 <td>${getMotivoLabel(r)}</td>
                 <td>${Number(r.ajuste || 0)}</td>
                 <td>${Number(r.stockFinal ?? 0)}</td>
+                <td>${r.anulado ? 'Anulado' : 'Vigente'}</td>
             </tr>
         `).join('');
 
@@ -170,7 +215,7 @@ function HistorialDeInventario() {
                     <table>
                         <thead>
                             <tr>
-                                <th>Fecha</th><th>Articulo</th><th>Empleado</th><th>Motivo</th><th>Ajuste</th><th>Stock final</th>
+                                <th>Fecha</th><th>Articulo</th><th>Empleado</th><th>Motivo</th><th>Ajuste</th><th>Stock final</th><th>Estado</th>
                             </tr>
                         </thead>
                         <tbody>${htmlRows}</tbody>
@@ -213,6 +258,7 @@ function HistorialDeInventario() {
                         <option value="Venta">Venta</option>
                         <option value="Compra">Compra</option>
                         <option value="Ajuste">Ajuste</option>
+                        <option value="Anulacion">Anulacion</option>
                         <option value="Eliminacion">Eliminacion</option>
                         <option value="Perdida">Perdida</option>
                         <option value="Danado">Danado</option>
@@ -250,17 +296,36 @@ function HistorialDeInventario() {
                                 <th>Motivo</th>
                                 <th>Ajuste</th>
                                 <th>Stock final</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {rows.map((r, idx) => (
-                                <tr key={`${r?._id || 'mov'}-${idx}`}>
+                                <tr key={`${r?._id || 'mov'}-${idx}`} className={r.anulado ? 'hist-row-anulado' : ''}>
                                     <td>{formatFecha(r.fecha)}</td>
                                     <td>{r.articuloNombre || r.articulo || '-'}</td>
                                     <td>{r.empleadoNombre || r.empleado || r.colaborador || '-'}</td>
                                     <td>{getMotivoLabel(r)}</td>
                                     <td>{Number(r.ajuste || 0) > 0 ? `+${r.ajuste}` : Number(r.ajuste || 0)}</td>
                                     <td>{r.stockFinal ?? '-'}</td>
+                                    <td>
+                                        <span className={`hist-status ${r.anulado ? 'hist-status--anulado' : 'hist-status--vigente'}`}>
+                                            {r.anulado ? 'Anulado' : 'Vigente'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button
+                                            type="button"
+                                            className="hist-action-btn"
+                                            onClick={() => handleAnularMovimiento(r)}
+                                            disabled={r.anulado || r.motivo === 'ANULACION_MOVIMIENTO' || anulandoId === r._id}
+                                            title="Anular movimiento"
+                                            aria-label="Anular movimiento"
+                                        >
+                                            <BlockIcon fontSize="small" />
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

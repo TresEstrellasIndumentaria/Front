@@ -6,7 +6,8 @@ import {
     crearOrdenCompra,
     getAllArticulos,
     getOrdenCompraById,
-    getUsuarioByRol
+    getUsuarioByRol,
+    modificarOrdenCompra
 } from "../../Redux/Actions";
 import Swal from "sweetalert2";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -20,7 +21,10 @@ const ESTADOS_ORDEN = {
 
 const formatFecha = (value) => {
     if (!value) return "-";
-    const date = new Date(value);
+    const fechaDia = typeof value === "string" ? value.slice(0, 10) : "";
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(fechaDia)
+        ? new Date(`${fechaDia}T12:00:00`)
+        : new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleDateString("es-AR", {
         day: "2-digit",
@@ -41,6 +45,20 @@ const getFechaActualInput = () => {
     const year = hoy.getFullYear();
     const month = String(hoy.getMonth() + 1).padStart(2, "0");
     const day = String(hoy.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+};
+
+const toDateInputValue = (value) => {
+    if (!value) return "";
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+        return value.slice(0, 10);
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
 };
 
@@ -98,6 +116,14 @@ const getCostoPorTalle = (articulo, talle) => {
         return Number(talleData.ultimoCostoCompra ?? talleData.costo ?? talleData.coste);
     }
     return getUltimoCostoCompra(articulo);
+};
+
+const normalizarNumeroInput = (value) => String(value ?? "").replace(",", ".");
+const esNumeroInputValido = (value) => /^\d*([.]\d*)?$/.test(value);
+const limpiarCerosIniciales = (value) => String(value).replace(/^0+(?=\d)/, "");
+const toNumero = (value) => {
+    const numero = Number(normalizarNumeroInput(value));
+    return Number.isFinite(numero) ? numero : 0;
 };
 
 export default function OrdenCompra() {
@@ -202,7 +228,7 @@ export default function OrdenCompra() {
         setBusqueda("");
     };
 
-    const totalArticulos = articulosOC.reduce((acc, a) => acc + a.cantidad * a.costo, 0);
+    const totalArticulos = articulosOC.reduce((acc, a) => acc + toNumero(a.cantidad) * toNumero(a.costo), 0);
     const total = totalArticulos;
 
     const proveedorSeleccionado = useMemo(
@@ -231,17 +257,17 @@ export default function OrdenCompra() {
             articulo: a._id,
             nombre: a.nombre,
             talle: a.talle || "",
-            cantidad: Number(a.cantidad || 0),
-            costo: Number(a.costo || 0),
-            subtotal: Number(a.cantidad || 0) * Number(a.costo || 0)
+            cantidad: toNumero(a.cantidad),
+            costo: toNumero(a.costo),
+            subtotal: toNumero(a.cantidad) * toNumero(a.costo)
         })),
         items: articulosOC.map((a) => ({
             articulo: a._id,
             talle: a.talle || "",
             stockActual: Number(getStockPorTalle(a, a.talle)),
-            cantidad: Number(a.cantidad || 0),
-            coste: Number(a.costo || 0),
-            costoTotal: Number(a.cantidad || 0) * Number(a.costo || 0)
+            cantidad: toNumero(a.cantidad),
+            coste: toNumero(a.costo),
+            costoTotal: toNumero(a.cantidad) * toNumero(a.costo)
         })),
         totalArticulos,
         total,
@@ -282,11 +308,14 @@ export default function OrdenCompra() {
         setGuardando(true);
         try {
             const payload = buildOrdenPayload("DEUDOR");
-            const resp = await dispatch(crearOrdenCompra(payload));
+            const ordenId = ordenActual?._id || id;
+            const resp = ordenId
+                ? await dispatch(modificarOrdenCompra(ordenId, payload))
+                : await dispatch(crearOrdenCompra(payload));
             const msg = String(resp?.message || resp?.msg || "");
 
             if (resp?.error || msg.toLowerCase().includes("error")) {
-                Swal.fire("Error", msg || "No se pudo crear la orden", "error");
+                Swal.fire("Error", msg || "No se pudo guardar la orden", "error");
                 return;
             }
 
@@ -297,8 +326,8 @@ export default function OrdenCompra() {
 
             await Swal.fire({
                 icon: "success",
-                title: "Orden creada",
-                text: "La orden se creo con estado Deudor.",
+                title: ordenId ? "Orden modificada" : "Orden creada",
+                text: ordenId ? "La orden se actualizo correctamente." : "La orden se creo con estado Deudor.",
                 timer: 1500,
                 showConfirmButton: false
             });
@@ -340,7 +369,7 @@ export default function OrdenCompra() {
 
         setForm({
             proveedor: ordenActual?.proveedor?._id || ordenActual?.proveedor || "",
-            fechaOrden: ordenActual?.fechaOrden ? String(ordenActual.fechaOrden).slice(0, 10) : "",
+            fechaOrden: toDateInputValue(ordenActual?.fechaOrden),
             anotaciones: ordenActual?.anotaciones || ""
         });
 
@@ -613,16 +642,26 @@ export default function OrdenCompra() {
 
                                 <td>
                                     <input
-                                        type="number"
-                                        min="0"
-                                        step="0.001"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={art.costo}
                                         className="input-costo"
                                         onChange={(e) => {
-                                            const v = Number(e.target.value);
+                                            const v = limpiarCerosIniciales(normalizarNumeroInput(e.target.value));
+                                            if (!esNumeroInputValido(v)) return;
                                             setArticulosOC(prev =>
                                                 prev.map((a, idx) =>
                                                     idx === i ? { ...a, costo: v } : a
+                                                )
+                                            );
+                                        }}
+                                        onFocus={(e) => e.target.select()}
+                                        onBlur={() => {
+                                            setArticulosOC(prev =>
+                                                prev.map((a, idx) =>
+                                                    idx === i && (a.costo === "" || a.costo === ".")
+                                                        ? { ...a, costo: "0" }
+                                                        : a
                                                 )
                                             );
                                         }}
@@ -630,7 +669,7 @@ export default function OrdenCompra() {
                                 </td>
 
                                 <td className="importe">
-                                    ${(art.cantidad * art.costo).toLocaleString("es-AR")}
+                                    ${(toNumero(art.cantidad) * toNumero(art.costo)).toLocaleString("es-AR")}
                                 </td>
 
                                 <td>
@@ -693,7 +732,7 @@ export default function OrdenCompra() {
                         onClick={handleCrearOrden}
                         disabled={guardando}
                     >
-                        Crear orden
+                        {(ordenActual?._id || id) ? "Guardar cambios" : "Crear orden"}
                     </button>
                 </div>
             </div>

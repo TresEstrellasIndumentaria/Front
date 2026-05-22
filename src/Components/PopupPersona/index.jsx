@@ -3,6 +3,8 @@ import Swal from "sweetalert2";
 import { URL } from "../../Urls";
 import "./styles.css";
 
+const formatearCodigo = (value) => String(Number(value || 0)).padStart(4, "0");
+
 export default function PopupPersona({
     rol,
     persona,
@@ -49,16 +51,47 @@ export default function PopupPersona({
         if (persona) return;
         if (!["CLIENTE", "PROVEEDOR"].includes(rol)) return;
 
+        let active = true;
         const campoNumero = rol === "PROVEEDOR" ? "numeroProveedor" : "numeroCliente";
-        const maxNumero = (personas || []).reduce((max, item) => {
-            const value = Number(item?.[campoNumero] || item?.numeroCliente || 0);
-            return Number.isFinite(value) && value > max ? value : max;
-        }, 0);
 
-        setForm(prev => ({
-            ...prev,
-            [campoNumero]: String(maxNumero + 1)
-        }));
+        const cargarCodigo = async () => {
+            const userData = JSON.parse(
+                localStorage.getItem("dataUser") || localStorage.getItem("userData") || "null"
+            );
+
+            try {
+                const res = await fetch(`${URL}/auth/siguiente-codigo?rol=${rol}`, {
+                    headers: {
+                        Authorization: `Bearer ${userData?.token}`
+                    }
+                });
+                const data = await res.json();
+                const codigo = data?.codigo || data?.siguiente;
+                if (active && codigo) {
+                    setForm(prev => ({ ...prev, [campoNumero]: codigo }));
+                    return;
+                }
+            } catch (error) {
+                // fallback local
+            }
+
+            const maxNumero = (personas || []).reduce((max, item) => {
+                const value = Number(item?.[campoNumero] || item?.numeroCliente || 0);
+                return Number.isFinite(value) && value > max ? value : max;
+            }, 0);
+
+            if (active) {
+                setForm(prev => ({
+                    ...prev,
+                    [campoNumero]: formatearCodigo(maxNumero + 1)
+                }));
+            }
+        };
+
+        cargarCodigo();
+        return () => {
+            active = false;
+        };
     }, [persona, personas, rol]);
 
     //Manejo genérico de inputs
@@ -205,7 +238,7 @@ export default function PopupPersona({
                 {rol === "CLIENTE" && (
                     <input
                         name="numeroCliente"
-                        placeholder="Numero de cliente"
+                        placeholder="Cod de cliente"
                         value={form.numeroCliente}
                         onChange={handleChange}
                     />
@@ -214,7 +247,7 @@ export default function PopupPersona({
                 {rol === "PROVEEDOR" && (
                     <input
                         name="numeroProveedor"
-                        placeholder="Numero de proveedor"
+                        placeholder="Cod de proveedor"
                         value={form.numeroProveedor}
                         onChange={handleChange}
                     />

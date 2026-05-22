@@ -229,6 +229,18 @@ export const getAllArticulos = () => {
     }
 };
 
+export const getSiguienteCodigoArticulo = () => {
+    return async function () {
+        const config = getAuthConfig();
+        try {
+            const resp = await axios.get(`${URL}/articulos/siguiente-codigo`, config);
+            return resp.data?.codigo || resp.data?.siguiente || '';
+        } catch (error) {
+            return '';
+        }
+    };
+};
+
 //crea art
 export const creaArticulo = (data) => {
     return async function (dispatch) {
@@ -376,6 +388,7 @@ export const ajustarStockArticulos = (data) => {
                         endpoint.url,
                         {
                             stock,
+                            talle: item?.talle || "",
                             motivo,
                             anotaciones: data?.anotaciones || "",
                             coste: item?.coste,
@@ -482,6 +495,42 @@ export const getHistorialInventario = (params = {}) => {
 export const clearHistorialInventarioError = () => ({
     type: CLEAR_HISTORIAL_INVENTARIO_ERROR,
 });
+
+export const anularMovimientoInventario = (id, data = {}) => {
+    return async function () {
+        const config = getAuthConfig();
+        const endpoints = [
+            { method: 'post', url: `${URL}/articulos/historial-inventario/${id}/anular` },
+            { method: 'patch', url: `${URL}/articulos/historial-inventario/${id}/anular` },
+            { method: 'put', url: `${URL}/articulos/historial-inventario/${id}/anular` },
+        ];
+
+        for (const endpoint of endpoints) {
+            try {
+                const resp = await axios[endpoint.method](endpoint.url, data, config);
+                return resp.data;
+            } catch (error) {
+                const status = error?.response?.status;
+                const message =
+                    error.response?.data?.message ||
+                    error.response?.data?.msg ||
+                    error.response?.data?.error;
+
+                if (status && (message || ![404, 405].includes(status))) {
+                    return {
+                        error: true,
+                        message: message || 'Error al anular movimiento de inventario.',
+                    };
+                }
+            }
+        }
+
+        return {
+            error: true,
+            message: 'No se encontro endpoint para anular movimiento.',
+        };
+    };
+};
 
 export const getValoracionInventario = (params = {}) => {
     return async function () {
@@ -656,6 +705,39 @@ export const crearOrdenCompra = (data) => {
         return {
             error: true,
             message: "No se encontro endpoint para crear ordenes de compra.",
+        };
+    };
+};
+
+export const modificarOrdenCompra = (id, data) => {
+    return async function () {
+        const config = getAuthConfig();
+        const endpoints = [
+            { method: "put", url: `${URL}/ordenesCompraProv/${id}` },
+            { method: "patch", url: `${URL}/ordenesCompraProv/${id}` },
+        ];
+
+        for (const endpoint of endpoints) {
+            try {
+                const resp = await axios[endpoint.method](endpoint.url, data, config);
+                return resp.data;
+            } catch (error) {
+                const status = error?.response?.status;
+                if (status && ![404, 405].includes(status)) {
+                    return {
+                        error: true,
+                        message:
+                            error.response?.data?.message ||
+                            error.response?.data?.msg ||
+                            "Error al modificar orden de compra.",
+                    };
+                }
+            }
+        }
+
+        return {
+            error: true,
+            message: "No se encontro endpoint para modificar ordenes de compra.",
         };
     };
 };
@@ -1075,6 +1157,39 @@ export const actualizarEstadoRemito = (id, estado) => {
         return {
             error: true,
             message: "No se encontro endpoint para actualizar estado del remito.",
+        };
+    };
+};
+
+export const eliminarRemito = (id) => {
+    return async function (dispatch) {
+        const config = getAuthConfig();
+        const endpoints = [
+            `${URL}/remitos/eliminar/${id}`,
+            `${URL}/remitos/${id}`,
+        ];
+
+        for (const endpoint of endpoints) {
+            try {
+                const resp = await axios.delete(endpoint, config);
+                return resp.data;
+            } catch (error) {
+                const status = error?.response?.status;
+                if (status && ![404, 405].includes(status)) {
+                    return {
+                        error: true,
+                        message:
+                            error.response?.data?.message ||
+                            error.response?.data?.msg ||
+                            "Error al eliminar el remito.",
+                    };
+                }
+            }
+        }
+
+        return {
+            error: true,
+            message: "No se encontro endpoint para eliminar el remito.",
         };
     };
 };

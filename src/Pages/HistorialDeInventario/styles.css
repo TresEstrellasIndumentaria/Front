@@ -93,6 +93,54 @@
     background: var(--color-dark);
 }
 
+.hist-row-anulado td {
+    color: #7b7f87;
+    background: #f8fafc;
+}
+
+.hist-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 76px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.hist-status--vigente {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.hist-status--anulado {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+.hist-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    background: var(--color-primary);
+    color: var(--color-dark);
+    cursor: pointer;
+}
+
+.hist-action-btn:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+}
+
+.hist-action-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 .hist-empty {
     min-height: 360px;
     display: flex;

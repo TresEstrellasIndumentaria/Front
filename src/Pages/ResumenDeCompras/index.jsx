@@ -18,7 +18,10 @@ const normalizeEstadoCompra = (estado) => (estado === 'PAGADA' ? 'PAGADA' : 'DEU
 
 const formatDate = (value) => {
   if (!value) return '-';
-  const date = new Date(value);
+  const fechaDia = typeof value === 'string' ? value.slice(0, 10) : '';
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(fechaDia)
+    ? new Date(`${fechaDia}T12:00:00`)
+    : new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
   return new Intl.DateTimeFormat('es-AR').format(date);
 };

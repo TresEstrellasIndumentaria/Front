@@ -32,6 +32,28 @@ const getStockArticulo = (articulo) => {
     return Math.max(stockRaiz, stockTalles);
 };
 
+const getTallesArticulo = (articulo) => (
+    Array.isArray(articulo?.talles)
+        ? articulo.talles.filter((talle) => String(talle?.talle || '').trim())
+        : []
+);
+
+const getStockArticuloPorTalle = (articulo, talleSeleccionado = '') => {
+    const talles = getTallesArticulo(articulo);
+    if (!talles.length) return getStockArticulo(articulo);
+
+    const talle = talles.find((item) => String(item?.talle || '') === String(talleSeleccionado || ''));
+    return Number(talle?.stock ?? 0);
+};
+
+const getCosteArticuloPorTalle = (articulo, talleSeleccionado = '') => {
+    const talles = getTallesArticulo(articulo);
+    if (!talles.length) return getCosteArticulo(articulo);
+
+    const talle = talles.find((item) => String(item?.talle || '') === String(talleSeleccionado || ''));
+    return Number(talle?.costo ?? talle?.coste ?? getCosteArticulo(articulo));
+};
+
 const getCosteArticulo = (articulo) => {
     if (Number.isFinite(Number(articulo?.costo ?? articulo?.coste))) {
         return Number(articulo?.costo ?? articulo?.coste);
@@ -45,12 +67,15 @@ const getCosteArticulo = (articulo) => {
     return 0;
 };
 
+const crearKeyAjuste = (articuloId, talle = '') => `${articuloId}::${talle || 'SIN_TALLE'}`;
+
 function AjusteDeStock() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const articulos = useSelector((state) => state.articulos || []);
 
     const [anotaciones, setAnotaciones] = useState('');
+    const [tipoAjuste, setTipoAjuste] = useState('AJUSTE');
     const [articuloSelect, setArticuloSelect] = useState('');
     const [itemsAjuste, setItemsAjuste] = useState([]);
     const [guardando, setGuardando] = useState(false);
@@ -74,39 +99,70 @@ function AjusteDeStock() {
 
     const agregarArticulo = (id) => {
         if (!id) return;
-        if (itemsAjuste.some((item) => item.articulo === id)) {
+
+        const art = mapaArticulos.get(id);
+        if (!art) return;
+        const talles = getTallesArticulo(art);
+        const tallesUsados = new Set(itemsAjuste
+            .filter((item) => item.articulo === id)
+            .map((item) => item.talle || ''));
+        const talleInicial = talles.find((talle) => !tallesUsados.has(talle.talle))?.talle || '';
+        const key = crearKeyAjuste(id, talleInicial);
+
+        if (itemsAjuste.some((item) => item.key === key)) {
             setArticuloSelect('');
             return;
         }
 
-        const art = mapaArticulos.get(id);
-        if (!art) return;
-
         setItemsAjuste((prev) => [
             ...prev,
             {
+                key,
                 articulo: id,
                 nombre: art.nombre,
-                stockActual: getStockArticulo(art),
+                talle: talleInicial,
+                talles: talles.map((talle) => ({
+                    talle: talle.talle,
+                    stock: Number(talle?.stock ?? 0),
+                    coste: Number(talle?.costo ?? talle?.coste ?? 0),
+                })),
+                stockActual: getStockArticuloPorTalle(art, talleInicial),
                 cantidad: '',
-                coste: String(getCosteArticulo(art)),
+                coste: String(getCosteArticuloPorTalle(art, talleInicial)),
             },
         ]);
         setArticuloSelect('');
         setErrorItems('');
     };
 
-    const actualizarItem = (id, key, value) => {
+    const actualizarItem = (rowKey, key, value) => {
         setItemsAjuste((prev) =>
             prev.map((item) => {
-                if (item.articulo !== id) return item;
+                if (item.key !== rowKey) return item;
                 return { ...item, [key]: value };
             })
         );
     };
 
-    const eliminarItem = (id) => {
-        setItemsAjuste((prev) => prev.filter((item) => item.articulo !== id));
+    const actualizarTalleItem = (rowKey, talleSeleccionado) => {
+        setItemsAjuste((prev) =>
+            prev.map((item) => {
+                if (item.key !== rowKey) return item;
+
+                const art = mapaArticulos.get(item.articulo);
+                return {
+                    ...item,
+                    key: crearKeyAjuste(item.articulo, talleSeleccionado),
+                    talle: talleSeleccionado,
+                    stockActual: getStockArticuloPorTalle(art, talleSeleccionado),
+                    coste: String(getCosteArticuloPorTalle(art, talleSeleccionado)),
+                };
+            })
+        );
+    };
+
+    const eliminarItem = (key) => {
+        setItemsAjuste((prev) => prev.filter((item) => item.key !== key));
     };
 
     const getStockFinal = (item) => {
@@ -125,6 +181,7 @@ function AjusteDeStock() {
                 const delta = toNumberOrZero(item.cantidad);
                 return {
                     articulo: item.articulo,
+                    talle: item.talle,
                     cantidad: delta,
                     stockFinal: Number(item.stockActual || 0) + delta,
                     coste: toNumberOrZero(item.coste),
@@ -144,6 +201,7 @@ function AjusteDeStock() {
         }
 
         const payload = {
+            motivo: tipoAjuste,
             anotaciones,
             items: payloadItems,
         };
@@ -161,6 +219,7 @@ function AjusteDeStock() {
             await Swal.fire('Ajuste realizado', msg || 'Se ajusto el stock correctamente.', 'success');
             setItemsAjuste([]);
             setAnotaciones('');
+            setTipoAjuste('AJUSTE');
             setErrorItems('');
             dispatch(getAllArticulos());
         } finally {
@@ -171,6 +230,19 @@ function AjusteDeStock() {
     return (
         <div className="stock-ajuste-page">
             <div className="stock-card">
+                <div className="stock-field">
+                    <label>Tipo de ajuste</label>
+                    <select
+                        className="stock-type-select"
+                        value={tipoAjuste}
+                        onChange={(e) => setTipoAjuste(e.target.value)}
+                    >
+                        <option value="COMPRA">Compra</option>
+                        <option value="VENTA">Venta</option>
+                        <option value="AJUSTE">Ajuste</option>
+                    </select>
+                </div>
+
                 <div className="stock-field">
                     <label>Anotaciones</label>
                     <textarea
@@ -188,9 +260,9 @@ function AjusteDeStock() {
                     <thead>
                         <tr>
                             <th>Articulo</th>
+                            <th>Talle</th>
                             <th>En stock</th>
                             <th>Ajuste (+/-)</th>
-                            <th>Costo</th>
                             <th>Stock final</th>
                             <th></th>
                         </tr>
@@ -198,9 +270,33 @@ function AjusteDeStock() {
                     <tbody>
                         {itemsAjuste.map((item) => {
                             const stockFinal = getStockFinal(item);
+                            const tallesUsados = new Set(itemsAjuste
+                                .filter((otroItem) => otroItem.articulo === item.articulo && otroItem.key !== item.key)
+                                .map((otroItem) => otroItem.talle));
                             return (
-                                <tr key={item.articulo}>
+                                <tr key={item.key}>
                                     <td>{item.nombre}</td>
+                                    <td>
+                                        {item.talles.length ? (
+                                            <select
+                                                className="stock-talle-select"
+                                                value={item.talle}
+                                                onChange={(e) => actualizarTalleItem(item.key, e.target.value)}
+                                            >
+                                                {item.talles.map((talle) => (
+                                                    <option
+                                                        key={`${item.articulo}-${talle.talle}`}
+                                                        value={talle.talle}
+                                                        disabled={tallesUsados.has(talle.talle)}
+                                                    >
+                                                        {talle.talle}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <span className="stock-talle-empty">-</span>
+                                        )}
+                                    </td>
                                     <td>{item.stockActual}</td>
                                     <td>
                                         <input
@@ -209,31 +305,16 @@ function AjusteDeStock() {
                                             onChange={(e) => {
                                                 const value = normalizarInputNumerico(e.target.value);
                                                 if (!esInputNumericoValido(value)) return;
-                                                actualizarItem(item.articulo, 'cantidad', value);
+                                                actualizarItem(item.key, 'cantidad', value);
                                             }}
                                             onBlur={() => {
-                                                actualizarItem(item.articulo, 'cantidad', limpiarInputNumerico(item.cantidad));
-                                            }}
-                                        />
-                                    </td>
-                                    <td>
-                                        <input
-                                            type="number"
-                                            step="0.001"
-                                            value={item.coste}
-                                            onChange={(e) => {
-                                                const value = normalizarInputNumerico(e.target.value);
-                                                if (!esInputNumericoValido(value)) return;
-                                                actualizarItem(item.articulo, 'coste', value);
-                                            }}
-                                            onBlur={() => {
-                                                actualizarItem(item.articulo, 'coste', limpiarInputNumerico(item.coste));
+                                                actualizarItem(item.key, 'cantidad', limpiarInputNumerico(item.cantidad));
                                             }}
                                         />
                                     </td>
                                     <td className={stockFinal < 0 ? 'stock-final-danger' : ''}>{stockFinal}</td>
                                     <td>
-                                        <button type="button" className="stock-remove" onClick={() => eliminarItem(item.articulo)}>X</button>
+                                        <button type="button" className="stock-remove" onClick={() => eliminarItem(item.key)}>X</button>
                                     </td>
                                 </tr>
                             );

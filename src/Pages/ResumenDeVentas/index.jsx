@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import Swal from 'sweetalert2';
-import { actualizarEstadoRemito, getRemitos } from '../../Redux/Actions';
+import { actualizarEstadoRemito, eliminarRemito, getRemitos } from '../../Redux/Actions';
 import './styles.css';
 
 const estadoLabel = {
@@ -139,6 +140,7 @@ function ResumenDeVentas() {
   const [orden, setOrden] = useState('FECHA_DESC');
   const [resumenBackend, setResumenBackend] = useState(null);
   const [actualizandoEstadoId, setActualizandoEstadoId] = useState(null);
+  const [eliminandoRemitoId, setEliminandoRemitoId] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -321,6 +323,42 @@ function ResumenDeVentas() {
     });
   };
 
+  const handleEliminarRemito = async (venta) => {
+    const remitoId = venta?._id;
+    if (!remitoId) return;
+
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Eliminar remito',
+      text: `Se eliminara ${venta?.numeroRemitoFormateado || 'el remito seleccionado'} y se revertira el stock asociado.`,
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#111827',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setEliminandoRemitoId(remitoId);
+    const response = await dispatch(eliminarRemito(remitoId));
+    setEliminandoRemitoId(null);
+
+    if (response?.error) {
+      Swal.fire('Error', response.message || 'No se pudo eliminar el remito.', 'error');
+      return;
+    }
+
+    setVentas((prev) => prev.filter((item) => item?._id !== remitoId));
+    setResumenBackend(null);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Remito eliminado',
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  };
+
   return (
     <section className="resumen-ventas-page">
       <div className="resumen-ventas-shell">
@@ -488,6 +526,16 @@ function ResumenDeVentas() {
                             <EditIcon fontSize="inherit" />
                           </button>
                         </NavLink>
+                        <button
+                          type="button"
+                          className="resumen-ventas-btn resumen-ventas-btn--icon resumen-ventas-btn--delete"
+                          onClick={() => handleEliminarRemito(venta)}
+                          disabled={eliminandoRemitoId === venta._id}
+                          title="Eliminar remito"
+                          aria-label="Eliminar remito"
+                        >
+                          <DeleteIcon fontSize="inherit" />
+                        </button>
                       </div>
                     </td>
                   </tr>
