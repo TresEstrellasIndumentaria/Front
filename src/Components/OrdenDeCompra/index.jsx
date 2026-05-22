@@ -614,6 +614,8 @@ export default function OrdenCompra() {
                                 <td>
                                     <input
                                         type="number"
+                                        min="0"
+                                        step="0.001"
                                         value={art.costo}
                                         className="input-costo"
                                         onChange={(e) => {

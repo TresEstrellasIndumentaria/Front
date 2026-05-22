@@ -219,6 +219,7 @@ function AjusteDeStock() {
                                     <td>
                                         <input
                                             type="number"
+                                            step="0.001"
                                             value={item.coste}
                                             onChange={(e) => {
                                                 const value = normalizarInputNumerico(e.target.value);

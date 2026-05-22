@@ -151,6 +151,7 @@
 }
 
 .cuenta-corriente-card {
+    margin-bottom: 28px;
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(180, 194, 217, 0.5);
     border-radius: 22px;

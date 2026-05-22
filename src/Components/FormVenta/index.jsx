@@ -191,6 +191,44 @@ const getOpcionesArticulo = (articulos, articuloValue, nombreArticulo = '') => {
     ];
 };
 
+const findArticuloByNombre = (articulos, nombreArticulo = '') => {
+    const normalizedNombre = normalize(nombreArticulo);
+    if (!normalizedNombre) return null;
+
+    return articulos.find((articulo) => normalize(articulo?.nombre) === normalizedNombre) || null;
+};
+
+const findArticuloByCodigo = (articulos, codigoArticulo = '') => {
+    const normalizedCodigo = normalize(codigoArticulo);
+    if (!normalizedCodigo) return null;
+
+    return articulos.find((articulo) => normalize(getCodigoArticulo(articulo)) === normalizedCodigo) || null;
+};
+
+const getOpcionesArticuloPorCodigo = (articulos, articuloValue, numeroArticulo = '') => {
+    const opciones = getOpcionesArticulo(articulos, articuloValue, numeroArticulo);
+    const normalizedCodigo = normalize(numeroArticulo);
+
+    if (!normalizedCodigo) return opciones;
+
+    return opciones.filter((articulo) => (
+        normalize(getCodigoArticulo(articulo)).includes(normalizedCodigo) ||
+        normalize(articulo?.nombre).includes(normalizedCodigo)
+    ));
+};
+
+const getOpcionesArticuloFiltradas = (articulos, articuloValue, nombreArticulo = '') => {
+    const opciones = getOpcionesArticulo(articulos, articuloValue, nombreArticulo);
+    const normalizedNombre = normalize(nombreArticulo);
+
+    if (!normalizedNombre) return opciones;
+
+    return opciones.filter((articulo) => (
+        normalize(articulo?.nombre).includes(normalizedNombre) ||
+        normalize(getCodigoArticulo(articulo)).includes(normalizedNombre)
+    ));
+};
+
 const getTallesArticulo = (articulo) => (
     Array.isArray(articulo?.talles)
         ? articulo.talles.map((talle) => talle?.talle).filter(Boolean)
@@ -212,6 +250,8 @@ function FormVenta() {
     const [articulosErrors, setArticulosErrors] = useState({});
     const [remitoEnEdicion, setRemitoEnEdicion] = useState(location.state?.remito || null);
     const [clientePrecargado, setClientePrecargado] = useState(location.state?.cliente || null);
+    const [articuloNombreActivo, setArticuloNombreActivo] = useState(null);
+    const [articuloCodigoActivo, setArticuloCodigoActivo] = useState(null);
     const isEditMode = Boolean(id);
 
     useEffect(() => {
@@ -255,9 +295,7 @@ function FormVenta() {
     }, [clientePrecargado, isEditMode]);
 
     const articulosDisponibles = useMemo(() => {
-        return Array.isArray(articulosState)
-            ? articulosState.filter((articulo) => articulo?.itemProveedor !== true)
-            : [];
+        return Array.isArray(articulosState) ? articulosState : [];
     }, [articulosState]);
 
     const totalVenta = useMemo(() => (
@@ -344,6 +382,75 @@ function FormVenta() {
             return {
                 ...articulo,
                 [field]: value,
+            };
+        }));
+    };
+
+    const handleArticuloNombreChange = (index, value) => {
+        setArticuloNombreActivo(index);
+
+        setArticulosErrors((prev) => {
+            if (!prev[index]?.articulo) return prev;
+            return {
+                ...prev,
+                [index]: {
+                    ...prev[index],
+                    articulo: false,
+                }
+            };
+        });
+
+        setArticulosVenta((prev) => prev.map((articulo, articuloIndex) => {
+            if (articuloIndex !== index) return articulo;
+
+            const articuloSeleccionado = findArticuloByNombre(articulosDisponibles, value);
+            if (articuloSeleccionado) {
+                return {
+                    ...articulo,
+                    articulo: articuloSeleccionado._id,
+                    nombreArticulo: articuloSeleccionado.nombre || value,
+                    numeroArticulo: getCodigoArticulo(articuloSeleccionado),
+                    talle: '',
+                    importeUnitario: getPrecioArticulo(articuloSeleccionado),
+                };
+            }
+
+            return {
+                ...articulo,
+                articulo: '',
+                nombreArticulo: value,
+                numeroArticulo: '',
+                talle: '',
+                importeUnitario: '',
+            };
+        }));
+    };
+
+    const handleArticuloCodigoChange = (index, value) => {
+        setArticuloCodigoActivo(index);
+
+        setArticulosVenta((prev) => prev.map((articulo, articuloIndex) => {
+            if (articuloIndex !== index) return articulo;
+
+            const articuloSeleccionado = findArticuloByCodigo(articulosDisponibles, value);
+            if (articuloSeleccionado) {
+                return {
+                    ...articulo,
+                    articulo: articuloSeleccionado._id,
+                    nombreArticulo: articuloSeleccionado.nombre || '',
+                    numeroArticulo: getCodigoArticulo(articuloSeleccionado),
+                    talle: '',
+                    importeUnitario: getPrecioArticulo(articuloSeleccionado),
+                };
+            }
+
+            return {
+                ...articulo,
+                articulo: '',
+                nombreArticulo: '',
+                numeroArticulo: value,
+                talle: '',
+                importeUnitario: '',
             };
         }));
     };
@@ -511,6 +618,9 @@ function FormVenta() {
                 ? `${isEditMode ? 'Se actualizo' : 'Se genero'} ${remito.numeroRemitoFormateado} para ${form.nombreApellido || form.razonSocial}.`
                 : `${isEditMode ? 'Se actualizo' : 'Se genero'} el remito para ${form.nombreApellido || form.razonSocial}.`,
         });
+
+        dispatch(getAllArticulos());
+
         if (isEditMode) {
             navigate('/listaVentas');
             return;
@@ -642,32 +752,76 @@ function FormVenta() {
 
                                     <div className="form-venta-field form-venta-item-field">
                                         <label>N° de Art.</label>
-                                        <select
-                                            value={articulo.articulo}
-                                            onChange={(e) => handleArticuloChange(index, 'articulo', e.target.value)}
-                                        >
-                                            <option value="">Seleccionar codigo</option>
-                                            {getOpcionesArticulo(articulosDisponibles, articulo.articulo, articulo.nombreArticulo).map((item) => (
-                                                <option key={`codigo-${item._id}`} value={item._id}>
-                                                    {getCodigoArticulo(item) || getArticuloCodigoByValue(articulosDisponibles, articulo.articulo, articulo.numeroArticulo) || 'Sin codigo'} - {item.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <div className="form-venta-autocomplete">
+                                            <input
+                                                type="text"
+                                                value={articulo.numeroArticulo}
+                                                onFocus={() => setArticuloCodigoActivo(index)}
+                                                onBlur={() => setArticuloCodigoActivo(null)}
+                                                onChange={(e) => handleArticuloCodigoChange(index, e.target.value)}
+                                                placeholder="Codigo"
+                                                autoComplete="off"
+                                            />
+                                            {articuloCodigoActivo === index && (
+                                                <div className="form-venta-autocomplete-list">
+                                                    {getOpcionesArticuloPorCodigo(articulosDisponibles, articulo.articulo, articulo.numeroArticulo).map((item) => (
+                                                        <button
+                                                            key={`codigo-${index}-${item._id}`}
+                                                            type="button"
+                                                            className="form-venta-autocomplete-option"
+                                                            onMouseDown={(e) => {
+                                                                e.preventDefault();
+                                                                handleArticuloChange(index, 'articulo', item._id);
+                                                                setArticuloCodigoActivo(null);
+                                                            }}
+                                                        >
+                                                            <span>{getCodigoArticulo(item) || getArticuloCodigoByValue(articulosDisponibles, articulo.articulo, articulo.numeroArticulo) || 'Sin codigo'}</span>
+                                                            <small>{item.nombre}</small>
+                                                        </button>
+                                                    ))}
+                                                    {!getOpcionesArticuloPorCodigo(articulosDisponibles, articulo.articulo, articulo.numeroArticulo).length && (
+                                                        <div className="form-venta-autocomplete-empty">Sin resultados</div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className={`form-venta-field form-venta-item-field ${articulosErrors[index]?.articulo ? 'is-error' : ''}`}>
-                                        <label>Nombre. Articulo.</label>
-                                        <select
-                                            value={articulo.articulo}
-                                            onChange={(e) => handleArticuloChange(index, 'articulo', e.target.value)}
-                                        >
-                                            <option value="">Seleccionar articulo</option>
-                                            {getOpcionesArticulo(articulosDisponibles, articulo.articulo, articulo.nombreArticulo).map((item) => (
-                                                <option key={item._id} value={item._id}>
-                                                    {item.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <label>Nombre Art.</label>
+                                        <div className="form-venta-autocomplete">
+                                            <input
+                                                type="text"
+                                                value={articulo.nombreArticulo}
+                                                onFocus={() => setArticuloNombreActivo(index)}
+                                                onBlur={() => setArticuloNombreActivo(null)}
+                                                onChange={(e) => handleArticuloNombreChange(index, e.target.value)}
+                                                placeholder="Escribir articulo"
+                                                autoComplete="off"
+                                            />
+                                            {articuloNombreActivo === index && (
+                                                <div className="form-venta-autocomplete-list">
+                                                    {getOpcionesArticuloFiltradas(articulosDisponibles, articulo.articulo, articulo.nombreArticulo).map((item) => (
+                                                        <button
+                                                            key={`nombre-${index}-${item._id}`}
+                                                            type="button"
+                                                            className="form-venta-autocomplete-option"
+                                                            onMouseDown={(e) => {
+                                                                e.preventDefault();
+                                                                handleArticuloChange(index, 'articulo', item._id);
+                                                                setArticuloNombreActivo(null);
+                                                            }}
+                                                        >
+                                                            <span>{item.nombre}</span>
+                                                            <small>{getCodigoArticulo(item) || 'Sin codigo'}</small>
+                                                        </button>
+                                                    ))}
+                                                    {!getOpcionesArticuloFiltradas(articulosDisponibles, articulo.articulo, articulo.nombreArticulo).length && (
+                                                        <div className="form-venta-autocomplete-empty">Sin resultados</div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="form-venta-field form-venta-item-field">

@@ -12,6 +12,7 @@ export default function PopupPersona({
 }) {
     const esEdicion = Boolean(persona);
     const requierePassword = rol === "ADMIN" || rol === "EMPLEADO";
+    const soloRequiereNombreApellido = rol === "CLIENTE" || rol === "PROVEEDOR";
 
     const [form, setForm] = useState({
         nombre: "",
@@ -77,10 +78,16 @@ export default function PopupPersona({
 
     //Submit crear / editar
     const handleSubmit = async () => {
-        if (!form.nombre.trim() || !form.apellido.trim() || !form.email.trim()) {
+        if (
+            !form.nombre.trim() ||
+            !form.apellido.trim() ||
+            (!soloRequiereNombreApellido && !form.email.trim())
+        ) {
             Swal.fire(
                 "Faltan datos",
-                "Nombre, apellido y email son obligatorios",
+                soloRequiereNombreApellido
+                    ? "Nombre y apellido son obligatorios"
+                    : "Nombre, apellido y email son obligatorios",
                 "warning"
             );
             return;
@@ -100,10 +107,10 @@ export default function PopupPersona({
         );
 
         const payload = {
-            nombre: form.nombre,
-            apellido: form.apellido,
-            dni: form.dni,
-            email: form.email,
+            nombre: form.nombre.trim(),
+            apellido: form.apellido.trim(),
+            dni: form.dni ? String(form.dni).trim() : undefined,
+            email: form.email.trim() || undefined,
             telefono: form.telefono,
             direccion: form.direccion,
             nota: form.nota,

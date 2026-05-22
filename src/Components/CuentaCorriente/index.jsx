@@ -6,7 +6,13 @@ import './styles.css';
 
 const formatDate = (value) => {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('es-AR').format(new Date(value));
+  const dateString = String(value);
+  const dateOnlyMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T00:00:00(?:\.000)?Z?$)/);
+  const date = dateOnlyMatch
+    ? new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
+    : new Date(value);
+
+  return new Intl.DateTimeFormat('es-AR').format(date);
 };
 
 const getTimeValue = (value) => {
@@ -15,27 +21,12 @@ const getTimeValue = (value) => {
 };
 
 const getMovimientoSortValue = (movimiento) => {
-  const fechaDia = movimiento?.fecha ? String(movimiento.fecha).slice(0, 10) : '';
-  const fechaBase = fechaDia ? getTimeValue(`${fechaDia}T00:00:00`) : getTimeValue(movimiento?.fecha);
-  const horaOrigen = new Date(
-    movimiento?.fechaHora ||
-    movimiento?.createdAt ||
-    movimiento?.updatedAt ||
-    movimiento?.fecha
-  );
-  const horaDelDia = Number.isNaN(horaOrigen.getTime())
-    ? 0
-    : (
-      (horaOrigen.getHours() * 60 * 60 * 1000) +
-      (horaOrigen.getMinutes() * 60 * 1000) +
-      (horaOrigen.getSeconds() * 1000) +
-      horaOrigen.getMilliseconds()
-    );
+  const fechaPrincipal = movimiento?.fecha || movimiento?.fechaHora || movimiento?.createdAt || movimiento?.updatedAt;
+  const fechaDia = fechaPrincipal ? String(fechaPrincipal).slice(0, 10) : '';
+  const fechaBase = fechaDia ? getTimeValue(`${fechaDia}T00:00:00`) : getTimeValue(fechaPrincipal);
+  const fechaHora = getTimeValue(movimiento?.fechaHora || movimiento?.createdAt || fechaPrincipal);
 
-  return {
-    fechaBase,
-    fechaHora: fechaBase + horaDelDia,
-  };
+  return { fechaBase, fechaHora };
 };
 
 const ordenarMovimientosPorFecha = (movimientos) => (
@@ -47,7 +38,11 @@ const ordenarMovimientosPorFecha = (movimientos) => (
       return sortA.fechaBase - sortB.fechaBase;
     }
 
-    return sortA.fechaHora - sortB.fechaHora;
+    if (sortA.fechaHora !== sortB.fechaHora) {
+      return sortA.fechaHora - sortB.fechaHora;
+    }
+
+    return String(a.id || '').localeCompare(String(b.id || ''), 'es');
   })
 );
 
@@ -249,7 +244,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
         comprobante: orden?.numero ? `OC-${String(orden.numero).padStart(6, '0')}` : 'Orden de compra',
         descripcion: getOrdenDetalle(orden),
         estado: orden?.estado || 'PENDIENTE',
-        referencia: orden?.tiendaDestino || '-',
+        referencia: '',
         fechaHora: orden?.createdAt || orden?.fechaOrden,
         createdAt: orden?.createdAt,
         updatedAt: orden?.updatedAt,
@@ -310,14 +305,14 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
         tipo: 'DEBE',
         comprobante: remito?.numeroRemitoFormateado || `R-${String(remito?.numeroRemito || '').padStart(6, '0')}`,
         descripcion: detalle,
-      estado: normalizeEstadoVenta(remito?.estado),
-      referencia: normalizeEstadoVenta(remito?.estado),
-      fechaHora: remito?.createdAt,
-      createdAt: remito?.createdAt,
-      updatedAt: remito?.updatedAt,
-      debe: Number(remito?.importeTotal || 0),
-      haber: 0,
-    };
+        estado: normalizeEstadoVenta(remito?.estado),
+        referencia: '',
+        fechaHora: remito?.createdAt,
+        createdAt: remito?.createdAt,
+        updatedAt: remito?.updatedAt,
+        debe: Number(remito?.importeTotal || 0),
+        haber: 0,
+      };
     });
 
     const movimientosRecibos = recibos.map((recibo) => ({
@@ -352,7 +347,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
 
   const movimientosConSaldo = useMemo(() => {
     let saldo = 0;
-    return movimientos.map((movimiento) => {
+    return ordenarMovimientosPorFecha(movimientos).map((movimiento) => {
       saldo += Number(movimiento.haber || 0) - Number(movimiento.debe || 0);
       return {
         ...movimiento,
@@ -805,7 +800,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
                   </td>
                   <td>{movimiento.comprobante}</td>
                   <td>{movimiento.descripcion}</td>
-                  <td>{movimiento.referencia}</td>
+                  <td>{movimiento.tipo === 'HABER' ? movimiento.referencia : ''}</td>
                   <td className="cuenta-corriente-money cuenta-corriente-money--debe">
                     {movimiento.debe ? formatMoney(movimiento.debe) : '-'}
                   </td>

@@ -77,7 +77,6 @@ function ListaArticulos() {
 
     const renderStock = (stockValue) => (
         <span className={getStockTone(Number(stockValue ?? 0))}>
-            <span className="stock-dot" />
             {Number(stockValue ?? 0)}
         </span>
     );

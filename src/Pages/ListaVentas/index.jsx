@@ -22,6 +22,60 @@ const formatDate = (value) => {
     return new Intl.DateTimeFormat('es-AR').format(new Date(value));
 };
 
+const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+}).format(Number(value || 0));
+
+const escapeHtml = (value) => String(value ?? '-')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+const getItemNombre = (item) => (
+    item?.nombreArticulo || item?.prenda || item?.articulo?.nombre || item?.articulo || '-'
+);
+
+const buildItemsTable = (items = []) => {
+    if (!items.length) return '<p>Sin items</p>';
+
+    const rows = items.map((item) => {
+        const cantidad = Number(item?.cantidad || 0);
+        const precioUnitario = Number(item?.precioUnitario ?? item?.importeUnitario ?? 0);
+        const total = Number(item?.subtotal ?? item?.importeTotal ?? (cantidad * precioUnitario));
+
+        return `
+            <tr>
+                <td>${escapeHtml(getItemNombre(item))}</td>
+                <td>${escapeHtml(item?.talle || '-')}</td>
+                <td style="text-align:right">${cantidad}</td>
+                <td style="text-align:right">${formatMoney(precioUnitario)}</td>
+                <td style="text-align:right">${formatMoney(total)}</td>
+            </tr>
+        `;
+    }).join('');
+
+    return `
+        <div style="overflow-x:auto; margin-top:8px">
+            <table style="width:100%; border-collapse:collapse; font-size:13px">
+                <thead>
+                    <tr>
+                        <th style="text-align:left; padding:8px; border-bottom:1px solid #d8d8d8">ART</th>
+                        <th style="text-align:left; padding:8px; border-bottom:1px solid #d8d8d8">Talle</th>
+                        <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Cant.</th>
+                        <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Precio</th>
+                        <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Total</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
+};
+
 function ListaVentas() {
     const dispatch = useDispatch();
     const remitos = useSelector((state) => state.remitos || []);
@@ -84,9 +138,7 @@ function ListaVentas() {
 
     const verRemito = (venta) => {
         const items = Array.isArray(venta?.pedido) ? venta.pedido : [];
-        const detalle = items.length
-            ? items.map((item, index) => `${index + 1}. ${item.prenda} - ${item.talle}`).join('<br />')
-            : 'Sin items';
+        const detalle = buildItemsTable(items);
 
         Swal.fire({
             title: venta?.numeroRemitoFormateado || `Remito ${venta?.numeroRemito || ''}`,
@@ -96,10 +148,12 @@ function ListaVentas() {
                     <p><strong>Razon social:</strong> ${venta?.razonSocial || '-'}</p>
                     <p><strong>Numero cliente:</strong> ${venta?.numeroCliente || '-'}</p>
                     <p><strong>Estado:</strong> ${estadoLabel[normalizeEstadoVenta(venta?.estado)]}</p>
-                    <p><strong>Items:</strong><br />${detalle}</p>
+                    <p><strong>Items:</strong></p>
+                    ${detalle}
                 </div>
             `,
             confirmButtonText: 'Cerrar',
+            width: 820,
         });
     };
 

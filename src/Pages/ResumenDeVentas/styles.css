@@ -202,6 +202,16 @@
     color: var(--color-dark) !important;
 }
 
+.resumen-ventas-btn--delete {
+    background: var(--color-primary) !important;
+    color: var(--color-dark) !important;
+}
+
+.resumen-ventas-btn--delete:hover {
+    background: var(--color-primary-hover) !important;
+    color: var(--color-dark) !important;
+}
+
 .resumen-ventas-btn--account {
     background: var(--color-primary) !important;
     color: var(--color-dark) !important;
@@ -227,7 +237,7 @@
 
 .resumen-ventas-table th:nth-child(1),
 .resumen-ventas-table td:nth-child(1) {
-    width: 136px;
+    width: 108px;
 }
 
 .resumen-ventas-table th:nth-child(2),
@@ -279,6 +289,12 @@
     text-align: center;
 }
 
+.resumen-ventas-table th:nth-child(8),
+.resumen-ventas-table td:nth-child(8) {
+    width: 112px;
+    text-align: center;
+}
+
 .resumen-ventas-table th {
     color: var(--color-primary) !important;
     font-size: 0.9rem;
@@ -327,13 +343,17 @@
     margin-top: 0;
 }
 
+.resumen-ventas-remito-actions--end {
+    justify-content: center;
+}
+
 .resumen-ventas-action-link {
     color: inherit;
     text-decoration: none;
 }
 
 .resumen-ventas-cuenta-link {
-    margin-top: 8px;
+    margin-top: 0;
     width: fit-content;
 }
 
@@ -383,6 +403,7 @@
 .resumen-ventas-money {
     color: var(--color-dark);
     font-weight: 800;
+    font-size: 0.86rem;
     white-space: nowrap;
 }
 

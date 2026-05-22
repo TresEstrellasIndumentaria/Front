@@ -10,6 +10,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import LocalMallIcon from '@mui/icons-material/LocalMall';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { userData } from '../../LocalStorage';
 import { PERMISOS, usuarioTieneAlgunPermiso } from '../../Config/permisos';
 import './estilos.css';
@@ -58,6 +59,13 @@ const MENU_ITEMS = [
     links: [
       { to: '/listaClientes', label: 'Listar Clientes', permisos: [PERMISOS.CLIENTES] },
     ],
+  },
+  {
+    key: 'venta',
+    label: '$$ Venta',
+    Icon: AttachMoneyIcon,
+    directTo: '/ventas/nueva',
+    permisos: [PERMISOS.VENTAS],
   },
   {
     key: 'informes',
@@ -121,6 +129,10 @@ const BarraLateral = ({ isOpen, onClose, menuButtonRef }) => {
   }, [onClose, menuButtonRef]);
 
   const renderMenuItem = ({ key, label, openLabel, Icon, links }) => {
+    const icon = <Icon sx={{ width: 25, height: 25 }} />;
+
+    if (!links) return null;
+
     const linksVisibles = links.filter((link) => {
       if (link.adminOnly) return userLog?.roles?.includes('ADMIN');
       return usuarioTieneAlgunPermiso(userLog, link.permisos || []);
@@ -128,7 +140,6 @@ const BarraLateral = ({ isOpen, onClose, menuButtonRef }) => {
     if (!linksVisibles.length) return null;
 
     const visibleLabel = key === 'usuario' ? nombre || openLabel || label : openLabel || label;
-    const icon = <Icon sx={{ width: 25, height: 25 }} />;
 
     return (
       <div className="cont-item-barra" onClick={() => handleToggle(key)} key={key}>
@@ -181,6 +192,44 @@ const BarraLateral = ({ isOpen, onClose, menuButtonRef }) => {
     );
   };
 
+  const renderDirectItem = ({ key, label, Icon, directTo, permisos }) => {
+    if (!usuarioTieneAlgunPermiso(userLog, permisos || [])) return null;
+
+    const icon = <Icon sx={{ width: 25, height: 25 }} />;
+
+    return (
+      <Link
+        to={directTo}
+        className="cont-item-barra cont-item-barra-link"
+        onClick={closeAllMenus}
+        key={key}
+      >
+        {isOpen ? (
+          <div className="cont-item-icono">{icon}</div>
+        ) : (
+          <Tooltip
+            title={label}
+            placement="right"
+            open={!isOpen && tooltipOpen === key}
+            disableHoverListener
+            disableFocusListener
+            disableTouchListener
+          >
+            <div
+              className="cont-item-icono"
+              onMouseEnter={() => setTooltipOpen(key)}
+              onMouseLeave={() => setTooltipOpen(null)}
+            >
+              {icon}
+            </div>
+          </Tooltip>
+        )}
+
+        {isOpen && <div className="cont-item-texto"><p>{label}</p></div>}
+      </Link>
+    );
+  };
+
   return (
     <div
       ref={sidebarRef}
@@ -188,7 +237,7 @@ const BarraLateral = ({ isOpen, onClose, menuButtonRef }) => {
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div className="content">
-        {MENU_ITEMS.map(renderMenuItem)}
+        {MENU_ITEMS.map((item) => (item.directTo ? renderDirectItem(item) : renderMenuItem(item)))}
       </div>
     </div>
   );

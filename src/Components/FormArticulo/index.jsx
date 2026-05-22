@@ -618,6 +618,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                 <input
                                     type="number"
                                     min="0"
+                                    step="0.001"
                                     className={tallesErrors[0]?.coste ? "input-error" : ""}
                                     value={form.talles[0]?.coste ?? ""}
                                     onChange={(e) => handleTalleChange(0, "coste", e.target.value)}
@@ -689,6 +690,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                             <input
                                                 type="number"
                                                 min="0"
+                                                step="0.001"
                                                 className={tallesErrors[index]?.coste ? "input-error" : ""}
                                                 value={talle.coste}
                                                 onChange={(e) => handleTalleChange(index, "coste", e.target.value)}

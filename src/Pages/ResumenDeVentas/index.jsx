@@ -30,6 +30,54 @@ const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0,
 }).format(Number(value || 0));
 
+const escapeHtml = (value) => String(value ?? '-')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
+const getItemNombre = (item) => (
+  item?.nombreArticulo || item?.prenda || item?.articulo?.nombre || item?.articulo || '-'
+);
+
+const buildItemsTable = (items = []) => {
+  if (!items.length) return '<p>Sin items</p>';
+
+  const rows = items.map((item) => {
+    const cantidad = Number(item?.cantidad || 0);
+    const precioUnitario = Number(item?.precioUnitario ?? item?.importeUnitario ?? 0);
+    const total = Number(item?.subtotal ?? item?.importeTotal ?? (cantidad * precioUnitario));
+
+    return `
+      <tr>
+        <td>${escapeHtml(getItemNombre(item))}</td>
+        <td>${escapeHtml(item?.talle || '-')}</td>
+        <td style="text-align:right">${cantidad}</td>
+        <td style="text-align:right">${formatMoney(precioUnitario)}</td>
+        <td style="text-align:right">${formatMoney(total)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div style="overflow-x:auto; margin-top:8px">
+      <table style="width:100%; border-collapse:collapse; font-size:13px">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:8px; border-bottom:1px solid #d8d8d8">ART</th>
+            <th style="text-align:left; padding:8px; border-bottom:1px solid #d8d8d8">Talle</th>
+            <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Cant.</th>
+            <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Precio</th>
+            <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Total</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+};
+
 const getCantidadPrendas = (pedido) => (
   Array.isArray(pedido)
     ? pedido.reduce((acc, item) => acc + Number(item?.cantidad || 0), 0)
@@ -217,13 +265,7 @@ function ResumenDeVentas() {
 
   const verRemito = (venta) => {
     const items = Array.isArray(venta?.pedido) ? venta.pedido : [];
-    const detalle = items.length
-      ? items.map((item, index) => {
-        const cantidad = Number(item?.cantidad || 0);
-        const cantidadTexto = cantidad ? ` x ${cantidad}` : '';
-        return `${index + 1}. ${item?.prenda || '-'} - ${item?.talle || '-'}${cantidadTexto}`;
-      }).join('<br />')
-      : 'Sin items';
+    const detalle = buildItemsTable(items);
 
     Swal.fire({
       title: venta?.numeroRemitoFormateado || `Remito ${venta?.numeroRemito || ''}`,
@@ -235,10 +277,12 @@ function ResumenDeVentas() {
           <p><strong>Fecha:</strong> ${formatDate(venta?.createdAt)}</p>
           <p><strong>Estado:</strong> ${estadoLabel[normalizeEstadoVenta(venta?.estado)]}</p>
           <p><strong>Importe:</strong> ${formatMoney(venta?.importeTotal)}</p>
-          <p><strong>Items:</strong><br />${detalle}</p>
+          <p><strong>Items:</strong></p>
+          ${detalle}
         </div>
       `,
       confirmButtonText: 'Cerrar',
+      width: 820,
     });
   };
 
@@ -353,24 +397,25 @@ function ResumenDeVentas() {
                   <th>Estado</th>
                   <th>Importe que debe</th>
                   <th>Importe total</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan="7" className="resumen-ventas-empty">Cargando resumen de ventas...</td>
+                    <td colSpan="8" className="resumen-ventas-empty">Cargando resumen de ventas...</td>
                   </tr>
                 )}
 
                 {!loading && error && (
                   <tr>
-                    <td colSpan="7" className="resumen-ventas-empty">{error}</td>
+                    <td colSpan="8" className="resumen-ventas-empty">{error}</td>
                   </tr>
                 )}
 
                 {!loading && !error && ventasFiltradas.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="resumen-ventas-empty">No hay ventas para los filtros seleccionados.</td>
+                    <td colSpan="8" className="resumen-ventas-empty">No hay ventas para los filtros seleccionados.</td>
                   </tr>
                 )}
 
@@ -380,31 +425,6 @@ function ResumenDeVentas() {
                       <div className="resumen-ventas-code resumen-ventas-remito-cell">
                         <strong>{venta.numeroRemitoFormateado || `R-${String(venta.numeroRemito || '').padStart(6, '0')}`}</strong>
                         {/* <span>{venta.razonSocial || '-'}</span> */}
-                        <div className="resumen-ventas-remito-actions">
-                          <button
-                            type="button"
-                            className="resumen-ventas-btn resumen-ventas-btn--icon resumen-ventas-btn--receipt"
-                            onClick={() => verRemito(venta)}
-                            title="Ver remito"
-                            aria-label="Ver remito"
-                          >
-                            <VisibilityIcon fontSize="inherit" />
-                          </button>
-                          <NavLink
-                            to={`/ventas/editar/${venta._id}`}
-                            state={{ remito: venta }}
-                            className="resumen-ventas-action-link"
-                          >
-                            <button
-                              type="button"
-                              className="resumen-ventas-btn resumen-ventas-btn--icon resumen-ventas-btn--edit"
-                              title="Editar remito"
-                              aria-label="Editar remito"
-                            >
-                              <EditIcon fontSize="inherit" />
-                            </button>
-                          </NavLink>
-                        </div>
                       </div>
                     </td>
                     <td>{formatDate(venta.createdAt)}</td>
@@ -443,6 +463,33 @@ function ResumenDeVentas() {
                     </td>
                     <td className="resumen-ventas-money">{formatMoney(getImporteDebe(venta))}</td>
                     <td className="resumen-ventas-money">{formatMoney(venta.importeTotal)}</td>
+                    <td>
+                      <div className="resumen-ventas-remito-actions resumen-ventas-remito-actions--end">
+                        <button
+                          type="button"
+                          className="resumen-ventas-btn resumen-ventas-btn--icon resumen-ventas-btn--receipt"
+                          onClick={() => verRemito(venta)}
+                          title="Ver remito"
+                          aria-label="Ver remito"
+                        >
+                          <VisibilityIcon fontSize="inherit" />
+                        </button>
+                        <NavLink
+                          to={`/ventas/editar/${venta._id}`}
+                          state={{ remito: venta }}
+                          className="resumen-ventas-action-link"
+                        >
+                          <button
+                            type="button"
+                            className="resumen-ventas-btn resumen-ventas-btn--icon resumen-ventas-btn--edit"
+                            title="Editar remito"
+                            aria-label="Editar remito"
+                          >
+                            <EditIcon fontSize="inherit" />
+                          </button>
+                        </NavLink>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -451,6 +498,7 @@ function ResumenDeVentas() {
                   <td colSpan="5" className="resumen-ventas-total-label">Totales visibles</td>
                   <td className="resumen-ventas-money">{formatMoney(ventasFiltradas.reduce((acc, venta) => acc + getImporteDebe(venta), 0))}</td>
                   <td className="resumen-ventas-money">{formatMoney(resumen.totalFacturado)}</td>
+                  <td></td>
                 </tr>
               </tfoot>
             </table>

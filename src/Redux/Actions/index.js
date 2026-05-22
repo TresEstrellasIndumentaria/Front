@@ -762,6 +762,39 @@ export const cancelarOrdenCompra = (id) => {
     };
 };
 
+export const eliminarOrdenCompra = (id) => {
+    return async function () {
+        const config = getAuthConfig();
+        const endpoints = [
+            `${URL}/ordenesCompraProv/eliminar/${id}`,
+            `${URL}/ordenesCompraProv/${id}`,
+        ];
+
+        for (const endpoint of endpoints) {
+            try {
+                const resp = await axios.delete(endpoint, config);
+                return resp.data;
+            } catch (error) {
+                const status = error?.response?.status;
+                if (status && ![404, 405].includes(status)) {
+                    return {
+                        error: true,
+                        message:
+                            error.response?.data?.message ||
+                            error.response?.data?.msg ||
+                            "Error al eliminar la orden.",
+                    };
+                }
+            }
+        }
+
+        return {
+            error: true,
+            message: "No se encontro endpoint para eliminar orden.",
+        };
+    };
+};
+
 export const registrarPagoProveedor = (ordenId, data = {}) => {
     return async function () {
         const config = getAuthConfig();

@@ -100,7 +100,7 @@ function InventarioCompuesto({
             return;
         }
 
-        const costeInicial = Number(componentesNormalizados.reduce((acc, c) => acc + Number(c.costeTotal || 0), 0).toFixed(2));
+        const costeInicial = Number(componentesNormalizados.reduce((acc, c) => acc + Number(c.costeTotal || 0), 0).toFixed(3));
 
         ultimaComposicionEnviadaRef.current = serializarComposicion(componentesNormalizados);
         ultimoCosteEnviadoRef.current = costeInicial;
@@ -260,7 +260,8 @@ function InventarioCompuesto({
         Number(value || 0).toLocaleString("es-AR", {
             style: "currency",
             currency: "ARS",
-            minimumFractionDigits: 2
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 3
         });
 
     useEffect(() => {
@@ -274,7 +275,7 @@ function InventarioCompuesto({
     }, [componentes]);
 
     useEffect(() => {
-        const costeNormalizado = Number(totalGeneral.toFixed(2));
+        const costeNormalizado = Number(totalGeneral.toFixed(3));
         if (ultimoCosteEnviadoRef.current === costeNormalizado) return;
 
         ultimoCosteEnviadoRef.current = costeNormalizado;
@@ -347,7 +348,7 @@ function InventarioCompuesto({
                                 <input
                                     type="number"
                                     min={0}
-                                    step="0.01"
+                                    step="0.001"
                                     value={c.costeInput ?? c.costeTotal}
                                     onChange={(e) => actualizarCoste(c._id, e.target.value)}
                                     onBlur={() => normalizarCosteAlSalir(c._id)}

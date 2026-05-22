@@ -5,17 +5,10 @@
     min-width: 70px;
     padding: 4px 10px;
     border-radius: 999px;
-    font-weight: 700;
+    font-weight: 400;
     font-size: 0.86rem;
     line-height: 1;
     border: 1px solid transparent;
-}
-
-.stock-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: currentColor;
 }
 
 .stock-chip--danger {
@@ -66,7 +59,7 @@
     text-transform: uppercase;
     letter-spacing: 0.12em;
     font-size: 0.78rem;
-    font-weight: 800;
+    font-weight: 400;
 }
 
 .articulos-heading h2 {
@@ -136,7 +129,7 @@
     background: linear-gradient(180deg, #f8fbff 0%, #f1f6fc 100%);
     color: #58708f;
     font-size: 0.78rem;
-    font-weight: 800;
+    font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     padding: 16px 14px;
@@ -146,7 +139,7 @@
 .articulos-table tbody td {
     padding: 14px;
     border-bottom: 1px solid #edf2f7;
-    color: #25364d;
+    color: #151515;
     font-size: 0.93rem;
     vertical-align: middle;
 }
@@ -158,64 +151,58 @@
 }
 
 .articulo-nombre-cell strong {
-    color: #203321;
+    color: #111111;
     font-size: 0.98rem;
-    font-weight: 800;
+    font-weight: 400;
 }
 
 .articulo-categoria-cell {
-    display: inline-flex;
-    align-items: center;
-    min-height: 32px;
-    padding: 5px 10px;
-    border-radius: 999px;
-    background: #eef4fb;
-    color: #3f5f84;
-    font-weight: 700;
-    font-size: 0.82rem;
+    display: inline;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font-weight: 400;
+    font-size: inherit;
 }
 
 .talle-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 5px 10px;
-    border-radius: 999px;
-    font-size: 0.82rem;
-    font-weight: 700;
+    display: inline;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    font-weight: 400;
     white-space: nowrap;
 }
 
 .talle-chip {
-    color: #1b5d39;
-    background: #eaf7ef;
-    border: 1px solid #cbe8d4;
+    color: inherit;
+    background: transparent;
+    border: 0;
 }
 
 .money-cell {
-    color: #123d78;
-    font-weight: 800;
+    color: #111111;
+    font-weight: 400;
     white-space: nowrap;
 }
 
 .money-cell--soft {
-    color: #4f6077;
+    color: #151515;
 }
 
 .margen-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 58px;
-    padding: 5px 10px;
-    border-radius: 999px;
-    font-size: 0.82rem;
-    font-weight: 800;
+    display: inline;
+    min-width: 0;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    font-weight: 400;
 }
 
 .margen-pill {
-    background: #e8f0ff;
-    color: #1d4ed8;
+    background: transparent;
+    color: inherit;
 }
 
 .codigo-articulo-cell {
@@ -225,9 +212,9 @@
     padding: 5px 9px;
     border-radius: 8px;
     background: #f2f4f7;
-    color: #344054;
+    color: #111111;
     font-size: 0.82rem;
-    font-weight: 800;
+    font-weight: 400;
     white-space: nowrap;
 }
 
@@ -242,14 +229,14 @@
     border-radius: 10px;
     padding: 8px 12px;
     font-size: 0.84rem;
-    font-weight: 800;
+    font-weight: 400;
     cursor: pointer;
     transition: transform 0.18s ease, filter 0.18s ease;
 }
 
-.articulos-acciones .btn-edit {
+.articulos-page .articulos-acciones .btn-edit {
     background: linear-gradient(135deg, #f4b64e 0%, #de9220 100%);
-    color: #fff;
+    color: #f9b218 !important;
     box-shadow: 0 8px 18px rgba(222, 146, 32, 0.18);
 }
 

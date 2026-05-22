@@ -44,10 +44,19 @@ export default function PopupProveedor({ proveedoresDB = [], onClose, onCreate }
     };
 
     const handleCrear = async () => {
-        if (!form.nombre.trim() || !form.email.trim()) {
-            Swal.fire("Faltan datos", "Nombre y email son obligatorios", "warning");
+        if (!form.nombre.trim() || !form.apellido.trim()) {
+            Swal.fire("Faltan datos", "Nombre y apellido son obligatorios", "warning");
             return;
         }
+
+        const payload = {
+            ...form,
+            nombre: form.nombre.trim(),
+            apellido: form.apellido.trim(),
+            dni: form.dni.trim() || undefined,
+            email: form.email.trim() || undefined,
+            rol: "PROVEEDOR"
+        };
 
         const res = await fetch(`${URL}/auth/registrar`, {
             method: "POST",
@@ -55,10 +64,7 @@ export default function PopupProveedor({ proveedoresDB = [], onClose, onCreate }
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${userData.token}`
             },
-            body: JSON.stringify({
-                ...form,
-                rol: "PROVEEDOR"
-            })
+            body: JSON.stringify(payload)
         });
 
         const data = await res.json();
