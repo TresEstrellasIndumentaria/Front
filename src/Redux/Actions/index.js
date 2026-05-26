@@ -362,6 +362,7 @@ export const ajustarStockArticulos = (data) => {
         }
 
         const articulosActualizados = [];
+        const advertencias = [];
 
         for (const item of items) {
             const articuloId = item?.articulo || item?.id;
@@ -398,7 +399,14 @@ export const ajustarStockArticulos = (data) => {
                         config
                     );
 
-                    actualizado = resp?.data?.articulo || resp?.data?.data || resp?.data;
+                    const dataResp = resp?.data || {};
+                    actualizado = dataResp?.articulo || dataResp?.data || dataResp;
+                    if (Array.isArray(dataResp?.articulosActualizados)) {
+                        articulosActualizados.push(...dataResp.articulosActualizados);
+                    }
+                    if (Array.isArray(dataResp?.advertencias)) {
+                        advertencias.push(...dataResp.advertencias);
+                    }
                     break;
                 } catch (error) {
                     ultimoError = error;
@@ -418,13 +426,16 @@ export const ajustarStockArticulos = (data) => {
                 };
             }
 
-            articulosActualizados.push(actualizado);
+            if (!articulosActualizados.some((art) => (art?._id || art?.id) === (actualizado?._id || actualizado?.id))) {
+                articulosActualizados.push(actualizado);
+            }
         }
 
         dispatch({ type: AJUSTE_STOCK_SUCCESS, payload: articulosActualizados });
         return {
             msg: "Ajuste de stock realizado correctamente.",
-            articulosActualizados
+            articulosActualizados,
+            advertencias
         };
     };
 };

@@ -483,7 +483,6 @@ function FormVenta() {
         if (!form.numeroCliente.trim()) nextErrors.numeroCliente = 'Completa el numero de cliente';
         if (!form.razonSocial.trim()) nextErrors.razonSocial = 'Completa la razon social';
         if (!form.nombreApellido.trim()) nextErrors.nombreApellido = 'Completa nombre y apellido';
-        if (!form.email.trim()) nextErrors.email = 'Completa el email';
         if (!form.telefono.trim()) nextErrors.telefono = 'Completa el telefono';
 
         const nextArticulosErrors = {};

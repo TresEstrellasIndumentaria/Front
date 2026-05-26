@@ -22,8 +22,7 @@ const createEmptyTalle = () => ({
     precio: "",
     coste: "",
     artCompuesto: false,
-    composicion: [],
-    stock: 0
+    composicion: []
 });
 
 const getCategoriaId = (categoria, categorias = []) => {
@@ -196,8 +195,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                         {
                             ...createEmptyTalle(),
                             precio: checked ? (prev.talles[0]?.precio ?? "") : "",
-                            coste: checked ? (prev.talles[0]?.coste ?? "") : "",
-                            stock: checked ? (prev.talles[0]?.stock ?? 0) : 0
+                            coste: checked ? (prev.talles[0]?.coste ?? "") : ""
                         }
                     ]
                 };
@@ -255,7 +253,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
             talles: prev.talles.map((talle, talleIndex) => {
                 if (talleIndex !== index) return talle;
 
-                const parsedValue = ["precio", "coste", "stock"].includes(field)
+                const parsedValue = ["precio", "coste"].includes(field)
                     ? value === ""
                         ? ""
                         : Number(value)
@@ -402,8 +400,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                 precio: form.talles[0]?.precio === "" ? 0 : Number(form.talles[0]?.precio || 0),
                 costo: form.talles[0]?.coste === "" ? "" : Number(form.talles[0]?.coste),
                 artCompuesto: false,
-                composicion: [],
-                stock: form.talles[0]?.stock === "" ? 0 : Number(form.talles[0]?.stock || 0)
+                composicion: []
             }]
             : form.talles
             .map((talle) => {
@@ -416,15 +413,13 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                     precio: talle.precio === "" ? "" : Number(talle.precio),
                     costo: talle.coste === "" ? (artCompuesto ? Number(costoCalculado.toFixed(3)) : "") : Number(talle.coste),
                     artCompuesto,
-                    composicion,
-                    stock: talle.stock === "" ? 0 : Number(talle.stock)
+                    composicion
                 };
             })
             .filter((talle) => (
                 talle.talle ||
                 talle.precio !== "" ||
                 talle.costo !== "" ||
-                talle.stock !== 0 ||
                 talle.artCompuesto ||
                 talle.composicion.length
             ));
@@ -434,8 +429,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                 return (
                     (talle.precio !== "" && Number(talle.precio) < 0) ||
                     talle.costo === "" ||
-                    Number(talle.costo) < 0 ||
-                    Number(talle.stock) < 0
+                    Number(talle.costo) < 0
                 );
             }
 
@@ -444,8 +438,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                 Number(talle.precio) < 0 ||
                 talle.costo === "" ||
                 Number(talle.costo) < 0 ||
-                (talle.artCompuesto && !talle.composicion?.length) ||
-                Number(talle.stock) < 0
+                (talle.artCompuesto && !talle.composicion?.length)
             );
         });
 
@@ -453,8 +446,8 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
             Swal.fire(
                 esItemProveedor ? "Datos invalidos" : "Datos de talle invalidos",
                 esItemProveedor
-                    ? "El costo es obligatorio. Precio y stock pueden quedar vacios, pero no pueden ser negativos."
-                    : "Cada fila cargada debe tener precio, coste y stock validos. Si es compuesto, tambien debe tener composicion.",
+                    ? "El costo es obligatorio. Precio puede quedar vacio, pero no puede ser negativo."
+                    : "Cada fila cargada debe tener precio y coste validos. Si es compuesto, tambien debe tener composicion.",
                 "warning"
             );
             return;
@@ -631,7 +624,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                         <div className="talles-header proveedor-fields-header">
                             <div>
                                 <label>Datos del articulo proveedor</label>
-                                <p>Carga costo obligatorio. Precio y stock son opcionales.</p>
+                                <p>Carga costo obligatorio. Precio es opcional.</p>
                             </div>
                         </div>
 
@@ -658,16 +651,6 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                     required
                                 />
                             </div>
-                            <div className="campo">
-                                <label>Stock</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={form.talles[0]?.stock ?? ""}
-                                    onChange={(e) => handleTalleChange(0, "stock", e.target.value)}
-                                    placeholder="Opcional"
-                                />
-                            </div>
                         </div>
                     </div>
                 ) : (
@@ -675,7 +658,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                     <div className="talles-header">
                         <div>
                             <label>Talles del articulo</label>
-                            <p>Carga talle, precio, coste, stock y compuesto en filas separadas.</p>
+                            <p>Carga talle, precio, coste y compuesto en filas separadas.</p>
                         </div>
                         <button
                             type="button"
@@ -694,7 +677,6 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                     <th>Precio</th>
                                     <th>Costo</th>
                                     <th>Compuesto</th>
-                                    <th>Stock</th>
                                     <th>Accion</th>
                                 </tr>
                             </thead>
@@ -751,14 +733,6 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                                                     </button>
                                                 )}
                                             </div>
-                                        </td>
-                                        <td>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={talle.stock}
-                                                onChange={(e) => handleTalleChange(index, "stock", e.target.value)}
-                                            />
                                         </td>
                                         <td>
                                             <button

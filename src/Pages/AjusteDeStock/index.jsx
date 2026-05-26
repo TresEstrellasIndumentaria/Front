@@ -19,6 +19,13 @@ const limpiarInputNumerico = (value) => {
     return toNumberOrZero(value);
 };
 
+const escapeHtml = (value) => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
 const getCodigoArticulo = (articulo) => (
     articulo?.codigoArticulo || articulo?.codigo || articulo?.codArticulo || ''
 );
@@ -216,7 +223,24 @@ function AjusteDeStock() {
                 return;
             }
 
-            await Swal.fire('Ajuste realizado', msg || 'Se ajusto el stock correctamente.', 'success');
+            const advertencias = Array.isArray(resp?.advertencias)
+                ? [...new Set(resp.advertencias.filter(Boolean))]
+                : [];
+
+            if (advertencias.length) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Ajuste realizado con stock negativo',
+                    html: `
+                        <p>${escapeHtml(msg || 'Se ajusto el stock correctamente.')}</p>
+                        <ul style="text-align:left;">
+                            ${advertencias.map((advertencia) => `<li>${escapeHtml(advertencia)}</li>`).join('')}
+                        </ul>
+                    `,
+                });
+            } else {
+                await Swal.fire('Ajuste realizado', msg || 'Se ajusto el stock correctamente.', 'success');
+            }
             setItemsAjuste([]);
             setAnotaciones('');
             setTipoAjuste('AJUSTE');

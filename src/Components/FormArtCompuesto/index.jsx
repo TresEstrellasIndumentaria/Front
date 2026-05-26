@@ -28,7 +28,7 @@ const getDefaultTalleComponente = (articulo) => {
 };
 
 const normalizarComponente = (componente, articulos = []) => {
-    const id = componente?._id || componente?.articulo?._id || componente?.articulo;
+    const id = componente?.articulo?._id || componente?.articulo || componente?._id;
     const articulo = articulos.find((a) => a._id === id);
     const qty = Number(componente?.cantidad ?? 1);
     const costeTotalGuardado = Number(componente?.costeTotal ?? 0);
@@ -320,7 +320,6 @@ function InventarioCompuesto({
                         <tr key={c._id}>
                             <td>
                                 <strong>{c.nombre}</strong>
-                                <span className="componente-ref">REF {String(c._id).slice(-5)}</span>
                             </td>
                             <td>
                                 {getTallesArticulo(articulos.find((a) => a._id === c._id)).length > 1 ? (
