@@ -188,6 +188,9 @@ function ListaArticulos() {
                                             <NavLink to={`/modificaArt/${art._id}`}>
                                                 <button className="btn-edit">Editar</button>
                                             </NavLink>
+                                            <NavLink to="/creaArticulo" state={{ duplicarArticulo: art }}>
+                                                <button className="btn-duplicate">Duplicar</button>
+                                            </NavLink>
                                             <BotonEliminarArt _id={art._id} nombre={art.nombre} />
                                         </td>
                                     )}

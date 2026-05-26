@@ -379,6 +379,7 @@
     }
 
     .form-articulo {
+        max-width: 100%;
         padding: 20px;
         border-radius: 18px;
     }
@@ -409,5 +410,51 @@
     .btn-cancelar,
     .btn-guardar {
         width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .cont-creaArt {
+        padding: 12px 8px 24px;
+    }
+
+    .form-articulo {
+        padding: 14px;
+        gap: 18px;
+    }
+
+    .articulo-proveedor-check {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .talles-tabla {
+        min-width: 560px;
+    }
+
+    .talle-compuesto-card-header {
+        padding: 14px 14px 0;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1100px) {
+    .cont-creaArt {
+        padding: 10px;
+    }
+
+    .form-articulo {
+        max-width: 100%;
+        padding: 16px;
+        gap: 16px;
+        border-radius: 16px;
+    }
+
+    .campo textarea {
+        min-height: 72px;
+    }
+
+    .talles-header {
+        flex-direction: row;
+        align-items: center;
     }
 }

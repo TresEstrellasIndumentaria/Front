@@ -66,3 +66,23 @@
     border-color: var(--color-barra);
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
 }
+
+@media (max-width: 700px) {
+    .search-panel {
+        min-width: 0;
+        width: 100%;
+        margin-top: 0;
+        padding: 12px;
+    }
+
+    .search-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-mode-select,
+    .search-input,
+    .search-field {
+        width: 100%;
+    }
+}

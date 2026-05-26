@@ -377,8 +377,14 @@
 }
 
 @media (max-width: 780px) {
+    .form-venta-section {
+        width: 100%;
+        padding: 0 10px;
+    }
+
     .form-venta-card {
-        padding: 20px;
+        padding: 18px;
+        border-radius: 16px;
     }
 
     .form-venta-row {
@@ -398,6 +404,7 @@
 
     .form-venta-item-row {
         grid-template-columns: 1fr;
+        padding: 12px;
     }
 
     .form-venta-item-index {
@@ -414,5 +421,71 @@
 
     .form-venta-total {
         justify-content: space-between;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-venta-card {
+        padding: 14px;
+    }
+
+    .form-venta-header h2 {
+        font-size: 1.35rem;
+    }
+
+    .form-venta-copy {
+        font-size: 0.9rem;
+    }
+
+    .form-venta-field input,
+    .form-venta-field select {
+        height: 42px;
+        border-radius: 10px;
+        padding: 0 10px;
+    }
+
+    .form-venta-autocomplete-list {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        top: auto;
+        bottom: 16px;
+        width: auto;
+        max-height: 50vh;
+        z-index: 2000;
+    }
+
+    .form-venta-autocomplete-option {
+        min-height: 42px;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1100px) {
+    .form-venta-section {
+        width: 100%;
+        padding: 0 10px;
+    }
+
+    .form-venta-card {
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .form-venta-header {
+        margin-bottom: 14px;
+    }
+
+    .form-venta-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .form-venta-item-row {
+        grid-template-columns: repeat(4, minmax(120px, 1fr));
+        overflow-x: auto;
+    }
+
+    .form-venta-field input,
+    .form-venta-field select {
+        height: 40px;
     }
 }

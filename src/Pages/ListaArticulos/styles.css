@@ -228,6 +228,7 @@
 }
 
 .articulos-acciones .btn-edit,
+.articulos-acciones .btn-duplicate,
 .articulos-acciones .btn-delete-articulo {
     border: none;
     border-radius: 10px;
@@ -242,6 +243,13 @@
     background: linear-gradient(135deg, #f4b64e 0%, #de9220 100%);
     color: #f9b218 !important;
     box-shadow: 0 8px 18px rgba(222, 146, 32, 0.18);
+}
+
+.articulos-page .articulos-acciones .btn-duplicate {
+    margin-left: 8px;
+    background: #fff7df;
+    color: #1f1f1f;
+    box-shadow: inset 0 0 0 1px #f2c766;
 }
 
 .articulos-acciones .btn-delete-articulo {
@@ -263,6 +271,7 @@
 }
 
 .articulos-acciones .btn-edit:hover,
+.articulos-acciones .btn-duplicate:hover,
 .articulos-acciones .btn-delete-articulo:hover {
     filter: brightness(1.03);
     transform: translateY(-1px);

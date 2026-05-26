@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
     creaArticulo,
     crearCategoria,
@@ -98,7 +98,9 @@ const calcularCostoComposicion = (composicion = []) => (
 function FormArticulo({ operacion = "crear", articuloInicial = null }) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
     const esModificacion = operacion === "modificar";
+    const articuloDuplicado = !esModificacion ? location.state?.duplicarArticulo : null;
 
     const articulos = useSelector(state => state.articulos);
     const categorias = useSelector(state => state.categorias);
@@ -117,6 +119,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
     const [inventarioAbiertoIndex, setInventarioAbiertoIndex] = useState(null);
     const articuloHidratadoRef = useRef(null);
     const inventarioAutoAbiertoRef = useRef(null);
+    const duplicadoHidratadoRef = useRef(null);
 
     const [form, setForm] = useState({
         codigoArticulo: "",
@@ -164,6 +167,19 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
             return nextForm;
         });
     }, [esModificacion, articuloInicial, categorias]);
+
+    useEffect(() => {
+        if (!articuloDuplicado?._id) return;
+        if (duplicadoHidratadoRef.current === articuloDuplicado._id) return;
+
+        const nextForm = {
+            ...buildFormFromArticulo(articuloDuplicado, categorias),
+            codigoArticulo: ""
+        };
+
+        duplicadoHidratadoRef.current = articuloDuplicado._id;
+        setForm(nextForm);
+    }, [articuloDuplicado, categorias]);
 
     useEffect(() => {
         if (!esModificacion || !articuloInicial?.talles?.length) return;

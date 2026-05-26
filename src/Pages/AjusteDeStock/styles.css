@@ -180,13 +180,64 @@
 }
 
 @media (max-width: 900px) {
+    .stock-ajuste-page {
+        width: 100%;
+        margin: 0;
+        padding: 12px 10px 24px;
+    }
+
     .stock-card {
         padding: 16px;
+        overflow-x: auto;
     }
 
     .stock-table {
-        display: block;
-        overflow-x: auto;
+        min-width: 680px;
         white-space: nowrap;
+    }
+
+    .stock-actions {
+        flex-direction: column-reverse;
+    }
+
+    .btn-ghost,
+    .btn-primary {
+        width: 100%;
+    }
+}
+
+@media (max-width: 520px) {
+    .stock-card h2 {
+        font-size: 1.35rem;
+    }
+
+    .stock-field textarea {
+        font-size: 1.1rem;
+    }
+
+    .stock-type-select {
+        width: 100%;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1100px) {
+    .stock-ajuste-page {
+        width: 100%;
+        margin: 0;
+        padding: 10px;
+    }
+
+    .stock-card {
+        padding: 14px;
+        overflow-x: auto;
+    }
+
+    .stock-field {
+        margin-bottom: 14px;
+    }
+
+    .stock-field textarea {
+        font-size: 1.1rem;
+        min-height: 38px;
     }
 }

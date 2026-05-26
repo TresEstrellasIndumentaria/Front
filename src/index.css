@@ -5,3 +5,21 @@ body, html, #root {
   background: #f4f4f4;
   color: #1f1f1f;
 }
+
+* {
+  box-sizing: border-box;
+}
+
+img,
+svg,
+canvas,
+video {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
