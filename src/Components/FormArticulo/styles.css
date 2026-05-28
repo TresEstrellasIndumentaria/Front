@@ -118,6 +118,13 @@
     font-size: 0.9rem;
 }
 
+.talles-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 .btn-agregar-talle,
 .btn-eliminar-talle {
     border: none;
@@ -138,6 +145,16 @@
 .btn-agregar-talle:hover {
     background: #ffd15a;
     transform: translateY(-1px);
+}
+
+.btn-duplicar-talle {
+    background: #e8f1e3;
+    color: #1e3320;
+    box-shadow: inset 0 0 0 1px rgba(38, 74, 42, 0.2);
+}
+
+.btn-duplicar-talle:hover {
+    background: #d9ead2;
 }
 
 .talles-tabla-wrap {
@@ -387,6 +404,14 @@
     .talles-header {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .talles-header-actions {
+        justify-content: stretch;
+    }
+
+    .talles-header-actions .btn-agregar-talle {
+        flex: 1 1 150px;
     }
 
     .talle-compuesto-card-header {

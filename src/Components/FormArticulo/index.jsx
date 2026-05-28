@@ -106,6 +106,26 @@ const calcularCostoComposicion = (composicion = []) => (
     }, 0)
 );
 
+const getComponenteArticuloId = (componente) => {
+    const articulo = componente?.articulo;
+    if (typeof articulo === "object" && articulo !== null) {
+        return articulo._id || articulo.id || "";
+    }
+
+    return articulo || componente?._id || componente?.id || "";
+};
+
+const normalizarComposicionParaGuardar = (composicion = []) => (
+    (Array.isArray(composicion) ? composicion : [])
+        .map((componente) => ({
+            articulo: getComponenteArticuloId(componente),
+            talle: componente?.talle || "",
+            cantidad: Number(componente?.cantidad ?? 1),
+            costo: Number(componente?.costo ?? componente?.costeUnitario ?? componente?.coste ?? 0)
+        }))
+        .filter((componente) => componente.articulo)
+);
+
 function FormArticulo({ operacion = "crear", articuloInicial = null }) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -328,6 +348,52 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
         setInventarioAbiertoIndex(null);
     };
 
+    const duplicarTalle = () => {
+        const lastIndex = form.talles.length - 1;
+        const talleBase = form.talles[lastIndex];
+
+        if (!talleBase) {
+            setForm((prev) => ({
+                ...prev,
+                talles: [createEmptyTalle()]
+            }));
+            return;
+        }
+
+        const requiredFields = ["talle", "precio", "coste"];
+        const baseErrors = requiredFields.reduce((acc, field) => {
+            const value = talleBase?.[field];
+            const isEmpty = value === "" || value === null || value === undefined;
+            acc[field] = isEmpty;
+            return acc;
+        }, {});
+
+        if (Object.values(baseErrors).some(Boolean)) {
+            setTallesErrors((prev) => ({
+                ...prev,
+                [lastIndex]: {
+                    ...(prev[lastIndex] || {}),
+                    ...baseErrors
+                }
+            }));
+            return;
+        }
+
+        const talleDuplicado = {
+            ...talleBase,
+            talle: "",
+            composicion: Array.isArray(talleBase.composicion)
+                ? JSON.parse(JSON.stringify(talleBase.composicion))
+                : []
+        };
+
+        setForm((prev) => ({
+            ...prev,
+            talles: [...prev.talles, talleDuplicado]
+        }));
+        setInventarioAbiertoIndex(talleDuplicado.artCompuesto ? lastIndex + 1 : null);
+    };
+
     const eliminarTalle = (index) => {
         setTallesErrors((prev) => {
             const next = {};
@@ -433,7 +499,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
             }]
             : form.talles
             .map((talle) => {
-                const composicion = Array.isArray(talle.composicion) ? talle.composicion : [];
+                const composicion = normalizarComposicionParaGuardar(talle.composicion);
                 const artCompuesto = Boolean(talle.artCompuesto);
                 const costoCalculado = artCompuesto ? calcularCostoComposicion(composicion) : 0;
 
@@ -689,13 +755,22 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
                             <label>Talles del articulo</label>
                             <p>Carga talle, precio, coste y compuesto en filas separadas.</p>
                         </div>
-                        <button
-                            type="button"
-                            className="btn-agregar-talle"
-                            onClick={agregarTalle}
-                        >
-                            + Agregar talle
-                        </button>
+                        <div className="talles-header-actions">
+                            <button
+                                type="button"
+                                className="btn-agregar-talle"
+                                onClick={agregarTalle}
+                            >
+                                + Agregar talle
+                            </button>
+                            <button
+                                type="button"
+                                className="btn-agregar-talle btn-duplicar-talle"
+                                onClick={duplicarTalle}
+                            >
+                                Duplicar talle
+                            </button>
+                        </div>
                     </div>
 
                     <div className="talles-tabla-wrap">
