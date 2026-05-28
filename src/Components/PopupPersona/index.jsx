@@ -112,18 +112,19 @@ export default function PopupPersona({
 
     //Submit crear / editar
     const handleSubmit = async () => {
+        const telefonoArea = String(form.telefono?.area || "").trim();
         const telefonoNumero = String(form.telefono?.numero || "").trim();
 
         if (
             !form.nombre.trim() ||
             !form.apellido.trim() ||
-            (requiereTelefono && !telefonoNumero) ||
+            (requiereTelefono && (!telefonoArea || !telefonoNumero)) ||
             (!soloRequiereNombreApellido && !form.email.trim())
         ) {
             Swal.fire(
                 "Faltan datos",
                 requiereTelefono
-                    ? "Nombre, apellido y telefono son obligatorios"
+                    ? "Nombre, apellido, area y telefono son obligatorios"
                     : soloRequiereNombreApellido
                     ? "Nombre y apellido son obligatorios"
                     : "Nombre, apellido y email son obligatorios",

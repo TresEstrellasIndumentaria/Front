@@ -58,8 +58,10 @@ function Registrarse({ operacion, rol }) {
 
     const validar = () => {
         const esModif = operacion === 'modificar';
-        let campos = { nombre, email };
-        if (!esModif) campos = { ...campos, apellido, dni, password, area, numTel };
+        const rolActual = String(rolAsignado || rol || 'CLIENTE').toUpperCase();
+        const esCliente = rolActual === 'CLIENTE';
+        let campos = esCliente ? { nombre, apellido, area, numTel } : { nombre, email };
+        if (!esModif && !esCliente) campos = { ...campos, apellido, dni, password, area, numTel };
 
         const nuevosErrores = Object.entries(campos).reduce((acc, [key, value]) => {
             if (!value || (typeof value === 'string' && value.trim() === '')) {
@@ -91,6 +93,7 @@ function Registrarse({ operacion, rol }) {
             password,
             telefono: { area, numero: numTel },
             direccion: { calle, numero, piso, depto, codigoPostal, provincia, localidad },
+            rol: rolAsignado || rol || 'CLIENTE',
             rolAsignado,
         };
 
