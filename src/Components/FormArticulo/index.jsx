@@ -65,6 +65,17 @@ const getTotalStockArticulo = (articulo) => {
 
 const normalizarTexto = (value) => String(value || "").trim().toLowerCase();
 
+const formatearCodigoArticulo = (value) => String(Number(value || 0)).padStart(4, "0");
+
+const calcularSiguienteCodigoArticulo = (articulos = []) => {
+    const ultimoNumero = articulos.reduce((max, articulo) => {
+        const numero = Number(String(articulo?.codigoArticulo || articulo?.codigo || articulo?.codArticulo || "").replace(/\D/g, ""));
+        return Number.isFinite(numero) && numero > max ? numero : max;
+    }, 0);
+
+    return formatearCodigoArticulo(ultimoNumero + 1);
+};
+
 const buildFormFromArticulo = (articulo, categorias = []) => ({
     codigoArticulo: articulo.codigoArticulo || articulo.codigo || articulo.codArticulo || "",
     nombre: articulo.nombre || "",
@@ -142,14 +153,16 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
 
         let active = true;
         dispatch(getSiguienteCodigoArticulo()).then((codigo) => {
-            if (!active || !codigo) return;
-            setForm((prev) => prev.codigoArticulo ? prev : { ...prev, codigoArticulo: codigo });
+            if (!active) return;
+            const siguienteCodigo = codigo || calcularSiguienteCodigoArticulo(articulos);
+            if (!siguienteCodigo) return;
+            setForm((prev) => prev.codigoArticulo ? prev : { ...prev, codigoArticulo: siguienteCodigo });
         });
 
         return () => {
             active = false;
         };
-    }, [dispatch, esModificacion, form.codigoArticulo]);
+    }, [dispatch, esModificacion, form.codigoArticulo, articulos]);
 
     useEffect(() => {
         if (!esModificacion || !articuloInicial?._id) return;
@@ -174,12 +187,12 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
 
         const nextForm = {
             ...buildFormFromArticulo(articuloDuplicado, categorias),
-            codigoArticulo: ""
+            codigoArticulo: calcularSiguienteCodigoArticulo(articulos)
         };
 
         duplicadoHidratadoRef.current = articuloDuplicado._id;
         setForm(nextForm);
-    }, [articuloDuplicado, categorias]);
+    }, [articuloDuplicado, categorias, articulos]);
 
     useEffect(() => {
         if (!esModificacion || !articuloInicial?.talles?.length) return;
