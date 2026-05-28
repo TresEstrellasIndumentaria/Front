@@ -15,6 +15,7 @@ export default function PopupPersona({
     const esEdicion = Boolean(persona);
     const requierePassword = rol === "ADMIN" || rol === "EMPLEADO";
     const soloRequiereNombreApellido = rol === "CLIENTE" || rol === "PROVEEDOR";
+    const requiereTelefono = rol === "CLIENTE";
 
     const [form, setForm] = useState({
         nombre: "",
@@ -111,14 +112,19 @@ export default function PopupPersona({
 
     //Submit crear / editar
     const handleSubmit = async () => {
+        const telefonoNumero = String(form.telefono?.numero || "").trim();
+
         if (
             !form.nombre.trim() ||
             !form.apellido.trim() ||
+            (requiereTelefono && !telefonoNumero) ||
             (!soloRequiereNombreApellido && !form.email.trim())
         ) {
             Swal.fire(
                 "Faltan datos",
-                soloRequiereNombreApellido
+                requiereTelefono
+                    ? "Nombre, apellido y telefono son obligatorios"
+                    : soloRequiereNombreApellido
                     ? "Nombre y apellido son obligatorios"
                     : "Nombre, apellido y email son obligatorios",
                 "warning"
