@@ -5,6 +5,7 @@ import { getCategorias, crearCategoria, editarCategoria } from '../../Redux/Acti
 import PopupCategoria from "../../Components/FormCategoria";
 import SearchBar from '../../Components/BuscaArticulo';
 import BotonEliminarCategoria from '../../Components/BotonEliminarCategoria';
+import EditIcon from '@mui/icons-material/Edit';
 import Swal from 'sweetalert2';
 
 function ListaCategorias() {
@@ -120,13 +121,15 @@ function ListaCategorias() {
                             <td className="acciones">
                                 <button
                                     className="btn-edit"
+                                    title="Editar categoria"
+                                    aria-label="Editar categoria"
                                     onClick={() => {
                                         setModoPopup('modificar');
                                         setCategoriaSeleccionada(cat);
                                         setMostrarPopup(true);
                                     }}
                                 >
-                                    Editar
+                                    <EditIcon fontSize="small" />
                                 </button>
 
                                 <BotonEliminarCategoria _id={cat._id} nombre={cat.nombre} />

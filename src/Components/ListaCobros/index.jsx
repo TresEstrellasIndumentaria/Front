@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Swal from 'sweetalert2';
+import EditIcon from '@mui/icons-material/Edit';
 import { eliminarRecibo, getRecibos } from '../../Redux/Actions';
 import './styles.css';
 
@@ -208,9 +209,11 @@ function ListaCobrosComponent() {
                                                 <button
                                                     type="button"
                                                     className="lista-cobros-action-btn"
+                                                    title="Editar cobro"
+                                                    aria-label="Editar cobro"
                                                     onClick={() => navigate(`/cobros/editar/${recibo._id}`)}
                                                 >
-                                                    Editar
+                                                    <EditIcon fontSize="small" />
                                                 </button>
                                                 <button
                                                     type="button"

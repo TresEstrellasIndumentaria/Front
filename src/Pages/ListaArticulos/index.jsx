@@ -5,6 +5,7 @@ import { AppContext } from '../../Context';
 import { getAllArticulos, getCategorias } from '../../Redux/Actions';
 import SearchBar from '../../Components/BuscaArticulo';
 import BotonEliminarArt from '../../Components/BotonEliminarArt';
+import EditIcon from '@mui/icons-material/Edit';
 import './styles.css';
 
 function ListaArticulos() {
@@ -186,7 +187,9 @@ function ListaArticulos() {
                                     {index === 0 && (
                                         <td className="acciones articulos-acciones" rowSpan={talles.length}>
                                             <NavLink to={`/modificaArt/${art._id}`}>
-                                                <button className="btn-edit">Editar</button>
+                                                <button className="btn-edit" title="Editar articulo" aria-label="Editar articulo">
+                                                    <EditIcon fontSize="small" />
+                                                </button>
                                             </NavLink>
                                             <NavLink to="/creaArticulo" state={{ duplicarArticulo: art }}>
                                                 <button className="btn-duplicate">Duplicar</button>

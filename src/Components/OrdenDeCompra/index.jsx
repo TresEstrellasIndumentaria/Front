@@ -10,6 +10,7 @@ import {
     modificarOrdenCompra
 } from "../../Redux/Actions";
 import Swal from "sweetalert2";
+import EditIcon from "@mui/icons-material/Edit";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import OrdenCompraPrint from "./OrdenCompraPrint";
 import "./styles.css";
@@ -420,7 +421,9 @@ export default function OrdenCompra() {
                 <div className="oc-detalle-header oc-screen-only">
                     <button className="oc-link-back" onClick={() => navigate("/resumenCompras")}>Resumen de compras</button>
                     <div className="oc-detalle-acciones">
-                        <button onClick={handleEditarDesdeDetalle} disabled={guardando || estadoBloqueado}>Editar</button>
+                        <button onClick={handleEditarDesdeDetalle} disabled={guardando || estadoBloqueado} title="Editar orden" aria-label="Editar orden">
+                            <EditIcon fontSize="small" />
+                        </button>
                         <button onClick={() => handleCambiarEstado("PAGADA")} disabled={guardando || estadoBloqueado}>Marcar pagada</button>
                         <button onClick={() => window.print()} disabled={guardando}>Imprimir</button>
                     </div>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import SearchIcon from '@mui/icons-material/Search';
+import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -185,12 +186,14 @@ function ListaProveedores() {
                                     <button
                                         type="button"
                                         className="prov-btn-edit"
+                                        title="Editar proveedor"
+                                        aria-label="Editar proveedor"
                                         onClick={() => {
                                             setProveedorSeleccionado(prov);
                                             setMostrarPopup(true);
                                         }}
                                     >
-                                        Editar
+                                        <EditIcon fontSize="small" />
                                     </button>
                                     <BotonEliminarUsuario
                                         _id={prov._id}
