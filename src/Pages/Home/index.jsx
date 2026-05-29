@@ -20,8 +20,8 @@ function Home() {
         },
         {
             title: 'Ventas',
-            text: 'Revisa operaciones y carga nuevas ventas.',
-            to: '/listaVentas',
+            text: 'Carga nuevas ventas desde el formulario de remitos.',
+            to: '/ventas/nueva',
             Icon: PointOfSaleIcon,
         },
         {

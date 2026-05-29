@@ -386,6 +386,12 @@ function FormVenta() {
         }));
     };
 
+    const handleImporteUnitarioFocus = (index, value) => {
+        if (String(value) === '0') {
+            handleArticuloChange(index, 'importeUnitario', '');
+        }
+    };
+
     const handleArticuloNombreChange = (index, value) => {
         setArticuloNombreActivo(index);
 
@@ -621,7 +627,7 @@ function FormVenta() {
         dispatch(getAllArticulos());
 
         if (isEditMode) {
-            navigate('/listaVentas');
+            navigate('/resumenVentas');
             return;
         }
 
@@ -864,6 +870,7 @@ function FormVenta() {
                                             min="0"
                                             step="0.01"
                                             value={articulo.importeUnitario}
+                                            onFocus={() => handleImporteUnitarioFocus(index, articulo.importeUnitario)}
                                             onChange={(e) => handleArticuloChange(index, 'importeUnitario', e.target.value)}
                                             placeholder="0"
                                         />

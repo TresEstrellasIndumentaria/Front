@@ -1,11 +1,12 @@
 import { useState, useEffect, useContext, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { AppContext } from '../../Context';
+import { getUsuarioByRol, resetPasswordEmpleado } from '../../Redux/Actions';
 import SearchIcon from '@mui/icons-material/Search';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import Swal from 'sweetalert2';
-import { AppContext } from '../../Context';
-import { getUsuarioByRol, resetPasswordEmpleado } from '../../Redux/Actions';
+import EditIcon from '@mui/icons-material/Edit';
 import PopupPersona from '../../Components/PopupPersona';
 import PersonaOrdenSelect from '../../Components/PersonaOrdenSelect';
 import BotonEliminarUsuario from '../../Components/BotonEliminarUsuario';
@@ -251,7 +252,7 @@ function ListaUsuariosPorRol({ rol }) {
                                             setMostrarPopup(true);
                                         }}
                                     >
-                                        Editar
+                                        <EditIcon fontSize="inherit" style={{width: '15px',height: "19px"}}/>
                                     </button>
 
                                     <BotonEliminarUsuario

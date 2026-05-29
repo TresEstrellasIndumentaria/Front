@@ -31,6 +31,19 @@ const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0,
 }).format(Number(value || 0));
 
+const getTotalCosto = (venta) => {
+  if (Number.isFinite(Number(venta?.totalCosto))) return Number(venta.totalCosto);
+
+  return Array.isArray(venta?.pedido)
+    ? venta.pedido.reduce((acc, item) => acc + Number(item?.costoTotal || 0), 0)
+    : 0;
+};
+
+const getRentabilidad = (venta) => {
+  if (Number.isFinite(Number(venta?.rentabilidad))) return Number(venta.rentabilidad);
+  return Number(venta?.importeTotal || 0) - getTotalCosto(venta);
+};
+
 const escapeHtml = (value) => String(value ?? '-')
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
@@ -49,6 +62,8 @@ const buildItemsTable = (items = []) => {
     const cantidad = Number(item?.cantidad || 0);
     const precioUnitario = Number(item?.precioUnitario ?? item?.importeUnitario ?? 0);
     const total = Number(item?.subtotal ?? item?.importeTotal ?? (cantidad * precioUnitario));
+    const costoTotal = Number(item?.costoTotal ?? (cantidad * Number(item?.costoUnitario || 0)));
+    const rentabilidad = total - costoTotal;
 
     return `
       <tr>
@@ -56,6 +71,8 @@ const buildItemsTable = (items = []) => {
         <td>${escapeHtml(item?.talle || '-')}</td>
         <td style="text-align:right">${cantidad}</td>
         <td style="text-align:right">${formatMoney(precioUnitario)}</td>
+        <td style="text-align:right">${formatMoney(costoTotal)}</td>
+        <td style="text-align:right">${formatMoney(rentabilidad)}</td>
         <td style="text-align:right">${formatMoney(total)}</td>
       </tr>
     `;
@@ -70,6 +87,8 @@ const buildItemsTable = (items = []) => {
             <th style="text-align:left; padding:8px; border-bottom:1px solid #d8d8d8">Talle</th>
             <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Cant.</th>
             <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Precio</th>
+            <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Costo</th>
+            <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Rentab.</th>
             <th style="text-align:right; padding:8px; border-bottom:1px solid #d8d8d8">Total</th>
           </tr>
         </thead>
@@ -230,6 +249,8 @@ function ResumenDeVentas() {
       const total = Number(venta?.importeTotal || 0);
       acc.cantidad += 1;
       acc.totalFacturado += total;
+      acc.totalCosto += getTotalCosto(venta);
+      acc.rentabilidad += getRentabilidad(venta);
       acc.prendas += getCantidadPrendas(venta?.pedido);
       const estado = normalizeEstadoVenta(venta?.estado);
       if (estado === 'PAGADO') acc.pagadas += 1;
@@ -238,6 +259,8 @@ function ResumenDeVentas() {
     }, {
       cantidad: 0,
       totalFacturado: 0,
+      totalCosto: 0,
+      rentabilidad: 0,
       prendas: 0,
       pagadas: 0,
       pendientes: 0,
@@ -382,8 +405,12 @@ function ResumenDeVentas() {
             <strong>{formatMoney(resumen.totalFacturado)}</strong>
           </article>
           <article className="resumen-ventas-summary-card">
-            <span>Proyeccion</span>
-            <strong>{formatMoney(resumen.proyeccion)}</strong>
+            <span>Costo visible</span>
+            <strong>{formatMoney(resumen.totalCosto)}</strong>
+          </article>
+          <article className="resumen-ventas-summary-card resumen-ventas-summary-card--profit">
+            <span>Rentabilidad visible</span>
+            <strong>{formatMoney(resumen.rentabilidad)}</strong>
           </article>
           <article className="resumen-ventas-summary-card resumen-ventas-summary-card--warn">
             <span>Pendientes</span>
@@ -435,25 +462,27 @@ function ResumenDeVentas() {
                   <th>Estado</th>
                   <th>Importe que debe</th>
                   <th>Importe total</th>
+                  <th>Costo total</th>
+                  <th>Rentabilidad</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan="8" className="resumen-ventas-empty">Cargando resumen de ventas...</td>
+                    <td colSpan="10" className="resumen-ventas-empty">Cargando resumen de ventas...</td>
                   </tr>
                 )}
 
                 {!loading && error && (
                   <tr>
-                    <td colSpan="8" className="resumen-ventas-empty">{error}</td>
+                    <td colSpan="10" className="resumen-ventas-empty">{error}</td>
                   </tr>
                 )}
 
                 {!loading && !error && ventasFiltradas.length === 0 && (
                   <tr>
-                    <td colSpan="8" className="resumen-ventas-empty">No hay ventas para los filtros seleccionados.</td>
+                    <td colSpan="10" className="resumen-ventas-empty">No hay ventas para los filtros seleccionados.</td>
                   </tr>
                 )}
 
@@ -471,17 +500,6 @@ function ResumenDeVentas() {
                       <div className="resumen-ventas-code">
                         <strong>{getNombreCliente(venta)}</strong>
                         {/* <span>{venta.razonSocial || 'Consumidor final'}</span> */}
-                        {venta.numeroCliente && (
-                          <NavLink
-                            to={`/cliente/${venta.cliente || venta.clienteId || venta.idCliente || venta.numeroCliente}/cuentaCorrient`}
-                            state={{ cliente: getClienteCuentaCorriente(venta) }}
-                            className="resumen-ventas-action-link resumen-ventas-cuenta-link"
-                          >
-                            <button type="button" className="resumen-ventas-btn resumen-ventas-btn--compact resumen-ventas-btn--account">
-                              C.C
-                            </button>
-                          </NavLink>
-                        )}
                       </div>
                     </td>
                     <td>
@@ -501,8 +519,28 @@ function ResumenDeVentas() {
                     </td>
                     <td className="resumen-ventas-money">{formatMoney(getImporteDebe(venta))}</td>
                     <td className="resumen-ventas-money">{formatMoney(venta.importeTotal)}</td>
+                    <td className="resumen-ventas-money">{formatMoney(getTotalCosto(venta))}</td>
+                    <td className={`resumen-ventas-money ${getRentabilidad(venta) < 0 ? 'resumen-ventas-money--loss' : 'resumen-ventas-money--profit'}`}>
+                      {formatMoney(getRentabilidad(venta))}
+                    </td>
                     <td>
                       <div className="resumen-ventas-remito-actions resumen-ventas-remito-actions--end">
+                        {venta.numeroCliente && (
+                          <NavLink
+                            to={`/cliente/${venta.cliente || venta.clienteId || venta.idCliente || venta.numeroCliente}/cuentaCorrient`}
+                            state={{ cliente: getClienteCuentaCorriente(venta) }}
+                            className="resumen-ventas-action-link"
+                          >
+                            <button
+                              type="button"
+                              className="resumen-ventas-btn resumen-ventas-btn--icon resumen-ventas-btn--receipt"
+                              title="Cuenta corriente"
+                              aria-label="Cuenta corriente"
+                            >
+                              C.C
+                            </button>
+                          </NavLink>
+                        )}
                         <button
                           type="button"
                           className="resumen-ventas-btn resumen-ventas-btn--icon resumen-ventas-btn--receipt"
@@ -546,6 +584,10 @@ function ResumenDeVentas() {
                   <td colSpan="5" className="resumen-ventas-total-label">Totales visibles</td>
                   <td className="resumen-ventas-money">{formatMoney(ventasFiltradas.reduce((acc, venta) => acc + getImporteDebe(venta), 0))}</td>
                   <td className="resumen-ventas-money">{formatMoney(resumen.totalFacturado)}</td>
+                  <td className="resumen-ventas-money">{formatMoney(resumen.totalCosto)}</td>
+                  <td className={`resumen-ventas-money ${resumen.rentabilidad < 0 ? 'resumen-ventas-money--loss' : 'resumen-ventas-money--profit'}`}>
+                    {formatMoney(resumen.rentabilidad)}
+                  </td>
                   <td></td>
                 </tr>
               </tfoot>

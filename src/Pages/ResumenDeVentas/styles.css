@@ -8,7 +8,7 @@
 }
 
 .resumen-ventas-shell {
-    width: min(1180px, calc(100% - 24px));
+    width: min(1480px, calc(100% - 24px));
     max-width: none;
     margin: 0 auto;
 }
@@ -41,7 +41,7 @@
 
 .resumen-ventas-summary {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;
     margin-bottom: 14px;
 }
@@ -56,6 +56,10 @@
 
 .resumen-ventas-summary-card--warn {
     background: #fff;
+}
+
+.resumen-ventas-summary-card--profit strong {
+    color: #166534;
 }
 
 .resumen-ventas-summary-card span {
@@ -229,32 +233,37 @@
 
 .resumen-ventas-table th,
 .resumen-ventas-table td {
-    padding: 16px 10px;
+    padding: 14px 8px;
     border-bottom: 1px solid #eef2f7;
     text-align: left;
     vertical-align: middle;
+    font-weight: 400;
+}
+
+.resumen-ventas-table tbody td {
+    font-size: 0.95rem;
 }
 
 .resumen-ventas-table th:nth-child(1),
 .resumen-ventas-table td:nth-child(1) {
-    width: 108px;
+    width: 104px;
 }
 
 .resumen-ventas-table th:nth-child(2),
 .resumen-ventas-table td:nth-child(2) {
-    width: 76px;
+    width: 72px;
     text-align: center;
 }
 
 .resumen-ventas-table th:nth-child(3),
 .resumen-ventas-table td:nth-child(3) {
-    width: 74px;
+    width: 78px;
     text-align: center;
 }
 
 .resumen-ventas-table th:nth-child(4),
 .resumen-ventas-table td:nth-child(4) {
-    width: 220px;
+    width: 210px;
     text-align: left;
 }
 
@@ -273,25 +282,37 @@
 
 .resumen-ventas-table th:nth-child(5),
 .resumen-ventas-table td:nth-child(5) {
-    width: 154px;
+    width: 144px;
     text-align: center;
 }
 
 .resumen-ventas-table th:nth-child(6),
 .resumen-ventas-table td:nth-child(6) {
-    width: 120px;
+    width: 100px;
     text-align: center;
 }
 
 .resumen-ventas-table th:nth-child(7),
 .resumen-ventas-table td:nth-child(7) {
-    width: 120px;
+    width: 100px;
     text-align: center;
 }
 
 .resumen-ventas-table th:nth-child(8),
 .resumen-ventas-table td:nth-child(8) {
-    width: 112px;
+    width: 100px;
+    text-align: center;
+}
+
+.resumen-ventas-table th:nth-child(9),
+.resumen-ventas-table td:nth-child(9) {
+    width: 106px;
+    text-align: center;
+}
+
+.resumen-ventas-table th:nth-child(10),
+.resumen-ventas-table td:nth-child(10) {
+    width: 148px;
     text-align: center;
 }
 
@@ -329,6 +350,7 @@
 
 .resumen-ventas-code strong {
     color: var(--color-dark);
+    font-weight: 400;
 }
 
 .resumen-ventas-code span {
@@ -339,7 +361,7 @@
 .resumen-ventas-remito-actions {
     display: flex;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 5px;
     margin-top: 0;
 }
 
@@ -352,11 +374,6 @@
     text-decoration: none;
 }
 
-.resumen-ventas-cuenta-link {
-    margin-top: 0;
-    width: fit-content;
-}
-
 .resumen-ventas-status {
     display: inline-flex;
     align-items: center;
@@ -364,9 +381,9 @@
     min-width: 78px;
     padding: 7px 9px;
     border-radius: 2px;
-    font-size: 0.76rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
+    font-size: inherit;
+    font-weight: 400;
+    letter-spacing: 0;
 }
 
 .resumen-ventas-status--pagado {
@@ -402,8 +419,8 @@
 
 .resumen-ventas-money {
     color: var(--color-dark);
-    font-weight: 800;
-    font-size: 0.86rem;
+    font-weight: 400;
+    font-size: inherit;
     white-space: nowrap;
 }
 
@@ -435,6 +452,10 @@
 }
 
 @media (max-width: 980px) {
+    .resumen-ventas-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .resumen-ventas-toolbar {
         flex-direction: column;
         align-items: stretch;
@@ -451,6 +472,7 @@
     }
 
     .resumen-ventas-table {
+        min-width: 1320px;
         white-space: nowrap;
     }
 }

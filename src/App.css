@@ -46,7 +46,6 @@
 .btn-add,
 .btn-primary,
 .form-venta-submit,
-.ventas-add-btn,
 .oc-primary,
 .oc-search-btn,
 .hist-export-btn,
@@ -61,7 +60,6 @@
 .btn-add:hover,
 .btn-primary:hover,
 .form-venta-submit:hover,
-.ventas-add-btn:hover,
 .oc-primary:hover,
 .oc-search-btn:hover,
 .hist-export-btn:hover,
@@ -71,7 +69,6 @@
 }
 
 .btn-edit,
-.ventas-btn--edit,
 .articulos-acciones .btn-edit {
   background: var(--color-dark) !important;
   color: var(--color-text-inverse) !important;
@@ -79,14 +76,12 @@
 }
 
 .btn-edit:hover,
-.ventas-btn--edit:hover,
 .articulos-acciones .btn-edit:hover {
   background: var(--color-dark-soft) !important;
 }
 
 .tabla-empleados thead,
 .articulos-table thead th,
-.ventas-table th,
 .ventas-articulo-table th,
 .ventas-categoria-table th {
   background: var(--color-dark) !important;
@@ -96,7 +91,6 @@
 /* Formato universal para vistas con tablas, alineado a Resumen de compras */
 .dashboard-content :where(
   .articulos-page,
-  .ventas-page,
   .hist-page,
   .valoracion-page,
   .ventas-articulo-page,
@@ -118,10 +112,13 @@
 }
 
 .dashboard-content :where(
-  .ventas-categoria-shell,
-  .resumen-ventas-shell
+  .ventas-categoria-shell
 ) {
   width: min(1180px, calc(100% - 24px)) !important;
+}
+
+.dashboard-content .resumen-ventas-shell {
+  width: min(1480px, calc(100% - 24px)) !important;
 }
 
 .dashboard-content .ventas-articulo-shell {
@@ -135,7 +132,6 @@
   .ventas-articulo-card,
   .ventas-categoria-card,
   .resumen-ventas-card,
-  .ventas-card,
   .usuarios-table-card,
   .prov-table-card
 ) {
@@ -184,7 +180,6 @@
   .valoracion-table,
   .ventas-articulo-table,
   .ventas-categoria-table,
-  .ventas-table,
   .resumen-ventas-table,
   .tabla-empleados,
   .prov-table,
@@ -203,7 +198,6 @@
   .valoracion-table,
   .ventas-articulo-table,
   .ventas-categoria-table,
-  .ventas-table,
   .resumen-ventas-table,
   .tabla-empleados,
   .prov-table,
@@ -223,7 +217,6 @@
   .valoracion-table,
   .ventas-articulo-table,
   .ventas-categoria-table,
-  .ventas-table,
   .resumen-ventas-table,
   .tabla-empleados,
   .prov-table,
@@ -245,7 +238,6 @@
   .valoracion-table,
   .ventas-articulo-table,
   .ventas-categoria-table,
-  .ventas-table,
   .resumen-ventas-table,
   .tabla-empleados,
   .prov-table,
@@ -262,7 +254,6 @@
   .valoracion-table,
   .ventas-articulo-table,
   .ventas-categoria-table,
-  .ventas-table,
   .resumen-ventas-table,
   .tabla-empleados,
   .prov-table,
@@ -279,7 +270,6 @@
 @media (max-width: 900px) {
   .dashboard-content :where(
     .articulos-page,
-    .ventas-page,
     .hist-page,
     .valoracion-page,
     .ventas-articulo-page,
@@ -298,7 +288,6 @@
 
   .dashboard-content :where(
     .articulos-table-shell,
-    .ventas-table-wrap,
     .hist-card,
     .valoracion-table-card,
     .valoracion-table-wrap,
@@ -322,7 +311,6 @@
     .valoracion-table,
     .ventas-articulo-table,
     .ventas-categoria-table,
-    .ventas-table,
     .resumen-ventas-table,
     .tabla-empleados,
     .prov-table,
@@ -335,7 +323,6 @@
 
   .dashboard-content :where(
     .articulos-header,
-    .ventas-toolbar,
     .hist-toolbar,
     .valoracion-table-head,
     .ventas-articulo-toolbar,
@@ -357,7 +344,6 @@
 @media (orientation: landscape) and (max-height: 520px) and (max-width: 1100px) {
   .dashboard-content :where(
     .articulos-page,
-    .ventas-page,
     .hist-page,
     .valoracion-page,
     .ventas-articulo-page,
@@ -374,7 +360,6 @@
 
   .dashboard-content :where(
     .articulos-table-shell,
-    .ventas-table-wrap,
     .hist-card,
     .valoracion-table-card,
     .valoracion-table-wrap,
@@ -396,7 +381,6 @@
     .valoracion-table,
     .ventas-articulo-table,
     .ventas-categoria-table,
-    .ventas-table,
     .resumen-ventas-table,
     .tabla-empleados,
     .prov-table,
@@ -407,7 +391,6 @@
 
   .dashboard-content :where(
     .articulos-header,
-    .ventas-toolbar,
     .hist-toolbar,
     .valoracion-table-head,
     .ventas-articulo-toolbar,
@@ -425,7 +408,6 @@
 @media (max-width: 520px) {
   .dashboard-content :where(
     .articulos-page,
-    .ventas-page,
     .hist-page,
     .valoracion-page,
     .ventas-articulo-page,
@@ -444,7 +426,6 @@
     .valoracion-table,
     .ventas-articulo-table,
     .ventas-categoria-table,
-    .ventas-table,
     .resumen-ventas-table,
     .tabla-empleados,
     .prov-table,

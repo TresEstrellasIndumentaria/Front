@@ -1,6 +1,12 @@
 .form-venta-section {
-    width: 90%;
-    margin: 0 auto;
+    width: min(1280px, calc(100% - 24px));
+    margin: 0 auto 0 12px;
+    box-sizing: border-box;
+}
+
+.dashboard-content > .form-venta-section {
+    margin-left: 12px;
+    margin-right: auto;
 }
 
 .form-venta-card {
@@ -53,6 +59,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-width: 0;
 }
 
 .form-venta-field label {
@@ -62,6 +69,8 @@
 }
 
 .form-venta-field input {
+    width: 100%;
+    box-sizing: border-box;
     height: 46px;
     padding: 0 14px;
     border-radius: 12px;
@@ -73,6 +82,8 @@
 }
 
 .form-venta-field select {
+    width: 100%;
+    box-sizing: border-box;
     height: 46px;
     padding: 0 14px;
     border-radius: 12px;

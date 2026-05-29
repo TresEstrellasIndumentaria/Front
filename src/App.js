@@ -18,7 +18,6 @@ import AjusteDeStock from './Pages/AjusteDeStock';
 import ListaProveedores from './Pages/ListaProveedores';
 import HistorialDeInventario from './Pages/HistorialDeInventario';
 import ValoracionDeInventario from './Pages/ValoracionDeInventario';
-import ListaVentas from './Pages/ListaVentas';
 import Ventas from './Pages/Ventas';
 import CuentaCorrienteCliente from './Pages/CuentaCorrienteCliente';
 import CuentaCorrienteProveedor from './Pages/CuentaCorrienteProveedor';
@@ -43,7 +42,7 @@ function App() {
             <Route path="/" element={<DashboardLayout />}>
               <Route index element={<Home />} />
               <Route path="mis-datos" element={<ModifDatosPersonales />} />
-
+              {/* ADMIN */}
               <Route element={<PrivateRoute allowedRoles={['ADMIN']} />}>
                 <Route path="creaPersona" element={<Registrarse />} />
                 <Route path="listaAdmins" element={<ListaUsuariosPorRol rol="ADMIN" />} />
@@ -51,12 +50,12 @@ function App() {
                 <Route path="permisosEmpleados" element={<PermisosEmpleados />} />
                 <Route path="modificaUsuario/:rol/:id" element={<ModifUsuario />} />
               </Route>
-
+              {/* CLiente */}
               <Route element={<PrivateRoute allowedPermissions={[PERMISOS.CLIENTES]} />}>
                 <Route path="listaClientes" element={<ListaUsuariosPorRol rol="CLIENTE" />} />
                 <Route path="cliente/:id/cuentaCorrient" element={<CuentaCorrienteCliente />} />
               </Route>
-
+              {/* ARTICULOS */}
               <Route element={<PrivateRoute allowedPermissions={[PERMISOS.ARTICULOS]} />}>
                 <Route path="listaCategorias" element={<ListaCategorias />} />
                 <Route path="modificaCategoria/:id" element={<PopupCategoria />} />
@@ -64,32 +63,28 @@ function App() {
                 <Route path="creaArticulo" element={<FormArticulo />} />
                 <Route path="modificaArt/:id" element={<ModifArticulo />} />
               </Route>
-
+              {/* INVENTARIO */}
               <Route element={<PrivateRoute allowedPermissions={[PERMISOS.INVENTARIO_AJUSTE]} />}>
                 <Route path="ajusteDeStock" element={<AjusteDeStock />} />
               </Route>
-
               <Route element={<PrivateRoute allowedPermissions={[PERMISOS.INVENTARIO_HISTORIAL]} />}>
                 <Route path="historialDeInventario" element={<HistorialDeInventario />} />
                 <Route path="historialInventario" element={<HistorialDeInventario />} />
               </Route>
-
               <Route element={<PrivateRoute allowedPermissions={[PERMISOS.INVENTARIO_VALORACION]} />}>
                 <Route path="valoracionDeInventario" element={<ValoracionDeInventario />} />
               </Route>
-
+              {/* PROVEEDORES */}
               <Route element={<PrivateRoute allowedPermissions={[PERMISOS.PROVEEDORES]} />}>
                 <Route path="listaProveedores" element={<ListaProveedores />} />
                 <Route path="proveedor/:id/cuentaCorrient" element={<CuentaCorrienteProveedor />} />
               </Route>
-
               <Route element={<PrivateRoute allowedPermissions={[PERMISOS.COMPRAS]} />}>
                 <Route path="ordenesDeCompras/nueva" element={<OrdenCompra />} />
                 <Route path="ordenesDeCompras/:id" element={<OrdenCompra />} />
               </Route>
-
+              {/* VENTAS */}
               <Route element={<PrivateRoute allowedPermissions={[PERMISOS.VENTAS]} />}>
-                <Route path="listaVentas" element={<ListaVentas />} />
                 <Route path="ventas/nueva" element={<Ventas />} />
                 <Route path="ventas/editar/:id" element={<Ventas />} />
               </Route>
