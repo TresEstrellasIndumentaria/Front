@@ -4,7 +4,7 @@
     min-height: 100%;
     width: 100%;
     box-sizing: border-box;
-    font-family: 'Roboto', sans-serif;
+    font-family: inherit;
 }
 
 .resumen-ventas-shell {

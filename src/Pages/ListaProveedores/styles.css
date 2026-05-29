@@ -4,7 +4,7 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
-    font-family: 'Roboto', sans-serif;
+    font-family: inherit;
 }
 
 .prov-card {

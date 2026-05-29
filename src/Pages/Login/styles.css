@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap');
-
 .cont-login-page {
     width: 100%;
     height: 100vh;
@@ -16,7 +14,7 @@
     background:
         radial-gradient(circle at top left, rgba(250, 204, 21, 0.18), transparent 34%),
         linear-gradient(135deg, #030712 0%, #111827 52%, #050505 100%);
-    font-family: 'Inter Tight', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: inherit;
 }
 /* código para el degrade */
 .cont-login-page::before {

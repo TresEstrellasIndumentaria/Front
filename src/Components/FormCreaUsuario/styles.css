@@ -10,7 +10,7 @@
     background: #ffffff;
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-    font-family: 'Roboto', sans-serif;
+    font-family: inherit;
     box-sizing: border-box;
 }
 
