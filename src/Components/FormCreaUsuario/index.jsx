@@ -1,4 +1,5 @@
 import React from 'react';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import './styles.css';
 
 const FormularioUsuario = ({
@@ -49,7 +50,9 @@ const FormularioUsuario = ({
                     <label>Contraseña</label>
                     <div className="password-container">
                         <input id="password" type="password" value={password} onChange={handleChange} placeholder="Contraseña" />
-                        <button type="button" className="btn-ver" onClick={onClickVerContraseña}>👁</button>
+                        <button type="button" className="btn-ver" onClick={onClickVerContraseña} aria-label="Ver contraseña">
+                            <VisibilityIcon fontSize="small" />
+                        </button>
                     </div>
                     {errors.password && <span className="error">La contraseña {errors.password}</span>}
                 </div>

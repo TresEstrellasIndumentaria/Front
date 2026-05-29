@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import Swal from "sweetalert2";
 import { URL } from "../../Urls";
 import "./styles.css";
@@ -29,6 +30,7 @@ export default function PopupPersona({
         direccion: { calle: "", numero: "", localidad: "" },
         nota: ""
     });
+    const [showPassword, setShowPassword] = useState(false);
 
     //Precargar datos al editar
     useEffect(() => {
@@ -165,7 +167,7 @@ export default function PopupPersona({
             payload.numeroProveedor = form.numeroProveedor;
         }
 
-        if (form.password) {
+        if (!esEdicion && form.password) {
             payload.password = form.password;
         }
 
@@ -260,16 +262,24 @@ export default function PopupPersona({
                     />
                 )}
 
-                {requierePassword && (
-                    <input
-                        type="password"
-                        name="password"
-                        placeholder={
-                            esEdicion ? "Nueva contraseÃ±a (opcional)" : "ContraseÃ±a"
-                        }
-                        value={form.password}
-                        onChange={handleChange}
-                    />
+                {requierePassword && !esEdicion && (
+                    <div className="popup-persona-password">
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            placeholder="Contraseña"
+                            value={form.password}
+                            onChange={handleChange}
+                        />
+                        <button
+                            type="button"
+                            className="popup-persona-password-toggle"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                        >
+                            <VisibilityIcon fontSize="small" />
+                        </button>
+                    </div>
                 )}
 
                 <div className="fila">
@@ -305,3 +315,4 @@ export default function PopupPersona({
         </div>
     );
 }
+

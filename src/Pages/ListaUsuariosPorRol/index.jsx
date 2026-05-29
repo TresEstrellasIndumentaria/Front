@@ -72,21 +72,42 @@ function ListaUsuariosPorRol({ rol }) {
 
     const titulo = rol === 'CLIENTE' ? 'Lista de Clientes' : `Lista de ${rol.toLowerCase()}s`;
 
-    const solicitarResetPassword = async (empleado) => {
+    const solicitarResetPassword = async (usuario) => {
         const result = await Swal.fire({
             title: 'Resetear contraseña',
             html: `
                 <div style="display:flex; flex-direction:column; gap:10px; text-align:left">
                     <label>Nueva contraseña temporal</label>
-                    <input id="reset-pass" type="password" class="swal2-input" style="margin:0; width:100%" />
+                    <div style="display:flex; align-items:center; width:100%; border:1px solid #d9d9d9; border-radius:4px; background:#fff">
+                        <input id="reset-pass" type="password" class="swal2-input" style="margin:0; width:100%; border:0; box-shadow:none" />
+                        <button type="button" class="reset-pass-toggle" data-target="reset-pass" aria-label="Ver contraseña" style="width:42px; height:38px; border:0; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111827">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                    </div>
                     <label>Confirmar contraseña</label>
-                    <input id="reset-pass-confirm" type="password" class="swal2-input" style="margin:0; width:100%" />
+                    <div style="display:flex; align-items:center; width:100%; border:1px solid #d9d9d9; border-radius:4px; background:#fff">
+                        <input id="reset-pass-confirm" type="password" class="swal2-input" style="margin:0; width:100%; border:0; box-shadow:none" />
+                        <button type="button" class="reset-pass-toggle" data-target="reset-pass-confirm" aria-label="Ver confirmación de contraseña" style="width:42px; height:38px; border:0; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111827">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                    </div>
                 </div>
             `,
             focusConfirm: false,
             showCancelButton: true,
             confirmButtonText: 'Resetear',
             cancelButtonText: 'Cancelar',
+            didOpen: () => {
+                document.querySelectorAll('.reset-pass-toggle').forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const input = document.getElementById(button.dataset.target);
+                        if (!input) return;
+                        const visible = input.type === 'text';
+                        input.type = visible ? 'password' : 'text';
+                        button.setAttribute('aria-label', visible ? 'Ver contraseña' : 'Ocultar contraseña');
+                    });
+                });
+            },
             preConfirm: () => {
                 const password = document.getElementById('reset-pass')?.value || '';
                 const confirm = document.getElementById('reset-pass-confirm')?.value || '';
@@ -107,7 +128,7 @@ function ListaUsuariosPorRol({ rol }) {
 
         if (!result.isConfirmed) return;
 
-        const response = await dispatch(resetPasswordEmpleado(empleado._id, result.value));
+        const response = await dispatch(resetPasswordEmpleado(usuario._id, result.value));
         if (response?.error) {
             Swal.fire({
                 icon: 'error',
@@ -120,7 +141,7 @@ function ListaUsuariosPorRol({ rol }) {
         Swal.fire({
             icon: 'success',
             title: 'Contraseña reseteada',
-            text: `${getApellidoNombre(empleado)} ya puede ingresar con la contraseña temporal.`,
+            text: `${getApellidoNombre(usuario)} ya puede ingresar con la contraseña temporal.`,
             timer: 1800,
             showConfirmButton: false,
         });
@@ -234,7 +255,7 @@ function ListaUsuariosPorRol({ rol }) {
                                         </>
                                     )}
 
-                                    {rol === 'EMPLEADO' && (
+                                    {['ADMIN', 'EMPLEADO'].includes(rol) && (
                                         <button
                                             className="btn-edit"
                                             type="button"

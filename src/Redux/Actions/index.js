@@ -168,8 +168,9 @@ export const resetUsuario = () => {
 export const modificaUsuario = (id, data) => {
     return async function (dispatch) {
         console.log("idF: ", id)
+        const config = getAuthConfig();
         try {
-            const resp = await axios.put(`${URL}/personas/modifica/${id}`, data);
+            const resp = await axios.put(`${URL}/personas/modifica/${id}`, data, config);
             dispatch({ type: MODIFICA_USUARIO, payload: resp.data });
             return resp.data;
         } catch (error) {
@@ -197,8 +198,9 @@ export const modificaContrasena = (id, password) => {
 // Eliminar usuario
 export const eliminaUsuario = (id) => {
     return async function () {
+        const config = getAuthConfig();
         try {
-            const resp = await axios.delete(`${URL}/personas/eliminar/${id}`);
+            const resp = await axios.delete(`${URL}/personas/eliminar/${id}`, config);
             return resp.data; // contiene { message: 'Usuario eliminado correctamente' }
         } catch (error) {
             console.error('Error al eliminar usuario:', error);

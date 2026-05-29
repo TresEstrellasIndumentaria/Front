@@ -66,14 +66,39 @@
 .password-container {
     display: flex;
     align-items: center;
-    gap: 8px;
+    border: 1.8px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+.password-container:focus-within {
+    border-color: #4CAF50;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.4);
+}
+
+.password-container input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+}
+
+.password-container input:focus {
+    border-color: transparent;
+    box-shadow: none;
 }
 
 .btn-ver {
+    width: 42px;
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 18px;
+    color: #333;
 }
 
 /* ---------- ERRORES ---------- */

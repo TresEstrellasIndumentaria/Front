@@ -60,6 +60,52 @@
     padding: 0 12px;
 }
 
+.popup-persona-password {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.popup-persona-password:focus-within {
+    border-color: #facc15;
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.18);
+    transform: translateY(-1px);
+}
+
+.popup.popup-persona .popup-persona-password input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.popup.popup-persona .popup-persona-password input:focus {
+    border-color: transparent;
+    box-shadow: none;
+    transform: none;
+}
+
+.popup-persona-password-toggle {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: #111827;
+    cursor: pointer;
+}
+
 .popup-persona textarea {
     grid-column: 1 / -1;
     justify-self: stretch;
