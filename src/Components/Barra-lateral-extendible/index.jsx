@@ -6,6 +6,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ContactEmergencyIcon from '@mui/icons-material/ContactEmergency';
 import GroupsIcon from '@mui/icons-material/Groups';
+import HomeIcon from '@mui/icons-material/Home';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import LocalMallIcon from '@mui/icons-material/LocalMall';
@@ -16,6 +17,12 @@ import { PERMISOS, usuarioTieneAlgunPermiso } from '../../Config/permisos';
 import './estilos.css';
 
 const MENU_ITEMS = [
+  {
+    key: 'inicio',
+    label: 'Inicio',
+    Icon: HomeIcon,
+    directTo: '/',
+  },
   {
     key: 'usuario',
     label: 'Datos personales',

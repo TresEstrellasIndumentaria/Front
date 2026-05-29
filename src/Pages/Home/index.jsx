@@ -4,6 +4,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import TuneIcon from '@mui/icons-material/Tune';
+import tresEstLogo from '../../Images/logo.jpg';
 import { userData } from '../../LocalStorage';
 import './styles.css';
 
@@ -51,7 +52,7 @@ function Home() {
                 </div>
 
                 <div className="home-brand-mark" aria-hidden="true">
-                    3E
+                    <img src={tresEstLogo} alt=""/>
                 </div>
             </div>
 
