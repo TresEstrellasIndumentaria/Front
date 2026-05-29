@@ -15,6 +15,12 @@
     box-shadow:
         0 24px 60px rgba(0, 0, 0, 0.45),
         0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    font-family: 'Inter Tight', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.login-container input,
+.login-container button {
+    font-family: inherit;
 }
 
 .login-title {
@@ -84,6 +90,37 @@
     color: #111827;
     font-size: 15px;
     background: transparent;
+}
+
+.login-container input:focus,
+.login-container input:focus-visible,
+.login-container button:focus,
+.login-container button:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.login-container .input-pass,
+.login-container .input-error {
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.login-container .input-pass:focus,
+.login-container .input-pass:focus-visible,
+.login-container .input-error:focus,
+.login-container .input-error:focus-visible {
+    border: none !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+
+.login-container input:-webkit-autofill,
+.login-container input:-webkit-autofill:hover,
+.login-container input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #111827;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
+    transition: background-color 9999s ease-in-out 0s;
 }
 
 .icon-email {
@@ -171,7 +208,6 @@
     padding: 0;
     color: #facc15;
     font-size: 15px;
-    font-weight: 700;
     background: transparent;
     border: none;
     cursor: pointer;
