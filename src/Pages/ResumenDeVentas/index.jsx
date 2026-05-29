@@ -104,9 +104,10 @@ const getCantidadPrendas = (pedido) => (
     : 0
 );
 
-const getImporteDebe = (venta) => (
-  normalizeEstadoVenta(venta?.estado) === 'PENDIENTE' ? Number(venta?.importeTotal || 0) : 0
-);
+const getImporteDebe = (venta) => {
+  if (Number.isFinite(Number(venta?.importeDebe))) return Number(venta.importeDebe);
+  return normalizeEstadoVenta(venta?.estado) === 'PENDIENTE' ? Number(venta?.importeTotal || 0) : 0;
+};
 
 const getNombreCliente = (venta) => (
   venta?.nombreApellido?.trim() || venta?.razonSocial?.trim() || 'Sin cliente'
