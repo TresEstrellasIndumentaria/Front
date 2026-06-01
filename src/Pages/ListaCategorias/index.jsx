@@ -1,7 +1,13 @@
 import React, { useEffect, useState, useContext, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppContext } from '../../Context';
-import { getCategorias, crearCategoria, editarCategoria } from '../../Redux/Actions';
+import {
+    getAllArticulos,
+    getCategorias,
+    crearCategoria,
+    editarCategoria,
+    desvincularArticuloCategoria
+} from '../../Redux/Actions';
 import PopupCategoria from "../../Components/FormCategoria";
 import SearchBar from '../../Components/BuscaArticulo';
 import BotonEliminarCategoria from '../../Components/BotonEliminarCategoria';
@@ -17,13 +23,17 @@ function ListaCategorias() {
     const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
 
     const categorias = useSelector(state => state.categorias);
+    const articulos = useSelector(state => state.articulos);
 
-    // Traer categorias
+    // Traer categorias y articulos
     useEffect(() => {
         if (!categorias?.length) {
             dispatch(getCategorias());
         }
-    }, [dispatch, categorias?.length]);
+        if (!articulos?.length) {
+            dispatch(getAllArticulos());
+        }
+    }, [dispatch, categorias?.length, articulos?.length]);
 
     const cerrarPopup = () => {
         setMostrarPopup(false);
@@ -62,6 +72,43 @@ function ListaCategorias() {
         cerrarPopup();
     };
 
+    const desvincularArticulo = async (articulo) => {
+        if (!categoriaSeleccionada?._id || !articulo?._id) return;
+
+        const confirmacion = await Swal.fire({
+            icon: 'warning',
+            title: 'Quitar articulo de la categoria',
+            text: `Se quitara ${articulo.nombre} de ${categoriaSeleccionada.nombre}. El articulo seguira existiendo.`,
+            showCancelButton: true,
+            confirmButtonText: 'Quitar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!confirmacion.isConfirmed) return;
+
+        const resp = await dispatch(
+            desvincularArticuloCategoria(categoriaSeleccionada._id, articulo._id)
+        );
+
+        if (resp?.error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'No se pudo quitar el articulo',
+                text: resp.msg || 'Ocurrio un error inesperado'
+            });
+            return;
+        }
+
+        await dispatch(getCategorias());
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Articulo quitado de la categoria',
+            timer: 1400,
+            showConfirmButton: false
+        });
+    };
+
     // Filtro por search
     const categoriasFiltradas = useMemo(() => {
         return categorias?.filter(cat =>
@@ -80,8 +127,10 @@ function ListaCategorias() {
                         categorias={categorias}
                         modo={modoPopup}
                         categoriaInicial={categoriaSeleccionada}
+                        articulos={articulos}
                         onClose={cerrarPopup}
                         onCreate={guardarCategoria}
+                        onRemoveArticulo={desvincularArticulo}
                     />
                 )}
 

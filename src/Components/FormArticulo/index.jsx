@@ -50,11 +50,6 @@ const getCategoriaLabel = (categoria) => {
     return categoria.nombre || categoria.label || CATEGORIA_DEFAULT;
 };
 
-const esCategoriaProveedor = (categoria) => {
-    if (!categoria || typeof categoria === "string") return false;
-    return Boolean(categoria.esProveedor);
-};
-
 const getTotalStockArticulo = (articulo) => {
     if (Array.isArray(articulo?.talles) && articulo.talles.length) {
         return articulo.talles.reduce((total, talle) => total + Number(talle?.stock || 0), 0);
@@ -135,10 +130,7 @@ function FormArticulo({ operacion = "crear", articuloInicial = null }) {
 
     const articulos = useSelector(state => state.articulos);
     const categorias = useSelector(state => state.categorias);
-    const categoriasArticulo = useMemo(
-        () => categorias.filter((cat) => !esCategoriaProveedor(cat)),
-        [categorias]
-    );
+    const categoriasArticulo = categorias;
     const componentesProveedor = useMemo(
         () => (articulos || []).filter((articulo) => articulo?.itemProveedor === true),
         [articulos]

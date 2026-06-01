@@ -643,6 +643,22 @@ export const editarCategoria = (id, categoriaData) => {
     };
 };
 
+//DESVINCULAR ARTICULO
+export const desvincularArticuloCategoria = (categoriaId, articuloId) => {
+    return async function (dispatch) {
+        try {
+            const resp = await axios.delete(`${URL}/categorias/${categoriaId}/articulos/${articuloId}`);
+            dispatch({ type: MODIFICA_ARTICULO, payload: resp.data.articulo });
+            return resp.data;
+        } catch (error) {
+            return {
+                error: true,
+                msg: error.response?.data?.msg || "Error al desvincular el articulo"
+            };
+        }
+    };
+};
+
 //ELIMINAR
 export const eliminarCategoria = (id) => {
     return async function () {
