@@ -82,7 +82,7 @@ const buildFormFromArticulo = (articulo, categorias = []) => ({
         ? articulo.talles.map((talle) => ({
             talle: talle?.talle || "",
             precio: talle?.precio ?? "",
-            coste: talle?.costo ?? talle?.coste ?? "",
+            coste: talle?.ultimoCostoCompra ?? talle?.costo ?? talle?.coste ?? articulo?.ultimoCostoCompra ?? "",
             artCompuesto: Boolean(talle?.artCompuesto),
             composicion: Array.isArray(talle?.composicion) ? talle.composicion : [],
             stock: Number(talle?.stock ?? 0)

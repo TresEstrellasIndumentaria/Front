@@ -88,7 +88,7 @@ function ListaArticulos() {
         return ((precio - coste) * 100) / precio;
     };
 
-    const getCostoTalle = (talle) => Number(talle?.costo ?? talle?.coste ?? 0);
+    const getCostoTalle = (talle) => Number(talle?.ultimoCostoCompra ?? talle?.costo ?? talle?.coste ?? 0);
 
     return (
         <div className="cont-principal-listaEmp articulos-page">
@@ -146,9 +146,9 @@ function ListaArticulos() {
                                 ? art.talles
                                 : [{
                                     talle: '-',
-                                    precio: 0,
-                                    costo: 0,
-                                    stock: 0,
+                                    precio: Number(art?.precio || 0),
+                                    costo: Number(art?.ultimoCostoCompra ?? art?.costo ?? art?.coste ?? 0),
+                                    stock: Number(art?.stock || 0),
                                     artCompuesto: false
                                 }];
 

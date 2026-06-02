@@ -343,6 +343,7 @@ export default function OrdenCompra() {
                 return;
             }
 
+            await dispatch(getAllArticulos());
             const hydratedOrden = hydrateOrdenActual(resp, payload);
             setOrdenActual(hydratedOrden);
             sincronizarOrdenLocal(hydratedOrden);

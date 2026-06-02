@@ -807,39 +807,6 @@ export const actualizarEstadoOrdenCompra = (id, estado, extra = {}) => {
     };
 };
 
-export const recibirOrdenCompra = (id, data = {}) => {
-    return async function () {
-        const config = getAuthConfig();
-        const endpoints = [
-            { method: "put", url: `${URL}/ordenesCompraProv/${id}/recibir` },
-            { method: "patch", url: `${URL}/ordenesCompraProv/${id}/recibir` },
-        ];
-
-        for (const endpoint of endpoints) {
-            try {
-                const resp = await axios[endpoint.method](endpoint.url, data, config);
-                return resp.data;
-            } catch (error) {
-                const status = error?.response?.status;
-                if (status && ![404, 405].includes(status)) {
-                    return {
-                        error: true,
-                        message:
-                            error.response?.data?.message ||
-                            error.response?.data?.msg ||
-                            "Error al recibir la orden.",
-                    };
-                }
-            }
-        }
-
-        return {
-            error: true,
-            message: "No se encontro endpoint para recibir orden.",
-        };
-    };
-};
-
 export const cancelarOrdenCompra = (id) => {
     return async function () {
         const config = getAuthConfig();
