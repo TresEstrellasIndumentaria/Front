@@ -546,17 +546,6 @@ function ResumenDeCompras() {
                       <td>
                         <div className="resumen-ventas-code">
                           <strong>{getProveedorNombre(compra)}</strong>
-                          {proveedorId && (
-                            <NavLink
-                              to={`/proveedor/${proveedorId}/cuentaCorrient`}
-                              state={{ proveedor: getProveedorCuentaCorriente(compra) }}
-                              className="resumen-ventas-action-link resumen-ventas-cuenta-link"
-                            >
-                              <button type="button" className="resumen-ventas-btn resumen-ventas-btn--compact resumen-ventas-btn--account">
-                                C.C
-                              </button>
-                            </NavLink>
-                          )}
                         </div>
                       </td>
                       <td>
@@ -578,6 +567,22 @@ function ResumenDeCompras() {
                       <td className="resumen-ventas-money">{formatMoney(getTotalOrden(compra))}</td>
                       <td>
                         <div className="resumen-ventas-remito-actions resumen-ventas-remito-actions--end">
+                          {proveedorId && (
+                            <NavLink
+                              to={`/proveedor/${proveedorId}/cuentaCorrient`}
+                              state={{ proveedor: getProveedorCuentaCorriente(compra) }}
+                              className="resumen-ventas-action-link resumen-ventas-cuenta-link"
+                            >
+                              <button
+                                type="button"
+                                className="resumen-ventas-btn resumen-ventas-btn--compact resumen-ventas-btn--account"
+                                title="Cuenta corriente"
+                                aria-label="Cuenta corriente"
+                              >
+                                C.C
+                              </button>
+                            </NavLink>
+                          )}
                           <button
                             type="button"
                             className="resumen-ventas-btn resumen-ventas-btn--icon resumen-ventas-btn--receipt"

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Swal from 'sweetalert2';
-import { crearRecibo, getOrdenesCompra, getPagosProveedorPorProveedor, getRecibosPorCliente, getRemitosPorCliente, registrarPagoProveedor } from '../../Redux/Actions';
+import { crearRecibo, getOrdenesCompraPorProveedor, getPagosProveedorPorProveedor, getRecibosPorCliente, getRemitosPorCliente, registrarPagoProveedor } from '../../Redux/Actions';
 import './styles.css';
 
 const formatDate = (value) => {
@@ -140,7 +140,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
     const proveedorId = proveedor?._id || proveedor?.id;
 
     return Promise.all([
-      dispatch(getOrdenesCompra()),
+      proveedorId ? dispatch(getOrdenesCompraPorProveedor(proveedorId)) : Promise.resolve([]),
       proveedorId ? dispatch(getPagosProveedorPorProveedor(proveedorId)) : Promise.resolve({ pagos: [] }),
     ]).then(([ordenesResponse, pagosResponse]) => {
       setLoading(false);

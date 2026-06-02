@@ -969,6 +969,23 @@ export const getPagosProveedorPorProveedor = (proveedorId) => async () => {
     }
 };
 
+export const getOrdenesCompraPorProveedor = (proveedorId) => async () => {
+    const config = getAuthConfig();
+
+    try {
+        const resp = await axios.get(`${URL}/ordenesCompraProv/proveedor/${proveedorId}`, config);
+        return Array.isArray(resp.data) ? resp.data : [];
+    } catch (error) {
+        return {
+            error: true,
+            message:
+                error.response?.data?.message ||
+                error.response?.data?.msg ||
+                "Error al obtener ordenes del proveedor.",
+        };
+    }
+};
+
 export const getOrdenesCompra = (params = {}) => async (dispatch) => {
     dispatch({ type: 'ORDENES_REQUEST' });
     const config = getAuthConfig();

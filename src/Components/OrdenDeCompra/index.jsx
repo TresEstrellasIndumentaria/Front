@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PopupProveedor from "../PopupProveedor";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -33,8 +33,6 @@ const formatFecha = (value) => {
         year: "numeric"
     });
 };
-
-const buildNumeroOrden = () => String(Date.now()).slice(-4);
 
 const formatNumeroOrden = (numero) => {
     if (!numero) return "---";
@@ -142,7 +140,9 @@ export default function OrdenCompra() {
 
     const [mostrarPopup, setMostrarPopup] = useState(false);
     const [proveedorCreado, setProveedorCreado] = useState(null);
-    const [, setBusqueda] = useState("");
+    const [busqueda, setBusqueda] = useState("");
+    const [mostrarArticulos, setMostrarArticulos] = useState(false);
+    const buscadorArticulosRef = useRef(null);
 
     const [ordenActual, setOrdenActual] = useState(null);
     const [vistaDetalle, setVistaDetalle] = useState(false);
@@ -154,12 +154,35 @@ export default function OrdenCompra() {
         anotaciones: ""
     });
 
-    const articulosNoCompuestos = allArticulos.filter(a => a.artCompuesto !== true && a.itemProveedor === true);
+    const articulosNoCompuestos = useMemo(
+        () => allArticulos
+            .filter(a => a.artCompuesto !== true && a.itemProveedor === true)
+            .sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || ""), "es", { sensitivity: "base" })),
+        [allArticulos]
+    );
+    const articulosFiltrados = useMemo(() => {
+        const termino = busqueda.trim().toLocaleLowerCase("es");
+        if (!termino) return articulosNoCompuestos;
+        return articulosNoCompuestos.filter(
+            a => String(a.nombre || "").toLocaleLowerCase("es").includes(termino)
+        );
+    }, [articulosNoCompuestos, busqueda]);
 
     useEffect(() => {
         dispatch(getUsuarioByRol("PROVEEDOR"));
         dispatch(getAllArticulos());
     }, [dispatch]);
+
+    useEffect(() => {
+        const cerrarBuscador = (event) => {
+            if (!buscadorArticulosRef.current?.contains(event.target)) {
+                setMostrarArticulos(false);
+            }
+        };
+
+        document.addEventListener("mousedown", cerrarBuscador);
+        return () => document.removeEventListener("mousedown", cerrarBuscador);
+    }, []);
 
     useEffect(() => {
         const proveedorState = location.state?.proveedor;
@@ -227,6 +250,7 @@ export default function OrdenCompra() {
         ]);
 
         setBusqueda("");
+        setMostrarArticulos(false);
     };
 
     const totalArticulos = articulosOC.reduce((acc, a) => acc + toNumero(a.cantidad) * toNumero(a.costo), 0);
@@ -238,7 +262,6 @@ export default function OrdenCompra() {
     );
 
     const buildOrdenPayload = (estado) => ({
-        numero: buildNumeroOrden(),
         estado,
         proveedor: form.proveedor,
         proveedorInfo: proveedorSeleccionado
@@ -690,29 +713,45 @@ export default function OrdenCompra() {
                     </tbody>
                 </table>
 
-                <div className="buscador-linea">
-                    <select
+                <div className="buscador-linea" ref={buscadorArticulosRef}>
+                    <input
                         className="oc-articulo-select"
-                        defaultValue=""
+                        type="text"
+                        value={busqueda}
+                        placeholder="Buscar articulo"
+                        autoComplete="off"
+                        onFocus={() => setMostrarArticulos(true)}
                         onChange={(e) => {
-                            const artId = e.target.value;
-                            if (!artId) return;
-
-                            const art = articulosNoCompuestos.find(a => a._id === artId);
-
-                            if (art) agregarArticulo(art);
-
-                            e.target.value = "";
+                            setBusqueda(e.target.value);
+                            setMostrarArticulos(true);
                         }}
-                    >
-                        <option value="">Seleccionar articulo</option>
-
-                        {articulosNoCompuestos.map(a => (
-                            <option key={a._id} value={a._id}>
-                                {a.nombre}
-                            </option>
-                        ))}
-	                    </select>
+                        onKeyDown={(e) => {
+                            if (e.key === "Escape") setMostrarArticulos(false);
+                            if (e.key === "Enter" && articulosFiltrados.length === 1) {
+                                e.preventDefault();
+                                agregarArticulo(articulosFiltrados[0]);
+                            }
+                        }}
+                    />
+                    {mostrarArticulos && (
+                        <div className="oc-articulo-opciones">
+                            {articulosFiltrados.length ? (
+                                articulosFiltrados.map(a => (
+                                    <button
+                                        key={a._id}
+                                        type="button"
+                                        className="oc-articulo-opcion"
+                                        onClick={() => agregarArticulo(a)}
+                                    >
+                                        <span>{a.nombre}</span>
+                                        <small>Agregar</small>
+                                    </button>
+                                ))
+                            ) : (
+                                <p className="oc-articulo-sin-resultados">No se encontraron articulos.</p>
+                            )}
+                        </div>
+                    )}
 	                </div>
 
 	                <div className="total">
