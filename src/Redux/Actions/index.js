@@ -704,10 +704,18 @@ export const creaProveedor = (data) => {
 //ORDENES DE COMPRA
 //==================================
 
+const refrescarArticulosLuegoDeInventario = async (dispatch) => {
+    try {
+        await dispatch(getAllArticulos());
+    } catch (error) {
+        console.error("No se pudo refrescar articulos despues de actualizar inventario:", error);
+    }
+};
+
 //trae con paginaciÃ³n y filtros
 //crear orden de compra (con fallback de endpoints)
 export const crearOrdenCompra = (data) => {
-    return async function () {
+    return async function (dispatch) {
         const config = getAuthConfig();
         const endpoints = [
             `${URL}/ordenesCompraProv`,
@@ -716,6 +724,7 @@ export const crearOrdenCompra = (data) => {
         for (const endpoint of endpoints) {
             try {
                 const resp = await axios.post(endpoint, data, config);
+                await refrescarArticulosLuegoDeInventario(dispatch);
                 return resp.data;
             } catch (error) {
                 const status = error?.response?.status;
@@ -739,7 +748,7 @@ export const crearOrdenCompra = (data) => {
 };
 
 export const modificarOrdenCompra = (id, data) => {
-    return async function () {
+    return async function (dispatch) {
         const config = getAuthConfig();
         const endpoints = [
             { method: "put", url: `${URL}/ordenesCompraProv/${id}` },
@@ -749,6 +758,7 @@ export const modificarOrdenCompra = (id, data) => {
         for (const endpoint of endpoints) {
             try {
                 const resp = await axios[endpoint.method](endpoint.url, data, config);
+                await refrescarArticulosLuegoDeInventario(dispatch);
                 return resp.data;
             } catch (error) {
                 const status = error?.response?.status;
@@ -808,7 +818,7 @@ export const actualizarEstadoOrdenCompra = (id, estado, extra = {}) => {
 };
 
 export const cancelarOrdenCompra = (id) => {
-    return async function () {
+    return async function (dispatch) {
         const config = getAuthConfig();
         const endpoints = [
             { method: "put", url: `${URL}/ordenesCompraProv/${id}/cancelar` },
@@ -820,6 +830,7 @@ export const cancelarOrdenCompra = (id) => {
             try {
                 const body = endpoint.url.endsWith("/estado") ? { estado: "CANCELADA" } : {};
                 const resp = await axios[endpoint.method](endpoint.url, body, config);
+                await refrescarArticulosLuegoDeInventario(dispatch);
                 return resp.data;
             } catch (error) {
                 const status = error?.response?.status;
@@ -843,7 +854,7 @@ export const cancelarOrdenCompra = (id) => {
 };
 
 export const eliminarOrdenCompra = (id) => {
-    return async function () {
+    return async function (dispatch) {
         const config = getAuthConfig();
         const endpoints = [
             `${URL}/ordenesCompraProv/eliminar/${id}`,
@@ -853,6 +864,7 @@ export const eliminarOrdenCompra = (id) => {
         for (const endpoint of endpoints) {
             try {
                 const resp = await axios.delete(endpoint, config);
+                await refrescarArticulosLuegoDeInventario(dispatch);
                 return resp.data;
             } catch (error) {
                 const status = error?.response?.status;
@@ -916,6 +928,25 @@ export const registrarPagoProveedor = (ordenId, data = {}) => {
             error: true,
             message: "No se encontro endpoint para registrar pagos de proveedor.",
         };
+    };
+};
+
+export const eliminarPagoProveedor = (id) => {
+    return async function () {
+        const config = getAuthConfig();
+
+        try {
+            const resp = await axios.delete(`${URL}/pagos-proveedor/eliminar/${id}`, config);
+            return resp.data;
+        } catch (error) {
+            return {
+                error: true,
+                message:
+                    error.response?.data?.message ||
+                    error.response?.data?.msg ||
+                    "Error al anular el pago del proveedor.",
+            };
+        }
     };
 };
 
@@ -1055,6 +1086,7 @@ export const crearRemito = (data) => {
         try {
             const resp = await axios.post(`${URL}/remitos`, data, config);
             dispatch({ type: CREA_REMITO_SUCCESS, payload: resp.data });
+            await refrescarArticulosLuegoDeInventario(dispatch);
             return resp.data;
         } catch (error) {
             const message =
@@ -1185,6 +1217,7 @@ export const eliminarRemito = (id) => {
         for (const endpoint of endpoints) {
             try {
                 const resp = await axios.delete(endpoint, config);
+                await refrescarArticulosLuegoDeInventario(dispatch);
                 return resp.data;
             } catch (error) {
                 const status = error?.response?.status;
@@ -1215,6 +1248,7 @@ export const modificarRemito = (id, data) => {
         try {
             const resp = await axios.put(`${URL}/remitos/modifica/${id}`, data, config);
             dispatch({ type: GET_REMITO_BY_ID_SUCCESS, payload: resp.data?.remito || resp.data });
+            await refrescarArticulosLuegoDeInventario(dispatch);
             return resp.data;
         } catch (error) {
             const message =

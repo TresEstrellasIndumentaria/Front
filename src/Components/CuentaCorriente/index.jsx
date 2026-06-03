@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Swal from 'sweetalert2';
-import { crearRecibo, getOrdenesCompraPorProveedor, getPagosProveedorPorProveedor, getRecibosPorCliente, getRemitosPorCliente, registrarPagoProveedor } from '../../Redux/Actions';
+import { crearRecibo, eliminarPagoProveedor, getOrdenesCompraPorProveedor, getPagosProveedorPorProveedor, getRecibosPorCliente, getRemitosPorCliente, registrarPagoProveedor } from '../../Redux/Actions';
 import './styles.css';
 
 const formatDate = (value) => {
@@ -119,6 +119,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
   const [data, setData] = useState({ remitos: null, recibos: null });
   const [loading, setLoading] = useState(false);
   const [guardandoPago, setGuardandoPago] = useState(false);
+  const [anulandoPagoId, setAnulandoPagoId] = useState(null);
   const [error, setError] = useState('');
   const [pagoProveedor, setPagoProveedor] = useState({
     importe: '',
@@ -255,6 +256,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
       const pagosProveedor = Array.isArray(data?.pagos?.pagos) ? data.pagos.pagos : [];
       const movimientosPagos = pagosProveedor.map((pago, index) => ({
         id: pago?._id || pago?.id || `pago-proveedor-${index}`,
+        pagoProveedorId: pago?._id || pago?.id,
         fecha: pago?.fechaPago || pago?.fecha || pago?.createdAt,
         tipo: 'HABER',
         comprobante: pago?.numeroPagoFormateado || pago?.comprobante || `PP-${String(pago?.numeroPago || index + 1).padStart(6, '0')}`,
@@ -539,6 +541,45 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
     });
   };
 
+  const handleAnularPagoProveedor = async (movimiento) => {
+    const pagoId = movimiento?.pagoProveedorId;
+    if (!pagoId) return;
+
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Anular pago',
+      text: `Se anulara ${movimiento.comprobante || 'el pago seleccionado'} por ${formatMoney(movimiento.haber)}.`,
+      showCancelButton: true,
+      confirmButtonText: 'Anular',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setAnulandoPagoId(pagoId);
+    const response = await dispatch(eliminarPagoProveedor(pagoId));
+    setAnulandoPagoId(null);
+
+    if (response?.error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo anular',
+        text: response.message || 'Intenta nuevamente.',
+      });
+      return;
+    }
+
+    await cargarOrdenesProveedor();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Pago anulado',
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  };
+
   return (
     <section className="cuenta-corriente">
       <div className="cuenta-corriente-summary">
@@ -763,30 +804,31 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
                 <th>Debe</th>
                 <th>Haber</th>
                 <th>Saldo</th>
+                {esProveedor && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan="8" className="cuenta-corriente-empty">Cargando cuenta corriente...</td>
+                  <td colSpan={esProveedor ? 9 : 8} className="cuenta-corriente-empty">Cargando cuenta corriente...</td>
                 </tr>
               )}
 
               {!loading && error && (
                 <tr>
-                  <td colSpan="8" className="cuenta-corriente-empty">{error}</td>
+                  <td colSpan={esProveedor ? 9 : 8} className="cuenta-corriente-empty">{error}</td>
                 </tr>
               )}
 
               {!loading && !error && !puedeConsultar && (
                 <tr>
-                  <td colSpan="8" className="cuenta-corriente-empty">{sinIdentificadorMessage}</td>
+                  <td colSpan={esProveedor ? 9 : 8} className="cuenta-corriente-empty">{sinIdentificadorMessage}</td>
                 </tr>
               )}
 
               {!loading && !error && puedeConsultar && movimientosConSaldo.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="cuenta-corriente-empty">No hay movimientos para los filtros seleccionados.</td>
+                  <td colSpan={esProveedor ? 9 : 8} className="cuenta-corriente-empty">No hay movimientos para los filtros seleccionados.</td>
                 </tr>
               )}
 
@@ -808,6 +850,20 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
                     {movimiento.haber ? formatMoney(movimiento.haber) : '-'}
                   </td>
                   <td className="cuenta-corriente-money">{formatMoney(movimiento.saldo)}</td>
+                  {esProveedor && (
+                    <td>
+                      {movimiento.pagoProveedorId ? (
+                        <button
+                          type="button"
+                          className="cuenta-corriente-action cuenta-corriente-action--danger"
+                          onClick={() => handleAnularPagoProveedor(movimiento)}
+                          disabled={anulandoPagoId === movimiento.pagoProveedorId}
+                        >
+                          {anulandoPagoId === movimiento.pagoProveedorId ? 'Anulando...' : 'Anular'}
+                        </button>
+                      ) : '-'}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -823,6 +879,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
                 <td className={`cuenta-corriente-money cuenta-corriente-total-saldo ${totalesFiltrados.saldoFinal < 0 ? 'is-deudor' : totalesFiltrados.saldoFinal > 0 ? 'is-favor' : ''}`}>
                   {formatMoney(totalesFiltrados.saldoFinal)}
                 </td>
+                {esProveedor && <td></td>}
               </tr>
             </tfoot>
           </table>

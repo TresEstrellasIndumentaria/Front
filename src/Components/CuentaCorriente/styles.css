@@ -227,6 +227,29 @@
     font-weight: 800;
 }
 
+.cuenta-corriente-action {
+    border: none;
+    border-radius: 6px;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.cuenta-corriente-action--danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.cuenta-corriente-action--danger:hover:not(:disabled) {
+    background: #fecaca;
+}
+
+.cuenta-corriente-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
 .cuenta-corriente-tag {
     display: inline-flex;
     align-items: center;
