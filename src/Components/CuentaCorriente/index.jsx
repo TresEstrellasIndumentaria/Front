@@ -2,18 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Swal from 'sweetalert2';
 import { crearRecibo, eliminarPagoProveedor, getOrdenesCompraPorProveedor, getPagosProveedorPorProveedor, getRecibosPorCliente, getRemitosPorCliente, registrarPagoProveedor } from '../../Redux/Actions';
+import {
+  formatCurrencyARS,
+  formatDateAR as formatDate,
+  getCurrentMonthRange as getMesActualRange,
+} from '../../Helpers/formatters';
 import './styles.css';
-
-const formatDate = (value) => {
-  if (!value) return '-';
-  const dateString = String(value);
-  const dateOnlyMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T00:00:00(?:\.000)?Z?$)/);
-  const date = dateOnlyMatch
-    ? new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
-    : new Date(value);
-
-  return new Intl.DateTimeFormat('es-AR').format(date);
-};
 
 const getTimeValue = (value) => {
   const time = new Date(value || 0).getTime();
@@ -46,12 +40,10 @@ const ordenarMovimientosPorFecha = (movimientos) => (
   })
 );
 
-const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
+const formatMoney = (value) => formatCurrencyARS(value, {
   minimumFractionDigits: 0,
   maximumFractionDigits: 2,
-}).format(Number(value || 0));
+});
 
 const getSaldoLabel = (value) => {
   if (value > 0) return 'Saldo a favor';
@@ -92,21 +84,6 @@ const getOrdenDetalle = (orden) => {
 };
 
 const getOrdenTotal = (orden) => Number(orden?.estado === 'CANCELADA' ? 0 : orden?.totalOrden ?? orden?.total ?? 0);
-
-const toDateInputValue = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-const getMesActualRange = () => {
-  const now = new Date();
-  return {
-    desde: toDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1)),
-    hasta: toDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
-  };
-};
 
 function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
   const dispatch = useDispatch();

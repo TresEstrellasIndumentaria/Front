@@ -4,18 +4,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import Swal from 'sweetalert2';
 import EditIcon from '@mui/icons-material/Edit';
 import { eliminarRecibo, getRecibos } from '../../Redux/Actions';
+import {
+    formatCurrencyARS,
+    formatDateAR as formatDate,
+} from '../../Helpers/formatters';
 import './styles.css';
 
-const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 0,
-}).format(value || 0);
-
-const formatDate = (value) => {
-    if (!value) return '-';
-    return new Intl.DateTimeFormat('es-AR').format(new Date(value));
-};
+const formatMoney = (value) => formatCurrencyARS(value, { maximumFractionDigits: 0 });
 
 function ListaCobrosComponent() {
     const dispatch = useDispatch();

@@ -7,6 +7,11 @@ import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import Swal from 'sweetalert2';
 import { actualizarEstadoRemito, eliminarRemito, getRemitos } from '../../Redux/Actions';
+import {
+  formatCurrencyARS,
+  formatDateAR as formatDate,
+  getCurrentMonthRange as getMesActualRange,
+} from '../../Helpers/formatters';
 import './styles.css';
 
 const estadoLabel = {
@@ -20,16 +25,7 @@ const normalizeRemitoVenta = (venta) => (
   venta ? { ...venta, estado: normalizeEstadoVenta(venta.estado) } : venta
 );
 
-const formatDate = (value) => {
-  if (!value) return '-';
-  return new Intl.DateTimeFormat('es-AR').format(new Date(value));
-};
-
-const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-}).format(Number(value || 0));
+const formatMoney = (value) => formatCurrencyARS(value, { maximumFractionDigits: 0 });
 
 const getTotalCosto = (venta) => {
   if (Number.isFinite(Number(venta?.totalCosto))) return Number(venta.totalCosto);
@@ -109,6 +105,11 @@ const getImporteDebe = (venta) => {
   return normalizeEstadoVenta(venta?.estado) === 'PENDIENTE' ? Number(venta?.importeTotal || 0) : 0;
 };
 
+const getImportePagado = (venta) => {
+  const total = Number(venta?.importeTotal || 0);
+  return Math.max(0, total - getImporteDebe(venta));
+};
+
 const getNombreCliente = (venta) => (
   venta?.nombreApellido?.trim() || venta?.razonSocial?.trim() || 'Sin cliente'
 );
@@ -122,23 +123,6 @@ const getClienteCuentaCorriente = (venta) => ({
   telefono: venta?.telefono || '',
   numeroCliente: venta?.numeroCliente || '',
 });
-
-const toDateInputValue = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-const getMesActualRange = () => {
-  const now = new Date();
-  const desde = new Date(now.getFullYear(), now.getMonth(), 1);
-  const hasta = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return {
-    desde: toDateInputValue(desde),
-    hasta: toDateInputValue(hasta),
-  };
-};
 
 const getProyeccionMesActual = (totalFacturado) => {
   const now = new Date();
@@ -250,6 +234,7 @@ function ResumenDeVentas() {
       const total = Number(venta?.importeTotal || 0);
       acc.cantidad += 1;
       acc.totalFacturado += total;
+      acc.ingresoVisible += getImportePagado(venta);
       acc.totalCosto += getTotalCosto(venta);
       acc.rentabilidad += getRentabilidad(venta);
       acc.prendas += getCantidadPrendas(venta?.pedido);
@@ -260,6 +245,7 @@ function ResumenDeVentas() {
     }, {
       cantidad: 0,
       totalFacturado: 0,
+      ingresoVisible: 0,
       totalCosto: 0,
       rentabilidad: 0,
       prendas: 0,
@@ -303,6 +289,7 @@ function ResumenDeVentas() {
           <p><strong>Fecha:</strong> ${formatDate(venta?.createdAt)}</p>
           <p><strong>Estado:</strong> ${estadoLabel[normalizeEstadoVenta(venta?.estado)]}</p>
           <p><strong>Importe:</strong> ${formatMoney(venta?.importeTotal)}</p>
+          <p><strong>Importe pagado:</strong> ${formatMoney(getImportePagado(venta))}</p>
           <p><strong>Items:</strong></p>
           ${detalle}
         </div>
@@ -406,6 +393,10 @@ function ResumenDeVentas() {
             <strong>{formatMoney(resumen.totalFacturado)}</strong>
           </article>
           <article className="resumen-ventas-summary-card">
+            <span>Ingreso visible</span>
+            <strong>{formatMoney(resumen.ingresoVisible)}</strong>
+          </article>
+          <article className="resumen-ventas-summary-card">
             <span>Costo visible</span>
             <strong>{formatMoney(resumen.totalCosto)}</strong>
           </article>
@@ -462,6 +453,7 @@ function ResumenDeVentas() {
                   <th>Nomb cliente</th>
                   <th>Estado</th>
                   <th>Importe que debe</th>
+                  <th>Importe pagado</th>
                   <th>Importe total</th>
                   <th>Costo total</th>
                   <th>Rentabilidad</th>
@@ -471,19 +463,19 @@ function ResumenDeVentas() {
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan="10" className="resumen-ventas-empty">Cargando resumen de ventas...</td>
+                    <td colSpan="11" className="resumen-ventas-empty">Cargando resumen de ventas...</td>
                   </tr>
                 )}
 
                 {!loading && error && (
                   <tr>
-                    <td colSpan="10" className="resumen-ventas-empty">{error}</td>
+                    <td colSpan="11" className="resumen-ventas-empty">{error}</td>
                   </tr>
                 )}
 
                 {!loading && !error && ventasFiltradas.length === 0 && (
                   <tr>
-                    <td colSpan="10" className="resumen-ventas-empty">No hay ventas para los filtros seleccionados.</td>
+                    <td colSpan="11" className="resumen-ventas-empty">No hay ventas para los filtros seleccionados.</td>
                   </tr>
                 )}
 
@@ -519,6 +511,7 @@ function ResumenDeVentas() {
                       </div>
                     </td>
                     <td className="resumen-ventas-money">{formatMoney(getImporteDebe(venta))}</td>
+                    <td className="resumen-ventas-money">{formatMoney(getImportePagado(venta))}</td>
                     <td className="resumen-ventas-money">{formatMoney(venta.importeTotal)}</td>
                     <td className="resumen-ventas-money">{formatMoney(getTotalCosto(venta))}</td>
                     <td className={`resumen-ventas-money ${getRentabilidad(venta) < 0 ? 'resumen-ventas-money--loss' : 'resumen-ventas-money--profit'}`}>
@@ -584,6 +577,7 @@ function ResumenDeVentas() {
                 <tr>
                   <td colSpan="5" className="resumen-ventas-total-label">Totales visibles</td>
                   <td className="resumen-ventas-money">{formatMoney(ventasFiltradas.reduce((acc, venta) => acc + getImporteDebe(venta), 0))}</td>
+                  <td className="resumen-ventas-money">{formatMoney(resumen.ingresoVisible)}</td>
                   <td className="resumen-ventas-money">{formatMoney(resumen.totalFacturado)}</td>
                   <td className="resumen-ventas-money">{formatMoney(resumen.totalCosto)}</td>
                   <td className={`resumen-ventas-money ${resumen.rentabilidad < 0 ? 'resumen-ventas-money--loss' : 'resumen-ventas-money--profit'}`}>

@@ -10,6 +10,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import BlockIcon from '@mui/icons-material/Block';
 import Swal from 'sweetalert2';
 import { anularMovimientoInventario, clearHistorialInventarioError, getHistorialInventario } from '../../Redux/Actions';
+import { getCurrentMonthToDateRange as getMesActualRange } from '../../Helpers/formatters';
 import './styles.css';
 
 const MOTIVO_LABEL = {
@@ -55,21 +56,6 @@ const getMotivoLabel = (movimiento) => {
     if (Number(movimiento?.ajuste || 0) > 0) return 'Compra';
     if (Number(movimiento?.ajuste || 0) < 0) return 'Venta';
     return movimiento?.motivo || 'Ajuste';
-};
-
-const toDateInputValue = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-
-const getMesActualRange = () => {
-    const today = new Date();
-    return {
-        desde: toDateInputValue(new Date(today.getFullYear(), today.getMonth(), 1)),
-        hasta: toDateInputValue(today),
-    };
 };
 
 function HistorialDeInventario() {

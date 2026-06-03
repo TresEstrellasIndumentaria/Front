@@ -7,6 +7,12 @@ import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import Swal from 'sweetalert2';
 import { actualizarEstadoOrdenCompra, eliminarOrdenCompra, getAllArticulos, getOrdenesCompra } from '../../Redux/Actions';
+import {
+  formatCurrencyARS,
+  formatDateAR as formatDate,
+  formatOrdenNumero as formatNumeroOrden,
+  getCurrentMonthRange as getMesActualRange,
+} from '../../Helpers/formatters';
 import '../ResumenDeVentas/styles.css';
 
 const estadoLabel = {
@@ -15,22 +21,7 @@ const estadoLabel = {
 };
 
 const normalizeEstadoCompra = (estado) => (estado === 'PAGADA' ? 'PAGADA' : 'DEUDOR');
-
-const formatDate = (value) => {
-  if (!value) return '-';
-  const fechaDia = typeof value === 'string' ? value.slice(0, 10) : '';
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(fechaDia)
-    ? new Date(`${fechaDia}T12:00:00`)
-    : new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return new Intl.DateTimeFormat('es-AR').format(date);
-};
-
-const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 3,
-}).format(Number(value || 0));
+const formatMoney = (value) => formatCurrencyARS(value, { maximumFractionDigits: 3 });
 
 const escapeHtml = (value) => String(value ?? '-')
   .replace(/&/g, '&amp;')
@@ -162,28 +153,6 @@ const getTotalOrden = (orden) => Number(orden?.totalOrden ?? orden?.total ?? ord
 const getImporteDebe = (orden) => (
   normalizeEstadoCompra(orden?.estado) === 'DEUDOR' ? getTotalOrden(orden) : 0
 );
-
-const formatNumeroOrden = (numero) => {
-  if (!numero) return '-';
-  return String(numero).replace(/^PO/i, '');
-};
-
-const toDateInputValue = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-const getMesActualRange = () => {
-  const now = new Date();
-  const desde = new Date(now.getFullYear(), now.getMonth(), 1);
-  const hasta = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return {
-    desde: toDateInputValue(desde),
-    hasta: toDateInputValue(hasta),
-  };
-};
 
 const isDateInRange = (value, fechaDesde, fechaHasta) => {
   const date = new Date(value || 0);
@@ -637,10 +606,10 @@ function ResumenDeCompras() {
             </table>
           </div>
 
-          <div className="resumen-ventas-footer">
+          {/* <div className="resumen-ventas-footer">
             <span>{compras.length} compras cargadas en total</span>
             <strong>{resumen.pagadas} pagadas, {resumen.deudoras} deudoras</strong>
-          </div>
+          </div> */}
         </div>
       </div>
     </section>

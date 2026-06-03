@@ -41,7 +41,7 @@
 
 .resumen-ventas-summary {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 12px;
     margin-bottom: 14px;
 }
@@ -312,6 +312,12 @@
 
 .resumen-ventas-table th:nth-child(10),
 .resumen-ventas-table td:nth-child(10) {
+    width: 106px;
+    text-align: center;
+}
+
+.resumen-ventas-table th:nth-child(11),
+.resumen-ventas-table td:nth-child(11) {
     width: 148px;
     text-align: center;
 }
@@ -472,7 +478,7 @@
     }
 
     .resumen-ventas-table {
-        min-width: 1320px;
+        min-width: 1420px;
         white-space: nowrap;
     }
 }

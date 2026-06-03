@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import SearchIcon from '@mui/icons-material/Search';
 import { getAllArticulos, getRemitos } from '../../Redux/Actions';
+import {
+  formatCurrencyARS,
+  getCurrentMonthRange as getMesActualRange,
+} from '../../Helpers/formatters';
 import './styles.css';
 
 const estadoLabel = {
@@ -11,11 +15,7 @@ const estadoLabel = {
 
 const normalizeEstadoVenta = (estado) => (estado === 'PAGADO' ? 'PAGADO' : 'PENDIENTE');
 
-const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-}).format(Number(value || 0));
+const formatMoney = (value) => formatCurrencyARS(value, { maximumFractionDigits: 0 });
 
 const normalizeText = (value) => String(value || '').trim();
 
@@ -35,21 +35,6 @@ const getItemsPedido = (venta) => (
     ? venta.pedido.filter((item) => normalizeText(item?.prenda))
     : []
 );
-
-const toDateInputValue = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-const getMesActualRange = () => {
-  const now = new Date();
-  return {
-    desde: toDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1)),
-    hasta: toDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
-  };
-};
 
 function VentasPorCategorias() {
   const dispatch = useDispatch();
