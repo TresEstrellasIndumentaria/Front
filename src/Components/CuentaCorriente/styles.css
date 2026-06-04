@@ -58,7 +58,14 @@
 
 .cuenta-corriente-payment-form {
     display: grid;
-    grid-template-columns: 1.4fr 1fr 0.9fr 1fr 1.4fr auto;
+    grid-template-columns:
+        minmax(160px, 1.1fr)
+        minmax(260px, 1.45fr)
+        minmax(240px, 1.2fr)
+        minmax(130px, 0.85fr)
+        minmax(140px, 0.85fr)
+        minmax(240px, 1.15fr)
+        auto;
     align-items: end;
     gap: 12px;
     padding: 16px;
@@ -136,11 +143,12 @@
 
 .cuenta-corriente-payment-amount {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(90px, 1fr) auto;
     gap: 8px;
 }
 
 .cuenta-corriente-payment-form .cuenta-corriente-payment-total-btn {
+    min-width: 92px;
     padding: 0 10px;
     background: var(--color-dark);
     color: var(--color-primary);
@@ -148,6 +156,21 @@
 
 .cuenta-corriente-payment-form .cuenta-corriente-payment-total-btn:hover:not(:disabled) {
     background: #111827;
+}
+
+@media (max-width: 1180px) {
+    .cuenta-corriente-payment-form {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .cuenta-corriente-payment-form>div {
+        grid-column: span 2;
+    }
+
+    .cuenta-corriente-payment-notes,
+    .cuenta-corriente-payment-form>button[type="submit"] {
+        grid-column: 1 / -1;
+    }
 }
 
 .cuenta-corriente-card {

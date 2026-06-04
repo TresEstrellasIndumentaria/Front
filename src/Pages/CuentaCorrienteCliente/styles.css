@@ -1,5 +1,5 @@
 .cuenta-corriente-page {
-    padding: 24px 18px 40px;
+    padding: 24px 12px 40px;
     background:
         radial-gradient(circle at top right, rgba(48, 163, 133, 0.16), transparent 28%),
         linear-gradient(180deg, #eef7f5 0%, #f7fafc 46%, #edf3f8 100%);
@@ -7,7 +7,7 @@
 }
 
 .cuenta-corriente-page-shell {
-    width: min(1240px, 100%);
+    width: min(1680px, calc(100% - 8px));
     margin: 0 auto;
 }
 

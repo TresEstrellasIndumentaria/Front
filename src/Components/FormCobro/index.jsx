@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { crearRecibo, getReciboById, getUsuarioByRol, modificarRecibo } from '../../Redux/Actions';
+import { crearRecibo, getReciboById, getRemitosPorCliente, getUsuarioByRol, modificarRecibo } from '../../Redux/Actions';
+import { formatCurrencyARS } from '../../Helpers/formatters';
 import './styles.css';
 
 const getNombreCompleto = (cliente) => (
@@ -11,6 +12,7 @@ const getNombreCompleto = (cliente) => (
 
 const getEmptyForm = () => ({
     numeroCliente: '',
+    remito: '',
     razonSocial: '',
     nombreApellido: '',
     importe: '',
@@ -18,6 +20,13 @@ const getEmptyForm = () => ({
     medioPago: 'Transferencia',
     observaciones: '',
 });
+
+const formatMoney = (value) => formatCurrencyARS(value, { maximumFractionDigits: 0 });
+
+const getRemitoDebe = (remito) => {
+    if (Number.isFinite(Number(remito?.importeDebe))) return Math.max(0, Number(remito.importeDebe));
+    return remito?.estado === 'PAGADO' ? 0 : Math.max(0, Number(remito?.importeTotal || 0));
+};
 
 const formatDateInput = (value) => {
     if (!value) return new Date().toISOString().slice(0, 10);
@@ -37,6 +46,7 @@ function FormCobro() {
     const [errors, setErrors] = useState({});
     const [query, setQuery] = useState('');
     const [loadingRecibo, setLoadingRecibo] = useState(false);
+    const [remitosCliente, setRemitosCliente] = useState([]);
 
     useEffect(() => {
         dispatch(getUsuarioByRol('CLIENTE'));
@@ -63,6 +73,7 @@ function FormCobro() {
 
             setForm({
                 numeroCliente: String(response?.numeroCliente || ''),
+                remito: String(response?.remito?._id || response?.remito || ''),
                 razonSocial: response?.razonSocial || '',
                 nombreApellido: response?.nombreApellido || '',
                 importe: String(response?.importe ?? ''),
@@ -72,6 +83,24 @@ function FormCobro() {
             });
         });
     }, [dispatch, id, navigate]);
+
+    useEffect(() => {
+        const numeroCliente = String(form.numeroCliente || '').trim();
+        if (!numeroCliente) {
+            setRemitosCliente([]);
+            return;
+        }
+
+        let active = true;
+        dispatch(getRemitosPorCliente(numeroCliente)).then((response) => {
+            if (!active) return;
+            setRemitosCliente(Array.isArray(response?.remitos) ? response.remitos : []);
+        });
+
+        return () => {
+            active = false;
+        };
+    }, [dispatch, form.numeroCliente]);
 
     const clientes = useMemo(() => {
         return (clientesState || []).map((cliente) => ({
@@ -97,6 +126,7 @@ function FormCobro() {
         setForm((prev) => ({
             ...prev,
             numeroCliente: cliente.numeroCliente || '',
+            remito: '',
             razonSocial: cliente.razonSocial || '',
             nombreApellido: cliente.nombreApellido || '',
         }));
@@ -134,6 +164,7 @@ function FormCobro() {
 
         const payload = {
             numeroCliente: form.numeroCliente.trim(),
+            remito: form.remito || undefined,
             razonSocial: form.razonSocial.trim(),
             nombreApellido: form.nombreApellido.trim(),
             importe: Number(form.importe),
@@ -234,6 +265,20 @@ function FormCobro() {
                             <input name="nombreApellido" value={form.nombreApellido} onChange={handleChange} placeholder="Nombre del cliente" />
                         </label>
 
+                        <label className="form-cobro-field">
+                            <span>Remito</span>
+                            <select name="remito" value={form.remito} onChange={handleChange}>
+                                <option value="">Sin remito asociado</option>
+                                {remitosCliente.map((remito) => (
+                                    <option key={remito._id} value={remito._id}>
+                                        {(remito.numeroRemitoFormateado || `R-${String(remito.numeroRemito || '').padStart(6, '0')}`)} - debe {formatMoney(getRemitoDebe(remito))}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
+
+                    <div className="form-cobro-row">
                         <label className={`form-cobro-field ${errors.importe ? 'is-error' : ''}`}>
                             <span>Importe</span>
                             <input name="importe" value={form.importe} onChange={handleChange} placeholder="0" />

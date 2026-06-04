@@ -85,6 +85,24 @@ const getOrdenDetalle = (orden) => {
 
 const getOrdenTotal = (orden) => Number(orden?.estado === 'CANCELADA' ? 0 : orden?.totalOrden ?? orden?.total ?? 0);
 
+const getReciboRemitoId = (recibo) => {
+  const remito = recibo?.remito ?? recibo?.remitoId;
+  return remito ? String(remito?._id || remito) : '';
+};
+
+const getRemitoSaldo = (remito, recibos = []) => {
+  if (Number.isFinite(Number(remito?.importeDebe))) {
+    return Math.max(0, Number(remito.importeDebe));
+  }
+
+  const remitoId = String(remito?._id || '');
+  const totalPagado = recibos
+    .filter((recibo) => getReciboRemitoId(recibo) === remitoId)
+    .reduce((acc, recibo) => acc + Number(recibo?.importe || 0), 0);
+
+  return Math.max(0, Number(remito?.importeTotal || 0) - totalPagado);
+};
+
 function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
   const dispatch = useDispatch();
   const esProveedor = tipoCuenta === 'PROVEEDOR';
@@ -105,6 +123,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
     observaciones: '',
   });
   const [pagoCliente, setPagoCliente] = useState({
+    remito: '',
     importe: '',
     fechaCobro: new Date().toISOString().slice(0, 10),
     medioPago: 'Transferencia',
@@ -404,8 +423,23 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
     ? 'No se encontro el proveedor para consultar la cuenta corriente.'
     : 'No se encontro el numero de cliente para consultar la cuenta corriente.';
   const puedeConsultar = esProveedor ? Boolean(proveedor?._id || proveedor?.id) : Boolean(cliente?.numeroCliente);
+  const remitosCliente = Array.isArray(data?.remitos?.remitos) ? data.remitos.remitos : [];
+  const recibosCliente = Array.isArray(data?.recibos?.recibos) ? data.recibos.recibos : [];
   const deudaProveedor = Math.max(0, Number(resumen.saldoActual || 0) * -1);
-  const deudaCliente = Math.max(0, Number(resumen.saldoActual || 0) * -1);
+  const deudaCliente = remitosCliente.reduce(
+    (acc, remito) => acc + getRemitoSaldo(remito, recibosCliente),
+    0
+  );
+  const remitosParaPago = remitosCliente
+    .map((remito) => ({
+      ...remito,
+      saldoRemito: getRemitoSaldo(remito, recibosCliente),
+      pagosRegistrados: recibosCliente.filter((recibo) => getReciboRemitoId(recibo) === String(remito?._id || '')).length,
+    }))
+    .filter((remito) => remito.saldoRemito > 0 && remito.pagosRegistrados < 2)
+    .sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime());
+  const remitoSeleccionado = remitosParaPago.find((remito) => String(remito?._id || '') === pagoCliente.remito);
+  const saldoRemitoSeleccionado = remitoSeleccionado ? Number(remitoSeleccionado.saldoRemito || 0) : 0;
 
   const handlePagoProveedorChange = (e) => {
     const { name, value } = e.target;
@@ -414,19 +448,33 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
 
   const handlePagoClienteChange = (e) => {
     const { name, value } = e.target;
-    setPagoCliente((prev) => ({ ...prev, [name]: value }));
+    setPagoCliente((prev) => {
+      if (name !== 'remito') return { ...prev, [name]: value };
+
+      const remito = remitosParaPago.find((item) => String(item?._id || '') === value);
+      return {
+        ...prev,
+        remito: value,
+        importe: remito ? String(Math.ceil(Number(remito.saldoRemito || 0) / 2)) : '',
+      };
+    });
   };
 
   const handleRegistrarPagoCliente = async (e) => {
     e.preventDefault();
+
+    if (!pagoCliente.remito) {
+      setError('Selecciona el remito que se esta cobrando.');
+      return;
+    }
 
     if (pagoCliente.importe === '' || Number(pagoCliente.importe) <= 0) {
       setError('Ingresa un importe de pago valido.');
       return;
     }
 
-    if (Number(pagoCliente.importe) > deudaCliente) {
-      setError('El importe no puede superar la deuda actual del cliente.');
+    if (Number(pagoCliente.importe) > saldoRemitoSeleccionado) {
+      setError('El importe no puede superar el saldo pendiente del remito seleccionado.');
       return;
     }
 
@@ -435,6 +483,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
 
     const response = await dispatch(crearRecibo({
       numeroCliente: String(cliente?.numeroCliente || '').trim(),
+      remito: pagoCliente.remito,
       razonSocial: cliente?.razonSocial || cliente?.nombreFantasia || getNombreCliente(cliente),
       nombreApellido: getNombreCliente(cliente),
       importe: Number(pagoCliente.importe),
@@ -451,6 +500,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
     }
 
     setPagoCliente({
+      remito: '',
       importe: '',
       fechaCobro: new Date().toISOString().slice(0, 10),
       medioPago: 'Transferencia',
@@ -610,13 +660,25 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
           </div>
 
           <label>
+            <span>Remito</span>
+            <select name="remito" value={pagoCliente.remito} onChange={handlePagoClienteChange}>
+              <option value="">Seleccionar remito</option>
+              {remitosParaPago.map((remito) => (
+                <option key={remito._id} value={remito._id}>
+                  {(remito.numeroRemitoFormateado || `R-${String(remito.numeroRemito || '').padStart(6, '0')}`)} - debe {formatMoney(remito.saldoRemito)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
             <span>Importe</span>
             <div className="cuenta-corriente-payment-amount">
               <input
                 type="number"
                 name="importe"
                 min="0"
-                max={deudaCliente}
+                max={saldoRemitoSeleccionado || 0}
                 step="0.01"
                 value={pagoCliente.importe}
                 onChange={handlePagoClienteChange}
@@ -625,10 +687,10 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
               <button
                 type="button"
                 className="cuenta-corriente-payment-total-btn"
-                onClick={() => setPagoCliente((prev) => ({ ...prev, importe: String(deudaCliente) }))}
-                disabled={!deudaCliente || guardandoPago}
+                onClick={() => setPagoCliente((prev) => ({ ...prev, importe: String(saldoRemitoSeleccionado) }))}
+                disabled={!saldoRemitoSeleccionado || guardandoPago}
               >
-                Total
+                Total remito
               </button>
             </div>
           </label>
@@ -660,7 +722,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
             />
           </label>
 
-          <button type="submit" disabled={guardandoPago || !deudaCliente}>
+          <button type="submit" disabled={guardandoPago || !deudaCliente || !remitosParaPago.length}>
             {guardandoPago ? 'Guardando...' : 'Registrar pago'}
           </button>
         </form>
