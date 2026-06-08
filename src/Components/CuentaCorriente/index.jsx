@@ -45,6 +45,8 @@ const formatMoney = (value) => formatCurrencyARS(value, {
   maximumFractionDigits: 2,
 });
 
+const roundMoney = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+
 const getSaldoLabel = (value) => {
   if (value > 0) return 'Saldo a favor';
   if (value < 0) return 'Saldo deudor';
@@ -85,6 +87,15 @@ const getOrdenDetalle = (orden) => {
 
 const getOrdenTotal = (orden) => Number(orden?.estado === 'CANCELADA' ? 0 : orden?.totalOrden ?? orden?.total ?? 0);
 
+const getOrdenId = (orden) => String(orden?._id || orden?.id || '');
+
+const getPagoProveedorOrdenId = (pago) => {
+  const orden = pago?.ordenCompra || pago?.orden;
+  return orden ? String(orden?._id || orden?.id || orden) : '';
+};
+
+const getPagoProveedorImporte = (pago) => Number(pago?.importe ?? pago?.monto ?? pago?.total ?? 0);
+
 const getReciboRemitoId = (recibo) => {
   const remito = recibo?.remito ?? recibo?.remitoId;
   return remito ? String(remito?._id || remito) : '';
@@ -117,6 +128,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
   const [anulandoPagoId, setAnulandoPagoId] = useState(null);
   const [error, setError] = useState('');
   const [pagoProveedor, setPagoProveedor] = useState({
+    ordenCompra: '',
     importe: '',
     fechaPago: new Date().toISOString().slice(0, 10),
     medioPago: 'EFECTIVO',
@@ -263,7 +275,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
         createdAt: pago?.createdAt,
         updatedAt: pago?.updatedAt,
         debe: 0,
-        haber: Number(pago?.importe ?? pago?.monto ?? pago?.total ?? 0),
+        haber: getPagoProveedorImporte(pago),
       }));
 
       return ordenarMovimientosPorFecha([...movimientosOrdenes, ...movimientosPagos]
@@ -378,7 +390,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
         (acc, orden) => acc + getOrdenTotal(orden),
         0
       );
-      const totalPagado = pagos.reduce((acc, pago) => acc + Number(pago?.importe ?? pago?.monto ?? pago?.total ?? 0), 0);
+      const totalPagado = pagos.reduce((acc, pago) => acc + getPagoProveedorImporte(pago), 0);
 
       return {
         entidad: getNombreProveedor(proveedor),
@@ -425,7 +437,42 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
   const puedeConsultar = esProveedor ? Boolean(proveedor?._id || proveedor?.id) : Boolean(cliente?.numeroCliente);
   const remitosCliente = Array.isArray(data?.remitos?.remitos) ? data.remitos.remitos : [];
   const recibosCliente = Array.isArray(data?.recibos?.recibos) ? data.recibos.recibos : [];
-  const deudaProveedor = Math.max(0, Number(resumen.saldoActual || 0) * -1);
+  const ordenesProveedorData = Array.isArray(data?.ordenes)
+    ? data.ordenes
+    : Array.isArray(data?.ordenes?.ordenes)
+      ? data.ordenes.ordenes
+      : [];
+  const pagosProveedorData = Array.isArray(data?.pagos?.pagos) ? data.pagos.pagos : [];
+  const ordenesProveedor = ordenesProveedorData
+    .filter((orden) => (
+      String(getOrdenProveedorId(orden)) === String(proveedor?._id || proveedor?.id || '')
+      && !['PAGADA', 'CANCELADA'].includes(String(orden?.estado || '').toUpperCase())
+    ))
+    .sort((a, b) => new Date(a?.createdAt || 0).getTime() - new Date(b?.createdAt || 0).getTime());
+  const pagosProveedorSinOrden = pagosProveedorData
+    .filter((pago) => !getPagoProveedorOrdenId(pago))
+    .reduce((acc, pago) => acc + getPagoProveedorImporte(pago), 0);
+  let saldoPagosSinOrden = pagosProveedorSinOrden;
+  const ordenesParaPago = ordenesProveedor
+    .map((orden) => {
+      const ordenId = getOrdenId(orden);
+      const totalOrden = roundMoney(getOrdenTotal(orden));
+      const pagadoOrden = pagosProveedorData
+        .filter((pago) => getPagoProveedorOrdenId(pago) === ordenId)
+        .reduce((acc, pago) => acc + getPagoProveedorImporte(pago), 0);
+      const aplicadoGlobal = Math.min(totalOrden, saldoPagosSinOrden);
+      saldoPagosSinOrden = roundMoney(saldoPagosSinOrden - aplicadoGlobal);
+
+      return {
+        ...orden,
+        saldoOrden: roundMoney(Math.max(0, totalOrden - pagadoOrden - aplicadoGlobal)),
+      };
+    })
+    .filter((orden) => orden.saldoOrden > 0)
+    .sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime());
+  const ordenSeleccionada = ordenesParaPago.find((orden) => getOrdenId(orden) === pagoProveedor.ordenCompra);
+  const saldoOrdenSeleccionada = ordenSeleccionada ? Number(ordenSeleccionada.saldoOrden || 0) : 0;
+  const deudaProveedor = roundMoney(Math.max(0, Number(resumen.saldoActual || 0) * -1));
   const deudaCliente = remitosCliente.reduce(
     (acc, remito) => acc + getRemitoSaldo(remito, recibosCliente),
     0
@@ -443,7 +490,16 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
 
   const handlePagoProveedorChange = (e) => {
     const { name, value } = e.target;
-    setPagoProveedor((prev) => ({ ...prev, [name]: value }));
+    setPagoProveedor((prev) => {
+      if (name !== 'ordenCompra') return { ...prev, [name]: value };
+
+      const orden = ordenesParaPago.find((item) => getOrdenId(item) === value);
+      return {
+        ...prev,
+        ordenCompra: value,
+        importe: orden ? String(roundMoney(orden.saldoOrden)) : '',
+      };
+    });
   };
 
   const handlePagoClienteChange = (e) => {
@@ -526,17 +582,23 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
       return;
     }
 
-    if (Number(pagoProveedor.importe) > deudaProveedor) {
-      setError('El importe no puede superar la deuda actual del proveedor.');
+    if (!pagoProveedor.ordenCompra) {
+      setError('Selecciona la orden de compra que se esta pagando.');
+      return;
+    }
+
+    if (Number(pagoProveedor.importe) > saldoOrdenSeleccionada) {
+      setError('El importe no puede superar el saldo pendiente de la orden seleccionada.');
       return;
     }
 
     setGuardandoPago(true);
     setError('');
 
-    const response = await dispatch(registrarPagoProveedor(null, {
-      importe: Number(pagoProveedor.importe),
-      monto: Number(pagoProveedor.importe),
+    const importePago = roundMoney(pagoProveedor.importe);
+    const response = await dispatch(registrarPagoProveedor(pagoProveedor.ordenCompra, {
+      importe: importePago,
+      monto: importePago,
       fechaPago: pagoProveedor.fechaPago,
       medioPago: pagoProveedor.medioPago,
       observaciones: pagoProveedor.observaciones.trim(),
@@ -551,6 +613,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
     }
 
     setPagoProveedor({
+      ordenCompra: '',
       importe: '',
       fechaPago: new Date().toISOString().slice(0, 10),
       medioPago: 'EFECTIVO',
@@ -737,13 +800,25 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
           </div>
 
           <label>
+            <span>Orden</span>
+            <select name="ordenCompra" value={pagoProveedor.ordenCompra} onChange={handlePagoProveedorChange}>
+              <option value="">Seleccionar orden</option>
+              {ordenesParaPago.map((orden) => (
+                <option key={getOrdenId(orden)} value={getOrdenId(orden)}>
+                  {(orden.numero ? `OC-${String(orden.numero).padStart(6, '0')}` : 'Orden de compra')} - debe {formatMoney(orden.saldoOrden)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
             <span>Importe</span>
             <div className="cuenta-corriente-payment-amount">
               <input
                 type="number"
                 name="importe"
                 min="0"
-                max={deudaProveedor}
+                max={saldoOrdenSeleccionada || 0}
                 step="0.01"
                 value={pagoProveedor.importe}
                 onChange={handlePagoProveedorChange}
@@ -752,10 +827,10 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
               <button
                 type="button"
                 className="cuenta-corriente-payment-total-btn"
-                onClick={() => setPagoProveedor((prev) => ({ ...prev, importe: String(deudaProveedor) }))}
-                disabled={!deudaProveedor || guardandoPago}
+                onClick={() => setPagoProveedor((prev) => ({ ...prev, importe: String(roundMoney(saldoOrdenSeleccionada)) }))}
+                disabled={!saldoOrdenSeleccionada || guardandoPago}
               >
-                Total
+                Total orden
               </button>
             </div>
           </label>
@@ -786,7 +861,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
             />
           </label>
 
-          <button type="submit" disabled={guardandoPago || !deudaProveedor}>
+          <button type="submit" disabled={guardandoPago || !deudaProveedor || !ordenesParaPago.length || !pagoProveedor.ordenCompra}>
             {guardandoPago ? 'Guardando...' : 'Registrar pago'}
           </button>
         </form>
