@@ -828,7 +828,7 @@ export const cancelarOrdenCompra = (id) => {
 
         for (const endpoint of endpoints) {
             try {
-                const body = endpoint.url.endsWith("/estado") ? { estado: "CANCELADA" } : {};
+                const body = endpoint.url.endsWith("/estado") ? { estado: "DEUDOR" } : {};
                 const resp = await axios[endpoint.method](endpoint.url, body, config);
                 await refrescarArticulosLuegoDeInventario(dispatch);
                 return resp.data;
@@ -969,19 +969,59 @@ export const getPagosProveedorPorProveedor = (proveedorId) => async () => {
 
 export const getOrdenesCompraPorProveedor = (proveedorId) => async () => {
     const config = getAuthConfig();
+    const getOrdenProveedorId = (orden) => {
+        const proveedor = orden?.proveedor ?? orden?.proveedorId ?? orden?.proveedorInfo;
+        return String(proveedor?._id || proveedor?.id || proveedor || '');
+    };
+    const extraerOrdenes = (data) => (
+        Array.isArray(data)
+            ? data
+            : Array.isArray(data?.ordenes)
+                ? data.ordenes
+                : Array.isArray(data?.data)
+                    ? data.data
+                    : []
+    );
+    const filtrarPorProveedor = (ordenes) => ordenes.filter((orden) => getOrdenProveedorId(orden) === String(proveedorId || ''));
+    let ultimoError = null;
 
     try {
         const resp = await axios.get(`${URL}/ordenesCompraProv/proveedor/${proveedorId}`, config);
-        return Array.isArray(resp.data) ? resp.data : [];
+        const ordenes = extraerOrdenes(resp.data);
+        if (ordenes.length) return ordenes;
     } catch (error) {
-        return {
-            error: true,
-            message:
-                error.response?.data?.message ||
-                error.response?.data?.msg ||
-                "Error al obtener ordenes del proveedor.",
-        };
+        ultimoError = error;
     }
+
+    try {
+        const respPorQuery = await axios.get(`${URL}/ordenesCompraProv`, {
+            ...config,
+            params: { proveedor: proveedorId },
+        });
+        const ordenesPorQuery = extraerOrdenes(respPorQuery.data);
+        if (ordenesPorQuery.length) return ordenesPorQuery;
+    } catch (error) {
+        ultimoError = error;
+    }
+
+    try {
+        const respTodas = await axios.get(`${URL}/ordenesCompraProv`, config);
+        const ordenesFiltradas = filtrarPorProveedor(extraerOrdenes(respTodas.data));
+        if (!ordenesFiltradas.length) {
+            console.warn('No se encontraron ordenes para proveedor', proveedorId);
+        }
+        return ordenesFiltradas;
+    } catch (error) {
+        ultimoError = error;
+    }
+
+    return {
+        error: true,
+        message:
+            ultimoError?.response?.data?.message ||
+            ultimoError?.response?.data?.msg ||
+            "Error al obtener ordenes del proveedor.",
+    };
 };
 
 export const getOrdenesCompra = (params = {}) => async (dispatch) => {

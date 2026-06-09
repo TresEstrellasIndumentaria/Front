@@ -63,7 +63,7 @@ function CuentaCorrienteProveedor() {
           </div>
         </header>
 
-        <CuentaCorriente proveedor={proveedor} tipoCuenta="PROVEEDOR" />
+        <CuentaCorriente proveedor={proveedor} proveedorId={id} tipoCuenta="PROVEEDOR" />
       </div>
     </section>
   );

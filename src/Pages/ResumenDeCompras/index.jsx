@@ -150,9 +150,13 @@ const buildItemsCompraTable = (items = [], articulosPorId = new Map()) => {
 
 const getTotalOrden = (orden) => Number(orden?.totalOrden ?? orden?.total ?? orden?.totalArticulos ?? 0);
 
-const getImporteDebe = (orden) => (
-  normalizeEstadoCompra(orden?.estado) === 'DEUDOR' ? getTotalOrden(orden) : 0
-);
+const getImporteDebe = (orden) => {
+  if (normalizeEstadoCompra(orden?.estado) !== 'DEUDOR') return 0;
+  const importeDebe = orden?.importeDebe ?? orden?.saldoOrden ?? orden?.saldoPendiente;
+  if (Number.isFinite(Number(importeDebe))) return Math.max(0, Number(importeDebe));
+  const totalPagado = Number(orden?.totalPagado ?? orden?.pagado ?? 0);
+  return Math.max(0, getTotalOrden(orden) - totalPagado);
+};
 
 const isDateInRange = (value, fechaDesde, fechaHasta) => {
   const date = new Date(value || 0);
