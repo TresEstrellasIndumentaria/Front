@@ -89,12 +89,47 @@ const getOrdenTotal = (orden) => Number(orden?.estado === 'CANCELADA' ? 0 : orde
 
 const getOrdenId = (orden) => String(orden?._id || orden?.id || '');
 
+const getEstadoOrdenCompra = (orden) => String(orden?.estado || 'DEUDOR').toUpperCase();
+
+const isOrdenCompraPendientePago = (orden) => getEstadoOrdenCompra(orden) === 'DEUDOR';
+
+const isOrdenCompraPagada = (orden) => getEstadoOrdenCompra(orden) === 'PAGADA';
+
 const getPagoProveedorOrdenId = (pago) => {
   const orden = pago?.ordenCompra || pago?.orden;
   return orden ? String(orden?._id || orden?.id || orden) : '';
 };
 
 const getPagoProveedorImporte = (pago) => Number(pago?.importe ?? pago?.monto ?? pago?.total ?? 0);
+
+const getSaldoOrdenProveedor = (orden, pagos = []) => {
+  const ordenId = getOrdenId(orden);
+  const totalOrden = roundMoney(getOrdenTotal(orden));
+  const pagadoOrden = pagos
+    .filter((pago) => getPagoProveedorOrdenId(pago) === ordenId)
+    .reduce((acc, pago) => acc + getPagoProveedorImporte(pago), 0);
+
+  return roundMoney(Math.max(0, totalOrden - pagadoOrden));
+};
+
+const getOrdenesConSaldoProveedor = (ordenes = [], pagos = []) => {
+  const pagosSinOrden = pagos
+    .filter((pago) => !getPagoProveedorOrdenId(pago))
+    .reduce((acc, pago) => acc + getPagoProveedorImporte(pago), 0);
+  let saldoPagosSinOrden = roundMoney(pagosSinOrden);
+
+  return ordenes
+    .map((orden) => {
+      const saldoVinculado = getSaldoOrdenProveedor(orden, pagos);
+      const aplicadoSinOrden = Math.min(saldoVinculado, saldoPagosSinOrden);
+      saldoPagosSinOrden = roundMoney(saldoPagosSinOrden - aplicadoSinOrden);
+
+      return {
+        ...orden,
+        saldoOrden: roundMoney(Math.max(0, saldoVinculado - aplicadoSinOrden)),
+      };
+    });
+};
 
 const getReciboRemitoId = (recibo) => {
   const remito = recibo?.remito ?? recibo?.remitoId;
@@ -386,8 +421,14 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
           : [];
       const ordenesProveedor = ordenes.filter((orden) => getOrdenProveedorId(orden) === proveedorId);
       const pagos = Array.isArray(data?.pagos?.pagos) ? data.pagos.pagos : [];
-      const totalDebe = ordenesProveedor.reduce(
-        (acc, orden) => acc + getOrdenTotal(orden),
+      const ordenesDeudoras = getOrdenesConSaldoProveedor(
+        ordenesProveedor
+          .filter(isOrdenCompraPendientePago)
+          .sort((a, b) => new Date(a?.createdAt || 0).getTime() - new Date(b?.createdAt || 0).getTime()),
+        pagos
+      );
+      const totalDebe = ordenesDeudoras.reduce(
+        (acc, orden) => acc + Number(orden.saldoOrden || 0),
         0
       );
       const totalPagado = pagos.reduce((acc, pago) => acc + getPagoProveedorImporte(pago), 0);
@@ -397,11 +438,11 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
         identificador: proveedor?.numeroProveedor || proveedor?.codigoProveedor || proveedor?._id || 'Sin numero',
         totalDebe,
         totalHaber: totalPagado,
-        saldoActual: totalPagado - totalDebe,
+        saldoActual: totalDebe * -1,
         totalPrincipal: ordenesProveedor.length,
         totalSecundario: pagos.length,
-        totalPendientes: ordenesProveedor.filter((orden) => ['BORRADOR', 'ENVIADA', 'PARCIALMENTE_RECIBIDA'].includes(orden?.estado)).length,
-        totalFinalizados: ordenesProveedor.filter((orden) => orden?.estado === 'RECIBIDA').length,
+        totalPendientes: ordenesDeudoras.filter((orden) => Number(orden.saldoOrden || 0) > 0).length,
+        totalFinalizados: ordenesProveedor.filter(isOrdenCompraPagada).length,
       };
     }
 
@@ -430,7 +471,7 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
 
   const principalLabel = esProveedor ? 'Ordenes' : 'Remitos';
   const secundarioLabel = esProveedor ? 'Pagos' : 'Recibos';
-  const finalizadosLabel = esProveedor ? 'Recibidas' : 'Pagados';
+  const finalizadosLabel = esProveedor ? 'Pagadas' : 'Pagados';
   const sinIdentificadorMessage = esProveedor
     ? 'No se encontro el proveedor para consultar la cuenta corriente.'
     : 'No se encontro el numero de cliente para consultar la cuenta corriente.';
@@ -446,28 +487,10 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
   const ordenesProveedor = ordenesProveedorData
     .filter((orden) => (
       String(getOrdenProveedorId(orden)) === String(proveedor?._id || proveedor?.id || '')
-      && !['PAGADA', 'CANCELADA'].includes(String(orden?.estado || '').toUpperCase())
+      && isOrdenCompraPendientePago(orden)
     ))
     .sort((a, b) => new Date(a?.createdAt || 0).getTime() - new Date(b?.createdAt || 0).getTime());
-  const pagosProveedorSinOrden = pagosProveedorData
-    .filter((pago) => !getPagoProveedorOrdenId(pago))
-    .reduce((acc, pago) => acc + getPagoProveedorImporte(pago), 0);
-  let saldoPagosSinOrden = pagosProveedorSinOrden;
-  const ordenesParaPago = ordenesProveedor
-    .map((orden) => {
-      const ordenId = getOrdenId(orden);
-      const totalOrden = roundMoney(getOrdenTotal(orden));
-      const pagadoOrden = pagosProveedorData
-        .filter((pago) => getPagoProveedorOrdenId(pago) === ordenId)
-        .reduce((acc, pago) => acc + getPagoProveedorImporte(pago), 0);
-      const aplicadoGlobal = Math.min(totalOrden, saldoPagosSinOrden);
-      saldoPagosSinOrden = roundMoney(saldoPagosSinOrden - aplicadoGlobal);
-
-      return {
-        ...orden,
-        saldoOrden: roundMoney(Math.max(0, totalOrden - pagadoOrden - aplicadoGlobal)),
-      };
-    })
+  const ordenesParaPago = getOrdenesConSaldoProveedor(ordenesProveedor, pagosProveedorData)
     .filter((orden) => orden.saldoOrden > 0)
     .sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime());
   const ordenSeleccionada = ordenesParaPago.find((orden) => getOrdenId(orden) === pagoProveedor.ordenCompra);
@@ -895,13 +918,9 @@ function CuentaCorriente({ cliente, proveedor, tipoCuenta = 'CLIENTE' }) {
               {!esProveedor && <option value="PENDIENTE">Pendiente</option>}
               {!esProveedor && <option value="PAGADO">Pagado</option>}
               {!esProveedor && <option value="COBRADO">Cobrado</option>}
-              {esProveedor && <option value="PENDIENTE">Pendiente</option>}
+              {esProveedor && <option value="DEUDOR">Deudor</option>}
               {esProveedor && <option value="PAGADO">Pagado</option>}
-              {esProveedor && <option value="BORRADOR">Borrador</option>}
-              {esProveedor && <option value="ENVIADA">Enviada</option>}
-              {esProveedor && <option value="PARCIALMENTE_RECIBIDA">Parcialmente recibida</option>}
-              {esProveedor && <option value="RECIBIDA">Recibida</option>}
-              {esProveedor && <option value="CANCELADA">Cancelada</option>}
+              {esProveedor && <option value="PAGADA">Orden pagada</option>}
             </select>
           </label>
         </div>

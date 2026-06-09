@@ -892,10 +892,10 @@ export const registrarPagoProveedor = (ordenId, data = {}) => {
         const config = getAuthConfig();
         const endpoints = ordenId
             ? [
+                { method: "post", url: `${URL}/pagos-proveedor` },
                 { method: "post", url: `${URL}/ordenesCompraProv/${ordenId}/pagos` },
                 { method: "post", url: `${URL}/ordenesCompraProv/${ordenId}/pago` },
                 { method: "post", url: `${URL}/ordenesCompraProv/${ordenId}/pagosProveedor` },
-                { method: "post", url: `${URL}/pagos-proveedor` },
             ]
             : [
                 { method: "post", url: `${URL}/pagos-proveedor` },
