@@ -27,6 +27,7 @@ import ResumenDeVentas from './Pages/ResumenDeVentas';
 import ResumenDeCompras from './Pages/ResumenDeCompras';
 import VentasPorArticulo from './Pages/VentasPorArticulo';
 import VentasPorCategorias from './Pages/VentasPorCategorias';
+import InformeFinanciero from './Pages/InformeFinanciero';
 import PermisosEmpleados from './Pages/PermisosEmpleados';
 import { PERMISOS } from './Config/permisos';
 import './App.css';
@@ -98,6 +99,7 @@ function App() {
               <Route element={<PrivateRoute allowedPermissions={[PERMISOS.INFORMES]} />}>
                 <Route path="resumenVentas" element={<ResumenDeVentas />} />
                 <Route path="resumenCompras" element={<ResumenDeCompras />} />
+                <Route path="informeFinanciero" element={<InformeFinanciero />} />
                 <Route path="ventasPorArticulo" element={<VentasPorArticulo />} />
                 <Route path="ventasPorCategorias" element={<VentasPorCategorias />} />
               </Route>

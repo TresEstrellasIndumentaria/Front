@@ -4,15 +4,38 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Switch from "@mui/material/Switch";
 import "./styles.css";
 
-const getArticuloCosteBase = (articulo) => {
+const getNumeroFinito = (value) => {
+    if (value === undefined || value === null || value === "") return null;
+    const numero = Number(value);
+    return Number.isFinite(numero) ? numero : null;
+};
+
+const getArticuloCosteBase = (articulo, talle = "") => {
     if (!articulo) return 0;
-    if (Number.isFinite(Number(articulo.costo))) return Number(articulo.costo);
-    if (Number.isFinite(Number(articulo.coste))) return Number(articulo.coste);
-    if (Number.isFinite(Number(articulo.precio))) return Number(articulo.precio);
     if (Array.isArray(articulo.talles) && articulo.talles.length) {
-        const primerTalleConCoste = articulo.talles.find((t) => Number.isFinite(Number(t?.costo ?? t?.coste)));
-        if (primerTalleConCoste) return Number(primerTalleConCoste.costo ?? primerTalleConCoste.coste);
+        const talleNormalizado = String(talle || "").trim().toLowerCase();
+        const talleSeleccionado = talleNormalizado
+            ? articulo.talles.find((t) => String(t?.talle || "").trim().toLowerCase() === talleNormalizado)
+            : null;
+        const talleDefault = articulo.talles.length > 1
+            ? articulo.talles.find((t) => t?.talle)
+            : articulo.talles[0];
+        const talleParaCoste = talleSeleccionado || talleDefault;
+        const costeTalle = getNumeroFinito(talleParaCoste?.ultimoCostoCompra)
+            ?? getNumeroFinito(talleParaCoste?.costo)
+            ?? getNumeroFinito(talleParaCoste?.coste);
+        if (costeTalle !== null) return costeTalle;
+
+        const primerTalleConCoste = articulo.talles
+            .map((t) => getNumeroFinito(t?.ultimoCostoCompra) ?? getNumeroFinito(t?.costo) ?? getNumeroFinito(t?.coste))
+            .find((coste) => coste !== null);
+        if (primerTalleConCoste !== undefined) return primerTalleConCoste;
     }
+    const costeArticulo = getNumeroFinito(articulo.ultimoCostoCompra)
+        ?? getNumeroFinito(articulo.costo)
+        ?? getNumeroFinito(articulo.coste)
+        ?? getNumeroFinito(articulo.precio);
+    if (costeArticulo !== null) return costeArticulo;
     return 0;
 };
 
@@ -36,7 +59,7 @@ const normalizarComponente = (componente, articulos = []) => {
         componente?.costeUnitario ??
         componente?.costo ??
         componente?.coste ??
-        (qty > 0 && costeTotalGuardado > 0 ? costeTotalGuardado / qty : getArticuloCosteBase(articulo))
+        (qty > 0 && costeTotalGuardado > 0 ? costeTotalGuardado / qty : getArticuloCosteBase(articulo, componente?.talle))
     );
 
     return {
@@ -82,6 +105,9 @@ function InventarioCompuesto({
     const articulosKey = JSON.stringify((articulos || []).map((articulo) => ({
         _id: articulo?._id,
         nombre: articulo?.nombre,
+        ultimoCostoCompra: articulo?.ultimoCostoCompra,
+        costo: articulo?.costo,
+        coste: articulo?.coste,
         talles: articulo?.talles
     })));
     const componentesNormalizados = useMemo(() => (
@@ -90,6 +116,11 @@ function InventarioCompuesto({
             .filter((c) => c._id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ), [componentesInicialesKey, articulosKey]);
+    const articulosOrdenados = useMemo(() => (
+        [...(articulos || [])].sort((a, b) => String(a?.nombre || "").localeCompare(String(b?.nombre || ""), "es", {
+            sensitivity: "base"
+        }))
+    ), [articulos]);
 
     useEffect(() => {
         if (!componentesNormalizados.length) {
@@ -118,6 +149,8 @@ function InventarioCompuesto({
 
         const articulo = articulos.find((a) => a._id === articuloSeleccionado);
         if (!articulo) return;
+        const talleDefault = getDefaultTalleComponente(articulo);
+        const costeUnitario = getArticuloCosteBase(articulo, talleDefault);
 
         usuarioModificoRef.current = true;
         setComponentes((prev) => [
@@ -125,11 +158,11 @@ function InventarioCompuesto({
             {
                 _id: articulo._id,
                 nombre: articulo.nombre,
-                talle: getDefaultTalleComponente(articulo),
-                costeUnitario: getArticuloCosteBase(articulo),
+                talle: talleDefault,
+                costeUnitario,
                 cantidad,
-                costeTotal: getArticuloCosteBase(articulo) * cantidad,
-                costeInput: String(getArticuloCosteBase(articulo) * cantidad)
+                costeTotal: costeUnitario * cantidad,
+                costeInput: String(costeUnitario * cantidad)
             }
         ]);
 
@@ -142,6 +175,8 @@ function InventarioCompuesto({
 
         const articulo = articulos.find((a) => a._id === articuloId);
         if (!articulo) return;
+        const talleDefault = getDefaultTalleComponente(articulo);
+        const costeUnitario = getArticuloCosteBase(articulo, talleDefault);
 
         usuarioModificoRef.current = true;
         setComponentes((prev) => [
@@ -149,11 +184,11 @@ function InventarioCompuesto({
             {
                 _id: articulo._id,
                 nombre: articulo.nombre,
-                talle: getDefaultTalleComponente(articulo),
-                costeUnitario: getArticuloCosteBase(articulo),
+                talle: talleDefault,
+                costeUnitario,
                 cantidad,
-                costeTotal: getArticuloCosteBase(articulo) * cantidad,
-                costeInput: String(getArticuloCosteBase(articulo) * cantidad)
+                costeTotal: costeUnitario * cantidad,
+                costeInput: String(costeUnitario * cantidad)
             }
         ]);
 
@@ -210,11 +245,20 @@ function InventarioCompuesto({
     const actualizarTalle = (id, nuevoTalle) => {
         usuarioModificoRef.current = true;
         setComponentes((prev) =>
-            prev.map((c) =>
-                c._id === id
-                    ? { ...c, talle: nuevoTalle }
-                    : c
-            )
+            prev.map((c) => {
+                if (c._id !== id) return c;
+
+                const articulo = articulos.find((a) => a._id === id);
+                const costeUnitario = getArticuloCosteBase(articulo, nuevoTalle);
+
+                return {
+                    ...c,
+                    talle: nuevoTalle,
+                    costeUnitario,
+                    costeTotal: c.cantidad * costeUnitario,
+                    costeInput: String(c.cantidad * costeUnitario)
+                };
+            })
         );
     };
 
@@ -379,7 +423,7 @@ function InventarioCompuesto({
                                 }}
                             >
                                 <option value="">Busqueda de articulos</option>
-                                {articulos.map((a) => (
+                                {articulosOrdenados.map((a) => (
                                     <option
                                         key={a._id}
                                         value={a._id}

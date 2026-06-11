@@ -81,6 +81,7 @@ const MENU_ITEMS = [
     Icon: BarChartIcon,
     links: [
       { to: '/resumenVentas', label: 'Resumen de ventas', permisos: [PERMISOS.INFORMES] },
+      { to: '/informeFinanciero', label: 'Informe financiero', permisos: [PERMISOS.INFORMES] },
       { to: '/ventasPorArticulo', label: 'Ventas por articulo', permisos: [PERMISOS.INFORMES] },
       { to: '/ventasPorCategorias', label: 'Ventas por categoria', permisos: [PERMISOS.INFORMES] },
     ],

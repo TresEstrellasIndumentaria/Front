@@ -571,6 +571,32 @@ export const getValoracionInventario = (params = {}) => {
     };
 };
 
+export const getInformeFinanciero = (params = {}) => {
+    return async function () {
+        const config = getAuthConfig();
+        const query = new URLSearchParams(
+            Object.entries(params).reduce((acc, [key, value]) => {
+                if (value !== undefined && value !== null && value !== '') acc[key] = value;
+                return acc;
+            }, {})
+        ).toString();
+
+        try {
+            const endpoint = `${URL}/informes/financiero${query ? `?${query}` : ''}`;
+            const resp = await axios.get(endpoint, config);
+            return resp.data;
+        } catch (error) {
+            return {
+                error: true,
+                message:
+                    error.response?.data?.message ||
+                    error.response?.data?.msg ||
+                    "Error al obtener informe financiero.",
+            };
+        }
+    };
+};
+
 //elimina ART
 export const eliminarArt = (id) => {
     return async function (dispatch) {
