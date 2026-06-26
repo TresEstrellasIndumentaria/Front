@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Swal from 'sweetalert2';
-import { crearRecibo, eliminarPagoProveedor, getOrdenesCompraPorProveedor, getPagosProveedorPorProveedor, getRecibosPorCliente, getRemitosPorCliente, registrarPagoProveedor } from '../../Redux/Actions';
+import { crearRecibo, eliminarPagoProveedor, eliminarRecibo, eliminarRemito, getOrdenesCompraPorProveedor, getPagosProveedorPorProveedor, getRecibosPorCliente, getRemitosPorCliente, registrarPagoProveedor } from '../../Redux/Actions';
 import {
   formatCurrencyARS,
   formatDateAR as formatDate,
@@ -151,6 +151,7 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
   const [loading, setLoading] = useState(false);
   const [guardandoPago, setGuardandoPago] = useState(false);
   const [anulandoPagoId, setAnulandoPagoId] = useState(null);
+  const [anulandoMovimientoId, setAnulandoMovimientoId] = useState(null);
   const [error, setError] = useState('');
   const [pagoProveedor, setPagoProveedor] = useState({
     ordenCompra: '',
@@ -273,6 +274,7 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
 
       const movimientosOrdenes = ordenesProveedor.map((orden) => ({
         id: orden?._id || orden?.id || `orden-${orden?.numero}`,
+        claseMovimiento: 'ORDEN_COMPRA',
         fecha: orden?.fechaOrden || orden?.createdAt,
         tipo: 'DEBE',
         comprobante: orden?.numero ? `OC-${String(orden.numero).padStart(6, '0')}` : 'Orden de compra',
@@ -289,6 +291,7 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
       const pagosProveedor = Array.isArray(data?.pagos?.pagos) ? data.pagos.pagos : [];
       const movimientosPagos = pagosProveedor.map((pago, index) => ({
         id: pago?._id || pago?.id || `pago-proveedor-${index}`,
+        claseMovimiento: 'PAGO_PROVEEDOR',
         pagoProveedorId: pago?._id || pago?.id,
         fecha: pago?.fechaPago || pago?.fecha || pago?.createdAt,
         tipo: 'HABER',
@@ -336,6 +339,8 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
 
       return {
         id: remito?._id || `remito-${remito?.numeroRemito}`,
+        claseMovimiento: 'REMITO',
+        remitoId: remito?._id,
         fecha: remito?.createdAt,
         tipo: 'DEBE',
         comprobante: remito?.numeroRemitoFormateado || `R-${String(remito?.numeroRemito || '').padStart(6, '0')}`,
@@ -352,6 +357,8 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
 
     const movimientosRecibos = recibos.map((recibo) => ({
       id: recibo?._id || `recibo-${recibo?.numeroRecibo}`,
+      claseMovimiento: 'RECIBO',
+      reciboId: recibo?._id,
       fecha: recibo?.fechaCobro || recibo?.createdAt,
       tipo: 'HABER',
       comprobante: recibo?.numeroReciboFormateado || `RC-${String(recibo?.numeroRecibo || '').padStart(6, '0')}`,
@@ -711,6 +718,52 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
     });
   };
 
+  const handleAnularMovimientoCliente = async (movimiento) => {
+    const esRemito = movimiento?.claseMovimiento === 'REMITO';
+    const esRecibo = movimiento?.claseMovimiento === 'RECIBO';
+    const movimientoId = esRemito ? movimiento?.remitoId : movimiento?.reciboId;
+
+    if (!movimientoId || (!esRemito && !esRecibo)) return;
+
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: esRemito ? 'Eliminar remito' : 'Anular pago',
+      text: esRemito
+        ? `Se eliminara ${movimiento.comprobante || 'el remito seleccionado'} y se revertira el stock asociado.`
+        : `Se anulara ${movimiento.comprobante || 'el pago seleccionado'} por ${formatMoney(movimiento.haber)}.`,
+      showCancelButton: true,
+      confirmButtonText: esRemito ? 'Eliminar' : 'Anular',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setAnulandoMovimientoId(movimientoId);
+    const response = esRemito
+      ? await dispatch(eliminarRemito(movimientoId))
+      : await dispatch(eliminarRecibo(movimientoId));
+    setAnulandoMovimientoId(null);
+
+    if (response?.error) {
+      Swal.fire({
+        icon: 'error',
+        title: esRemito ? 'No se pudo eliminar' : 'No se pudo anular',
+        text: response.message || 'Intenta nuevamente.',
+      });
+      return;
+    }
+
+    await cargarCuentaCliente();
+
+    Swal.fire({
+      icon: 'success',
+      title: esRemito ? 'Remito eliminado' : 'Pago anulado',
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  };
+
   return (
     <section className="cuenta-corriente">
       <div className="cuenta-corriente-summary">
@@ -960,31 +1013,31 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
                 <th>Debe</th>
                 <th>Haber</th>
                 <th>Saldo</th>
-                {esProveedor && <th>Acciones</th>}
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={esProveedor ? 9 : 8} className="cuenta-corriente-empty">Cargando cuenta corriente...</td>
+                  <td colSpan="9" className="cuenta-corriente-empty">Cargando cuenta corriente...</td>
                 </tr>
               )}
 
               {!loading && error && (
                 <tr>
-                  <td colSpan={esProveedor ? 9 : 8} className="cuenta-corriente-empty">{error}</td>
+                  <td colSpan="9" className="cuenta-corriente-empty">{error}</td>
                 </tr>
               )}
 
               {!loading && !error && !puedeConsultar && (
                 <tr>
-                  <td colSpan={esProveedor ? 9 : 8} className="cuenta-corriente-empty">{sinIdentificadorMessage}</td>
+                  <td colSpan="9" className="cuenta-corriente-empty">{sinIdentificadorMessage}</td>
                 </tr>
               )}
 
               {!loading && !error && puedeConsultar && movimientosConSaldo.length === 0 && (
                 <tr>
-                  <td colSpan={esProveedor ? 9 : 8} className="cuenta-corriente-empty">No hay movimientos para los filtros seleccionados.</td>
+                  <td colSpan="9" className="cuenta-corriente-empty">No hay movimientos para los filtros seleccionados.</td>
                 </tr>
               )}
 
@@ -1006,20 +1059,29 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
                     {movimiento.haber ? formatMoney(movimiento.haber) : '-'}
                   </td>
                   <td className="cuenta-corriente-money">{formatMoney(movimiento.saldo)}</td>
-                  {esProveedor && (
-                    <td>
-                      {movimiento.pagoProveedorId ? (
-                        <button
-                          type="button"
-                          className="cuenta-corriente-action cuenta-corriente-action--danger"
-                          onClick={() => handleAnularPagoProveedor(movimiento)}
-                          disabled={anulandoPagoId === movimiento.pagoProveedorId}
-                        >
-                          {anulandoPagoId === movimiento.pagoProveedorId ? 'Anulando...' : 'Anular'}
-                        </button>
-                      ) : '-'}
-                    </td>
-                  )}
+                  <td>
+                    {esProveedor && movimiento.pagoProveedorId ? (
+                      <button
+                        type="button"
+                        className="cuenta-corriente-action cuenta-corriente-action--danger"
+                        onClick={() => handleAnularPagoProveedor(movimiento)}
+                        disabled={anulandoPagoId === movimiento.pagoProveedorId}
+                      >
+                        {anulandoPagoId === movimiento.pagoProveedorId ? 'Anulando...' : 'Anular'}
+                      </button>
+                    ) : !esProveedor && (movimiento.remitoId || movimiento.reciboId) ? (
+                      <button
+                        type="button"
+                        className="cuenta-corriente-action cuenta-corriente-action--danger"
+                        onClick={() => handleAnularMovimientoCliente(movimiento)}
+                        disabled={anulandoMovimientoId === (movimiento.remitoId || movimiento.reciboId)}
+                      >
+                        {anulandoMovimientoId === (movimiento.remitoId || movimiento.reciboId)
+                          ? 'Anulando...'
+                          : movimiento.remitoId ? 'Eliminar' : 'Anular'}
+                      </button>
+                    ) : '-'}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1035,7 +1097,7 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
                 <td className={`cuenta-corriente-money cuenta-corriente-total-saldo ${totalesFiltrados.saldoFinal < 0 ? 'is-deudor' : totalesFiltrados.saldoFinal > 0 ? 'is-favor' : ''}`}>
                   {formatMoney(totalesFiltrados.saldoFinal)}
                 </td>
-                {esProveedor && <td></td>}
+                <td></td>
               </tr>
             </tfoot>
           </table>
