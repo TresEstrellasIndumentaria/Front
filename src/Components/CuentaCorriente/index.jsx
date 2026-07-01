@@ -126,8 +126,9 @@ const getReciboRemitoId = (recibo) => {
 };
 
 const getRemitoSaldo = (remito, recibos = []) => {
-  if (Number.isFinite(Number(remito?.importeDebe))) {
-    return Math.max(0, Number(remito.importeDebe));
+  const importeDebe = remito?.importeDebe;
+  if (importeDebe !== undefined && importeDebe !== null && importeDebe !== '' && Number.isFinite(Number(importeDebe))) {
+    return Math.max(0, Number(importeDebe));
   }
 
   const remitoId = String(remito?._id || '');
@@ -505,7 +506,7 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
       saldoRemito: getRemitoSaldo(remito, recibosCliente),
       pagosRegistrados: recibosCliente.filter((recibo) => getReciboRemitoId(recibo) === String(remito?._id || '')).length,
     }))
-    .filter((remito) => remito.saldoRemito > 0 && remito.pagosRegistrados < 2)
+    .filter((remito) => remito.saldoRemito > 0)
     .sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime());
   const remitoSeleccionado = remitosParaPago.find((remito) => String(remito?._id || '') === pagoCliente.remito);
   const saldoRemitoSeleccionado = remitoSeleccionado ? Number(remitoSeleccionado.saldoRemito || 0) : 0;
@@ -534,7 +535,7 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
       return {
         ...prev,
         remito: value,
-        importe: remito ? String(Math.ceil(Number(remito.saldoRemito || 0) / 2)) : '',
+        importe: remito ? String(roundMoney(remito.saldoRemito)) : '',
       };
     });
   };
@@ -1053,10 +1054,10 @@ function CuentaCorriente({ cliente, proveedor, proveedorId: proveedorIdProp, tip
                   <td>{movimiento.descripcion}</td>
                   <td>{movimiento.tipo === 'HABER' ? movimiento.referencia : ''}</td>
                   <td className="cuenta-corriente-money cuenta-corriente-money--debe">
-                    {movimiento.debe ? formatMoney(movimiento.debe) : '-'}
+                    {movimiento.tipo === 'DEBE' ? formatMoney(movimiento.debe) : '-'}
                   </td>
                   <td className="cuenta-corriente-money cuenta-corriente-money--haber">
-                    {movimiento.haber ? formatMoney(movimiento.haber) : '-'}
+                    {movimiento.tipo === 'HABER' ? formatMoney(movimiento.haber) : '-'}
                   </td>
                   <td className="cuenta-corriente-money">{formatMoney(movimiento.saldo)}</td>
                   <td>
